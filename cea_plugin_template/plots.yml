@@ -1,0 +1,13 @@
+Demand Summary:
+  - label: Total System Demand
+    data:
+      location: demand_summary
+      index: Name
+      fields:
+        - QC_sys_MWhyr
+        - QH_sys_MWhyr
+    layout:
+      kind: bar
+      title: Total System Demand
+      yTitle: "Energy Demand [MWh/yr]"
+      xTitle: Building Name

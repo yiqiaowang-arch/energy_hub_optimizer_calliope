@@ -1,0 +1,10 @@
+Demand Summary:
+
+  - name: demand-summary
+    label: Demand Summary
+    description: Creates a simple summary of the demand totals from the cea demand script.
+    interfaces: [cli, dashboard]
+    module: cea_plugin_template.demand_summary
+    parameters: ["general:scenario", "demand-summary:fudge-factor"]
+    input-files:
+      - [get_total_demand]
