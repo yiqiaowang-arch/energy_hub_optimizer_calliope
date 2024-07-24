@@ -1,0 +1,604 @@
+## definition for plot 8
+# set the model, run and group constraints
+model:
+    name: 'building in plot 8'
+    calliope_version: 0.6.10
+    timeseries_data: {}
+    time:
+        function: 'resample'
+        function_options:
+            resolution: '1M'
+
+#group_constraints:
+#    # A constraint group to apply a systemwide CO2 cap
+#    systemwide_co2_cap:
+#        cost_max:
+#            co2: 100000
+
+run:
+    bigM: 1e8
+    cyclic_storage: true
+    objective_options:
+        cost_class:
+            co2: 0
+            monetary: 1
+    solver: cplex
+#    solver_options:
+#        presolve: 0
+#    save_logs: './result_site_specific_2'
+    # ensure_feasibility: true
+#    relax_constraint: # Enable relaxing some equality constraints to be min/max constraints. The extent of relaxation is given as a fraction.
+#        demand_share_per_timestep_decision_main_constraint: 0.01
+
+
+# set locations
+locations:
+    Building:
+        techs:
+            grid:
+            wood_supply:
+            DHDC_small_heat:
+            # DHDC_small_cooling:
+            DHDC_medium_heat:
+            # DHDC_medium_cooling:
+            DHDC_large_heat:
+            # DHDC_large_cooling:
+            wood_boiler_heat:
+            wood_boiler_DHW:
+            PV:
+#            PVT:
+            SCFP:
+            DHW_to_heat:
+            # heat_to_geothermal:
+            ASHP:
+            ASHP_DHW:
+            GSHP_heat:
+            GSHP_cooling:
+            battery:
+            DHW_storage:
+            heat_storage:
+            geothermal_boreholes:
+            demand_electricity:
+                constraints:
+                    resource: df=demand_el
+            demand_space_heating:
+                constraints:
+                    resource: df=demand_sh
+            demand_space_cooling:
+                constraints:
+                    resource: df=demand_sc
+            demand_hot_water:
+                constraints:
+                    resource: df=demand_dhw
+        available_area: 1000
+
+# set group constraints, to make sure that:
+# 1. GSHP_heat and GSHP_cooling are strictly coupled, they have the same capacity
+# 2. PV, PVT and SC are competing for the same area
+
+#group_constraints:
+#    GSHP_heat_cooling:
+#        techs: [GSHP_heat, GSHP_cooling]
+#        energy_cap_equals: 100
+#    DHDC_small_heat_cooling:
+#        techs: [DHDC_small_heat, DHDC_small_cooling]
+#        energy_cap_equals: 100
+#    DHDC_medium_heat_cooling:
+#        techs: [DHDC_medium_heat, DHDC_medium_cooling]
+#        energy_cap_equals: 100
+#    DHDC_large_heat_cooling:
+#        techs: [DHDC_large_heat, DHDC_large_cooling]
+#        energy_cap_equals: 100
+
+techs:
+    # supply technologies
+    # grid supply
+    grid:
+        essentials:
+            name: 'Grid supply'
+            color: '#8fd14f'
+            parent: supply
+            carrier_out: electricity
+        constraints: # no other constraints needed
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                om_prod: 0.24 # electricity price, CHF per kWh
+            co2:
+                om_prod: 0.125 # CO2 emission, kg per kWh
+                om_annual: 0.001 # have this just to avoid too big sizing
+    wood_supply:
+        essentials:
+            name: 'Wood'
+            color: '#E37A72'
+            parent: supply
+            carrier_out: wood
+        constraints:
+            energy_cap_max: 2000 # kW
+        costs:
+            monetary:
+                interest_rate: 0.05
+                om_prod: 0.13 # wood price, CHF per kWh
+            co2:
+                om_prod: 0.023 # CO2 emission, kg per kWh
+                om_annual: 0.001 # have this just to avoid too big sizing
+    DHDC_small_heat: #
+        essentials:
+            name: 'DH small'
+            color: '#E37A72'
+            parent: supply
+            carrier_out: DHW
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 20 # kW
+            energy_cap_max: 273.13 # kW
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                energy_cap: 173.8751 # CHF per kW
+                om_prod: 0.08 # heat price, CHF per kWh
+                purchase: 16337.6764 # CHF per device
+                om_annual: 146 # yearly maintenance cost based on energy (power) capacity
+            co2:
+                om_prod: 0.046 # CO2 emission, kg per kWh
+                om_annual: 0.001 # have this just to avoid too big sizing
+    DHDC_small_cooling: #
+        essentials:
+            name: 'DC small'
+            color: '#E37A72'
+            parent: supply
+            carrier_out: cooling
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 20 # kW
+            energy_cap_max: 273.13 # kW
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                om_prod: 0.037 # cooling price, CHF per kWh
+                om_annual: 131 # yearly maintenance cost based on energy (power) capacity
+            co2:
+                om_prod: 0.046 # CO2 emission, kg per kWh
+                om_annual: 0.001 # have this just to avoid too big sizing
+    DHDC_medium_heat:
+        essentials:
+            name: 'DH medium'
+            color: '#E37A72'
+            parent: supply
+            carrier_out: DHW
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 273.13 # kW
+            energy_cap_max: 848.75 # kW
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                energy_cap: 96.2914 # CHF per kW
+                om_prod: 0.08 # heat/cooling price, CHF per kWh
+                purchase: 37528.4855 # CHF per device
+                om_annual: 146
+            co2:
+                om_prod: 0.046 # CO2 emission, kg per kWh
+                om_annual: 0.0011 # have this just to avoid too big sizing
+    DHDC_medium_cooling:
+        essentials:
+            name: 'DC medium'
+            color: '#E37A72'
+            parent: supply
+            carrier_out: cooling
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 273.13 # kW
+            energy_cap_max: 848.75 # kW
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                # energy_cap: 115 # CHF per kW
+                om_prod: 0.037 # heat/cooling price, CHF per kWh
+                # purchase: 29589 # CHF per device
+                om_annual: 131
+            co2:
+                om_prod: 0.046 # CO2 emission, kg per kWh
+                om_annual: 0.0011 # have this just to avoid too big sizing
+    DHDC_large_heat: #
+        essentials:
+            name: 'DH large'
+            color: '#E37A72'
+            parent: supply
+            carrier_out: DHW
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 848.75 # kW
+            energy_cap_max: 2000 # kW
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                energy_cap: 62.5738 # CHF per kW
+                om_prod: 0.08 # heat/cooling price, CHF per kWh
+                purchase: 66146.4332 # CHF per device
+                om_annual: 146
+            co2:
+                om_prod: 0.046 # CO2 emission, kg per kWh
+                om_annual: 0.0012 # have this just to avoid too big sizing
+    DHDC_large_cooling: #
+        essentials:
+            name: 'DC large'
+            color: '#E37A72'
+            parent: supply
+            carrier_out: cooling
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 848.75 # kW
+            energy_cap_max: 2000 # kW
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                # energy_cap: 65 # CHF per kW
+                om_prod: 0.037 # heat/cooling price, CHF per kWh
+                # purchase: 66851 # CHF per device
+                om_annual: 131
+            co2:
+                om_prod: 0.046 # CO2 emission, kg per kWh
+                om_annual: 0.0012 # have this just to avoid too big sizing
+    wood_boiler_heat:
+        essentials:
+            name: 'Wood boiler SH'
+            color: '#fac710'
+            parent: conversion
+            carrier_in: wood
+            carrier_out: heat
+        constraints:
+            energy_eff: 0.8
+            energy_cap_min: 5 # kW
+            energy_cap_max: 2000 # kW
+            lifetime: 20
+        costs:
+            monetary:
+                interest_rate: 0.05
+                purchase: 20000 # USD per device
+                energy_cap: 200 # USD per kW
+                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+    wood_boiler_DHW:
+        essentials:
+            name: 'Wood boiler DHW'
+            color: '#f24726'
+            parent: conversion
+            carrier_in: wood
+            carrier_out: DHW
+        constraints:
+            energy_eff: 0.7
+            energy_cap_min: 5 # kW
+            energy_cap_max: 2000 # kW
+            lifetime: 20
+        costs:
+            monetary:
+                interest_rate: 0.05
+                purchase: 20000 # USD per device
+                energy_cap: 200 # USD per kW
+                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+    PV:
+        essentials:
+            name: 'PV'
+            color: '#8fd14f'
+            parent: supply
+            carrier: electricity
+        constraints:
+            export_carrier: electricity
+            resource: df=supply_PV
+            resource_unit: energy_per_area
+            energy_eff: 1
+            resource_area_per_energy_cap: 7 # 7m2 per kWp
+            lifetime: 15
+        costs:
+            monetary:
+                interest_rate: 0.05
+                energy_cap: 2000 # CHF per kWp
+                export: -0.05 # CHF per kWh, feed-in tariff
+            co2:
+                om_prod: 0.042 # CO2 emission, kg per kWh
+                om_annual: 0.001 # have this just to avoid too big sizing
+    # PVT, this technology is a CHP, so it produces both heat and electricity
+#    PVT:
+#        essentials:
+#            name: 'PVT'
+#            color: '#E37A72'
+#            parent: supply_plus
+#            carrier_out: electricity
+#            carrier_out_2: heat
+#            primary_carrier_out: electricity
+#        constraints:
+#            export_carrier: electricity
+#            resource: df=supply_PVT_e
+#            resource_unit: energy_per_area
+##            carrier_ratios:
+##                carrier_out:
+##                    electricity: 1
+##                carrier_out_2:
+##                    heat: df=supply_PVT_h
+#            energy_eff: 1
+#            resource_area_per_energy_cap: 10 # 10m2 per kWp
+#            lifetime: 15
+#        costs:
+#            monetary:
+#                interest_rate: 0.05
+#                energy_cap: 2600 # CHF per kW
+#                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+#                export: -0.05 # CHF per kWh, feed-in tariff
+
+    SCFP:
+        essentials:
+            name: 'Solar collector flat plate'
+            color: '#ff6728'
+            parent: supply
+            carrier_out: DHW
+        constraints:
+            resource: df=supply_SCFP
+            resource_unit: energy_per_area
+            energy_eff: 1
+            resource_area_per_energy_cap: 2 # 2m2 per kWp
+            lifetime: 15
+        costs:
+            monetary:
+                interest_rate: 0.05
+                energy_cap: 850 # CHF per kW
+                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+            co2:
+                om_prod: 0.015 # CO2 emission, kg per kWh
+                om_annual: 0.001 # have this just to avoid too big sizing
+
+    # conversion technologies
+    # fake conversion, to turn DHW into heat
+    DHW_to_heat:
+        essentials:
+            name: 'DHW to heat'
+            color: '#c69e0c'
+            carrier_in: DHW
+            carrier_out: heat
+            parent: conversion
+        constraints:
+            lifetime: 100
+        costs:
+            monetary:
+                interest_rate: 0.05
+
+    # ASHP, consumes electricity to produce heat, with a COP of 2.4
+    ASHP:
+        essentials:
+            name: 'ASHP SH/SC'
+            color: '#676767'
+            carrier_in: electricity
+            carrier_out: [heat, cooling]
+            primary_carrier_out: heat
+            parent: conversion_plus
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 1 # kW
+            carrier_ratios:
+                carrier_out: {heat: 3, cooling: 2.7}
+            lifetime: 25
+        costs:
+            monetary:
+                interest_rate: 0.05
+                purchase: 19128 # USD per device
+                energy_cap: 167 # USD per kW
+                om_annual: 11 # USD per kW, annual maintenance cost based on energy (power) capacity
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+    ASHP_DHW:
+        essentials:
+            name: 'ASHP DHW'
+            color: '#f24726'
+            carrier_in: electricity
+            carrier_out: DHW
+            parent: conversion
+        constraints:
+            energy_eff: 2.4
+            energy_cap_min: 1 # kW
+            lifetime: 25
+        costs:
+            monetary:
+                interest_rate: 0.05
+                purchase: 19128 # USD per device
+                energy_cap: 167 # USD per kW
+                om_annual: 11 # USD per kW, annual maintenance cost based on energy (power) capacity
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+    # GSHP, consumes electricity and consumes geothermal storage to produce heat,
+    # or consumes and generate both cooling and geothermal storage
+    # with a COP of 4.5
+    GSHP_heat:
+        essentials:
+            name: 'GSHP heating'
+            color: '#ffda10'
+            carrier_in: electricity
+            carrier_in_2: geothermal_storage
+            primary_carrier_in: electricity
+            parent: conversion_plus
+            carrier_out: heat
+        constraints:
+            energy_eff: 4.5
+            energy_cap_min: 10 # kW
+            # energy_cap_max: 100000 # kW
+            carrier_ratios:
+                carrier_in.electricity: 1 # electricity
+                carrier_in_2.geothermal_storage: 3.5 # geothermal storage
+            lifetime: 30
+        costs:
+            monetary:
+                interest_rate: 0.05
+                purchase: 29204 # USD per device
+                energy_cap: 750 # USD per kW
+                om_annual: 25 # USD per kW, annual maintenance cost based on energy (power) capacity
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+
+    GSHP_cooling: # to be defined in group constraints to be strictly coupled with GSHP_heat
+        essentials:
+            name: 'GSHP cooling'
+            color: '#F9CF22'
+            carrier_in: electricity
+            carrier_out: cooling
+            carrier_out_2: geothermal_storage
+            primary_carrier_out: cooling
+            parent: conversion_plus
+        constraints:
+            energy_eff: 1
+            energy_cap_min: 10 # kW
+            # energy_cap_max: 100000 # kW
+            carrier_ratios:
+                carrier_out.cooling: 4 # cooling
+                carrier_out_2.geothermal_storage: 5 # geothermal storage
+            lifetime: 30
+        costs:
+            monetary: # to avoid double counting, only the cost of the heating mode is considered
+                interest_rate: 0.05
+                purchase: 0 # USD per device
+                energy_cap: 0 # USD per kW
+                om_annual: 5 # USD per kW, annual maintenance cost based on energy (power) capacity
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+
+    # storage technologies
+    # battery, stores electricity
+    battery:
+        essentials:
+            name: 'Battery'
+            color: '#6c9e3b'
+            parent: storage
+            carrier: electricity
+        constraints:
+            energy_cap_per_storage_cap_max: 0.25 # charging/discharging rate 0.25 kW per kWh
+            energy_eff: 0.85 # round trip efficiency
+            # force_asynchronous_prod_con: true # charge and discharge are not simultaneous
+            lifetime: 15
+            storage_cap_max: 1000 # kWh
+            # storage_loss: 0.001
+            storage_initial: 0 # initial storage level
+        costs:
+            monetary:
+                interest_rate: 0.05
+                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+                storage_cap: 189 # USD per kWh, storage cost
+                energy_cap: 211 # USD per kW, power cost
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+
+    # DHW storage tank, stores heat
+    DHW_storage:
+        essentials:
+            name: 'DHW storage tank'
+            color: '#a53019'
+            parent: storage
+            carrier: DHW
+        constraints:
+            energy_eff: 0.8 # round trip efficiency
+            # force_asynchronous_prod_con: true # charge and discharge are not simultaneous
+            lifetime: 20
+            storage_cap_max: 50 # kWh
+            storage_loss: 0.02 # 3% loss per hour
+            storage_initial: 1 # initial storage level
+        costs:
+            monetary:
+                interest_rate: 0.05
+                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+                storage_cap: 640 # USD per kWh
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+
+    heat_storage:
+        essentials:
+            name: 'heat storage tank'
+            color: '#ad8a0b'
+            parent: storage
+            carrier: heat
+        constraints:
+            energy_eff: 0.7 # round trip efficiency
+            # force_asynchronous_prod_con: true # charge and discharge are not simultaneous
+            lifetime: 20
+            storage_cap_max: 100 # kWh
+            storage_loss: 0.02 # 3% loss per hour
+            storage_initial: 1 # initial storage level
+        costs:
+            monetary:
+                interest_rate: 0.05
+                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+                storage_cap: 640 # USD per kWh
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+    # geothermal storage, stores heat, comes with GSHP so no cost
+    geothermal_boreholes:
+        essentials:
+            name: 'Geothermal Boreholes'
+            color: '#F9CF22'
+            parent: storage
+            carrier: geothermal_storage
+        constraints:
+            energy_eff: 0.9 # one way efficiency
+            # force_asynchronous_prod_con: true # charge and discharge are not simultaneous
+            lifetime: 30
+            storage_cap_max: 100000 # kWh
+            energy_cap_max: 100000 # kW
+            # storage_loss: 0.001 # 0.1% loss per hour
+            storage_initial: 0.85 # initial storage level
+        costs:
+            monetary:
+                interest_rate: 0.05
+                om_annual: 0.001 # have this just to avoid too big sizing
+                # om_annual_investment_fraction: 0 # fraction of purchase cost
+                # om_prod: 0.1 # USD per kWh, storage cost
+                # storage_cap: 0 # already included in the cost of GSHP
+            co2:
+                om_annual: 0.001 # have this just to avoid too big sizing
+
+    # demand technologies
+    # appliances, electricity demand
+    demand_electricity:
+        essentials:
+            name: 'Appliance electricity demand'
+            color: '#aeff60'
+            parent: demand
+            carrier: electricity
+
+    # then comes SH, SC, DHW demand
+    # SH demand
+    demand_space_heating:
+        essentials:
+            name: 'Space heating demand'
+            color: '#fac710'
+            parent: demand
+            carrier: heat
+
+    # SC demand
+    demand_space_cooling:
+        essentials:
+            name: 'Space cooling demand'
+            color: '#12cdd4'
+            parent: demand
+            carrier: cooling
+
+    # DHW demand
+    demand_hot_water:
+        essentials:
+            name: 'DHW demand'
+            color: '#ff6728'
+            parent: demand
+            carrier: DHW
+
+
+
+
+
+
+
+
