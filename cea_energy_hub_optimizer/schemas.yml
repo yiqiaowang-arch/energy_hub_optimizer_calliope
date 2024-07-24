@@ -1,7 +1,7 @@
-demand_summary:
+energy_hub_optimizer:
   created_by:
-  - demand-summary
-  file_path: outputs/data/demand-summary/demand-summary.csv
+  - energy_hub_optimizer
+  file_path: outputs/data/energy_hub_optimizer/pareto_front.csv
   file_type: csv
   schema:
     columns:

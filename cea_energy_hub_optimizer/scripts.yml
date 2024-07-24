@@ -1,0 +1,10 @@
+Energy Hub Optimizer:
+
+  - name: energy_hub_optimizer
+    label: Energy Hub Optimizer
+    description: An optimization plugin for building energy hub using Calliope for the City Energy Analyst.
+    interfaces: [cli, dashboard]
+    module: cea_energy_hub_optimizer.energy_hub_optimizer
+    parameters: ["general:scenario", "energy_hub_optimizer:fudge-factor"]
+    input-files:
+      - [get_total_demand]

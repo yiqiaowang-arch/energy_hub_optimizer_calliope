@@ -1,22 +1,22 @@
 from setuptools import setup, find_packages
 
 __author__ = "Yiqiao Wang"
-__copyright__ = "Copyright 2020, Architecture and Building Systems - ETH Zurich"
-__credits__ = ["Daren Thomas"]
+__copyright__ = "Copyright 2024, Yiqiao Wang"
+__credits__ = ["Yiqiao Wang"]
 __license__ = "MIT"
 __version__ = "1.0.0"
 __maintainer__ = "Yiqiao Wang"
-__email__ = "wangyiqiao97@gmail.com"
+__email__ = "yiqwang@ethz.ch / wangyiqiao97@gmail.com"
 __status__ = "Production"
 
-setup(name='cea_plugin_template',
+setup(name='energy_hub_optimizer',
       version=__version__,
-      description="A template plugin for the City Energy Analyst",
+      description="An optimization plugin for the City Energy Analyst",
       license='MIT',
-      author='Architecture and Building Systems',
-      author_email='cea@arch.ethz.ch',
-      url='https://github.com/architecture-building-systems/cea-plugin-template',
-      long_description="A template plugin for the City Energy Analyst - fork this and edit to create your own plugin.",
+      author='Yiqiao Wang',
+      author_email='yiqwang@ethz.ch / wangyiqiao97@gmail.com',
+      url='https://github.com/yiqiaowang-arch/energy_hub_optimizer_calliope',
+      long_description="An optimization plugin for building energy hub using Calliope for the City Energy Analyst.",
       py_modules=[''],
       packages=find_packages(),
       package_data={},

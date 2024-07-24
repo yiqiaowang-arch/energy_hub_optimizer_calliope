@@ -1,7 +1,5 @@
 """
-Creates a simple summary of the demand totals from the cea demand script.
-
-NOTE: This is an example of how to structure a cea plugin script. It is intentionally simplistic to avoid distraction.
+Creates an optimization plugin for building energy hub using Calliope for the City Energy Analyst.
 """
 from __future__ import division
 from __future__ import print_function
@@ -10,17 +8,17 @@ import cea.config
 import cea.inputlocator
 import cea.plugin
 
-__author__ = "Daren Thomas"
-__copyright__ = "Copyright 2020, Architecture and Building Systems - ETH Zurich"
-__credits__ = ["Daren Thomas"]
+__author__ = "Yiqiao Wang"
+__copyright__ = "Copyright 2024, Yiqiao Wang"
+__credits__ = ["Yiqiao Wang"]
 __license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Daren Thomas"
-__email__ = "cea@arch.ethz.ch"
+__version__ = "1.0.0"
+__maintainer__ = "Yiqiao Wang"
+__email__ = "yiqwang@ethz.ch / wangyiqiao97@gmail.com"
 __status__ = "Production"
 
 
-class DemandSummaryPlugin(cea.plugin.CeaPlugin):
+class EnergyHubOptimizer(cea.plugin.CeaPlugin):
     """
     Define the plugin class - unless you want to customize the behavior, you only really need to declare the class. The
     rest of the information will be picked up from ``default.config``, ``schemas.yml`` and ``scripts.yml`` by default.
@@ -52,8 +50,8 @@ def main(config: cea.config.Configuration):
     :return: None
     """
     locator = cea.inputlocator.InputLocator(config.scenario, config.plugins)
-    summary_df = summarize(locator.get_total_demand.read(), config.demand_summary.fudge_factor)
-    locator.demand_summary.write(summary_df)
+    summary_df = summarize(locator.get_total_demand.read(), config.energy_hub_optimizer.fudge_factor)
+    locator.energy_hub_optimizer.write(summary_df)
 
 
 if __name__ == '__main__':
