@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
-__author__ = "Daren Thomas"
+__author__ = "Yiqiao Wang"
 __copyright__ = "Copyright 2020, Architecture and Building Systems - ETH Zurich"
 __credits__ = ["Daren Thomas"]
 __license__ = "MIT"
 __version__ = "1.0.0"
-__maintainer__ = "Daren Thomas"
-__email__ = "cea@arch.ethz.ch"
+__maintainer__ = "Yiqiao Wang"
+__email__ = "wangyiqiao97@gmail.com"
 __status__ = "Production"
 
 setup(name='cea_plugin_template',
