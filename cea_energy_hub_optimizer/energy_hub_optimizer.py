@@ -53,7 +53,7 @@ def main(config: cea.config.Configuration):
     """
     locator = cea.inputlocator.InputLocator(config.scenario)
     buildings: list[str] = config.energy_hub_optimizer.buildings
-    yaml_path = './techs_energy_hub.yml'
+    yaml_path = './data/techs_energy_hub.yml'
     store_folder: str = locator._ensure_folder(locator.get_optimization_results_folder(), 'calliope_energy_hub')
     # comments on _ensure_folder:
     # Return the *components joined together as a path to a folder and ensure that that folder exists on disc. 

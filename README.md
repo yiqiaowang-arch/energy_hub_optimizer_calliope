@@ -11,7 +11,7 @@ Open CEA console and enter the following command to install the plugin to CEA:
 
 ```pip install -e PATH_OF_PLUGIN_FOLDER```
 
-(NOTE: PATH_OF_PLUGIN_FOLDER would be the DESIRED_PATH + 'energy_hub_optimizer_calliope')
+(NOTE: PATH_OF_PLUGIN_FOLDER would be the DESIRED_PATH + 'cea_energy_hub_optimizer')
 
 
 In the CEA console, enter the following command to enable the plugin in CEA:
