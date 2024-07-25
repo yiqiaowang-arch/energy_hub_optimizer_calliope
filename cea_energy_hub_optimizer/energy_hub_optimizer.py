@@ -68,7 +68,7 @@ def main(config: cea.config.Configuration):
             continue
         while retry_count < max_retries:
             try:
-                energy_hub = EnergyHub(name=building, locator=locator, calliope_yaml_path=yaml_path)
+                energy_hub = EnergyHub(name=building, locator=locator, calliope_yaml_path=yaml_path, solver=config.energy_hub_optimizer.solver)
                 # energy_hub.set_building_specific_config()
                 if energy_hub.building_status['no_heat'] == True: # if the building has no heating system, not worthy to optimize because it's just a pavilion
                     continue
@@ -78,6 +78,7 @@ def main(config: cea.config.Configuration):
                                             flatten_spikes=config.energy_hub_optimizer.flatten_spike, 
                                             flatten_percentile=config.energy_hub_optimizer.flatten_spike_percentile, 
                                             approach_tip=config.energy_hub_optimizer.approach_but_not_land_on_tip,
+                                            approach_percentile=config.energy_hub_optimizer.approach_percentile,
                                             to_lp=config.energy_hub_optimizer.save_constraint_to_lp, 
                                             to_yaml=config.energy_hub_optimizer.save_energy_hub_to_yaml,
                                             to_nc=config.energy_hub_optimizer.save_result_to_nc)

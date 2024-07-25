@@ -1,7 +1,7 @@
 energy_hub_optimizer:
   created_by:
   - energy_hub_optimizer
-  file_path: outputs/data/energy_hub_optimizer/pareto_front.csv
+  file_path: outputs/data/calliope_energy_hub/B001_pareto.csv
   file_type: csv
   schema:
     columns:
