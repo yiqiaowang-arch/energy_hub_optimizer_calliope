@@ -18,7 +18,7 @@ the file name is the building id, or builidng id + PV, or building id + PVT, or 
 """
 
 
-class Building:
+class EnergyHub:
     def __init__(self, name: str, scenario_path: str, calliope_yaml_path: str):
         self.name: str = name
         self.scenario_path: str = scenario_path

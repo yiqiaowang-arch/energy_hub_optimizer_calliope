@@ -1,5 +1,5 @@
 import calliope
-from building import Building
+from cea_energy_hub_optimizer.energy_hub import EnergyHub
 import geopandas as gpd
 import os
 import warnings
@@ -32,7 +32,7 @@ for index in zone_gdf.index:
     # if building_name not in ['B162376']:
     #     continue
     try:
-        building = Building(name=building_name, scenario_path=scenario_folder, calliope_yaml_path=yaml_path)
+        building = EnergyHub(name=building_name, scenario_path=scenario_folder, calliope_yaml_path=yaml_path)
         building.set_building_specific_config()
         if building.building_status['no_heat']: # if the building has no heating system, not worthy to optimize because it's just a pavilion
             continue
