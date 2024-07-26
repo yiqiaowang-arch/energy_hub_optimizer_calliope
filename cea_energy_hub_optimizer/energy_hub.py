@@ -24,7 +24,11 @@ the file name is the building id, or builidng id + PV, or building id + PVT, or 
 
 
 class EnergyHub:
-    def __init__(self, name: str, locator: cea.inputlocator.InputLocator, calliope_yaml_path: str, solver='glpk'):
+    def __init__(self, name: str, 
+                 locator: cea.inputlocator.InputLocator, 
+                 calliope_yaml_path: str, 
+                 solver='glpk',
+                 flatten_spikes=False, flatten_percentile=0.98):
         self.name: str = name
         self.locator = locator
         # locator.scenario returns a str of the scenario path, which includes /inputs and /outputs
@@ -60,6 +64,9 @@ class EnergyHub:
         # rename the building sub-dictionary to the building name
 
         self.get_demand_supply()
+        if flatten_spikes:
+            for key in ['demand_el', 'demand_sh', 'demand_dhw', 'demand_sc']:
+                self.dict_timeseries_df[key] = self.flatten_spikes(df=self.dict_timeseries_df[key], column_name=self.name, percentile=flatten_percentile)
 
 
     def get_demand_supply(self):
@@ -75,7 +82,7 @@ class EnergyHub:
         pv_df = get_df(path=self.locator.PV_results(building=self.name))
         pvt_df = get_df(path=self.locator.PVT_results(building=self.name))
         scfp_df = get_df(path=self.locator.SC_results(building=self.name, panel_type='FP')) # flat panel solar collector
-        scet_df = get_df(path=self.locator.SC_results(building=self.name, panel_type='ET')) # evacuated tube solar collector
+        # scet_df = get_df(path=self.locator.SC_results(building=self.name, panel_type='ET')) # evacuated tube solar collector
 
         # time series data
         # read demand data
@@ -90,7 +97,7 @@ class EnergyHub:
         pvt_e: pd.DataFrame = pvt_df[['E_PVT_gen_kWh']].astype('float64').rename(columns={'E_PVT_gen_kWh': self.name})
         pvt_h: pd.DataFrame = pvt_df[['Q_PVT_gen_kWh']].astype('float64').rename(columns={'Q_PVT_gen_kWh': self.name})
         scfp: pd.DataFrame = scfp_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
-        scet: pd.DataFrame = scet_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
+        # scet: pd.DataFrame = scet_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
 
         # prepare intensity data, because calliope can only have one area for PV, PVT, SC to compete with. 
         # For example, if building's area is 100m2, then the intensity is the generation divided by 100.
@@ -110,7 +117,7 @@ class EnergyHub:
         df_pvt_h_relative_intensity.replace(np.inf, 0, inplace=True)
         pvt_h_relative_intensity: pd.DataFrame = df_pvt_h_relative_intensity.astype('float64')
         scfp_intensity: pd.DataFrame = scfp.astype('float64') / self.area
-        scet_intensity: pd.DataFrame = scet.astype('float64') / self.area
+        # scet_intensity: pd.DataFrame = scet.astype('float64') / self.area
         self.dict_timeseries_df = {'demand_el':     app, # kW
                                    'demand_sh':     sh, # kW
                                    'demand_dhw':    dhw, # kW
@@ -140,9 +147,17 @@ class EnergyHub:
             raise ValueError('path must end with .csv or .dbf')
         
         df.fillna(0, inplace=True)
-        # set the index of the dataframe to be the first column as datetime
-        df.set_index(pd.to_datetime(df['DATE']).tz_localize(None), inplace=True)
-        df.index.rename('t', inplace=True)
+        col_mapping = {col.lower(): col for col in df.columns}
+        # this is because the date column could be 'DATE' or 'Date'
+        if 'date' in col_mapping:
+            date_col = col_mapping['date']
+            df[date_col] = pd.to_datetime(df[date_col])
+            df.set_index(date_col, inplace=True)
+            df.index = df.index.tz_localize(None)
+            df.index.rename('t', inplace=True)
+        else:
+            raise ValueError("The dataframe does not contain a 'DATE' column.")
+        
         return df
 
 
@@ -167,14 +182,6 @@ class EnergyHub:
         - building_specific_config: calliope.AttrDict (modified)
         """
         name = self.name
-        # building_status_df: pd.DataFrame = gpd.read_file(self.scenario_path+r'\inputs\building-properties\supply_systems.dbf', 
-        #                                    ignore_geometry=True).set_index("Name")[['type_hs']] # initialize the full df of buildings
-        # building_status_df = building_status_df.merge(pd.read_csv(self.scenario_path+r'\inputs\is_disheat.csv', index_col=0), 
-        #                                               left_index=True, right_index=True, how='left').fillna(0)
-        # building_status_df = building_status_df.merge(pd.read_csv(self.scenario_path+r'\inputs\Rebuild.csv', index_col=0), 
-        #                                               left_index=True, right_index=True, how='left').fillna(0)
-        # building_status_df = building_status_df.merge(pd.read_csv(self.scenario_path+r'\inputs\Renovation.csv', index_col=0), 
-        #                                               left_index=True, right_index=True, how='left').fillna(0)
 
         building_status_dfs_list = [pd.read_csv(self.scenario_path+r'\inputs\is_disheat.csv', index_col=0), # when the building is included in district heating zones
                                     pd.read_csv(self.scenario_path+r'\inputs\Rebuild.csv', index_col=0).fillna(0), # when will the building be rebuilt
@@ -247,7 +254,6 @@ class EnergyHub:
 
 
     def get_building_model(self,
-                           flatten_spikes=False, flatten_percentile=0.98, 
                            to_lp=False, to_yaml=False,
                            obj='cost',
                            emission_constraint=None) -> calliope.Model:
@@ -267,9 +273,6 @@ class EnergyHub:
         Return:
         Model:                      calliope.Model, the optimized model
         """
-
-        if flatten_spikes:
-            self.flatten_spikes_demand(percentile=flatten_percentile) # flatten the demand spikes
         
         # modify the self.calliope_config to match the building's status
         self.calliope_config.set_key(key=f'locations.{self.name}.available_area', value=self.area)
@@ -304,7 +307,6 @@ class EnergyHub:
 
     def get_pareto_front(self, epsilon:int, 
                          store_folder: str,
-                         flatten_spikes=False, flatten_percentile=0.98,
                          approach_tip=False, approach_percentile=0.01,
                          to_lp=False, to_yaml=False, to_nc=False):
         """
@@ -356,9 +358,7 @@ class EnergyHub:
         # calliope does not define the type of the return value, so it's ignored
         df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(epsilon+2))
         # first get the emission-optimal solution
-        model_emission = self.get_building_model(flatten_spikes=flatten_spikes, 
-                                                 flatten_percentile=flatten_percentile, to_lp=to_lp, to_yaml=to_yaml, 
-                                                 obj='emission')
+        model_emission = self.get_building_model(to_lp=to_lp, to_yaml=to_yaml, obj='emission')
         model_emission.run()
         if to_nc:
             model_emission.to_netcdf(path=self.store_folder + '/' + self.name+'_emission.nc')
@@ -371,9 +371,7 @@ class EnergyHub:
         df_tech_cap_pareto.loc[0] = model_emission.get_formatted_array('energy_cap').to_pandas().iloc[0]
         
         # then get the cost-optimal solution
-        model_cost = self.get_building_model(flatten_spikes=False, # self.timeseries have been modified, no need to flatten spikes again
-                                             flatten_percentile=flatten_percentile, to_lp=to_lp, to_yaml=to_yaml, 
-                                             obj='cost')
+        model_cost = self.get_building_model(to_lp=to_lp, to_yaml=to_yaml, obj='cost')
         # run model cost, and find both cost and emission of this result
         model_cost.run()
         if to_nc:
@@ -400,18 +398,20 @@ class EnergyHub:
         else:
             emission_max =df_cost['co2']
             emission_min =df_emission['co2']
+            emission_array = np.linspace(emission_min, emission_max, epsilon+2)
+            epsilon_list = list(emission_array[1:-1])
             # calculate the interval between two emissions
-            interval = (emission_max - emission_min) / (epsilon+1)
-            # for each epsilon, get the epsilon-optimal solution
-            epsilon_list = list(np.arange(emission_min+interval, emission_max, interval))
+            # for each epsilon, get the cost-optimal solution under a maximal emission constraint
             if approach_tip:
-                epsilon_list = [emission_min+approach_percentile*interval] + epsilon_list + [emission_max-approach_percentile*interval]
+                del_emission_begin = np.diff(emission_array)[0]*approach_percentile
+                del_emission_end = np.diff(emission_array)[-1]*approach_percentile
+                epsilon_list = [emission_min+del_emission_begin] + epsilon_list + [emission_max-del_emission_end]
+            print(f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts: {epsilon}")
             for i, emission_constraint in enumerate(epsilon_list):
                 n_epsilon = i+1
-                print(f'starting epsilon {n_epsilon}')
-                model_epsilon = self.get_building_model(flatten_spikes=False, # self.timeseries have been modified, no need to flatten spikes again
-                                                        flatten_percentile=flatten_percentile, to_lp=to_lp, to_yaml=to_yaml, 
-                                                        obj='cost', emission_constraint=emission_constraint)
+                print(f'starting epsilon {n_epsilon}, life-time emission smaller or equal to {emission_constraint} kgCO2')
+                model_epsilon = self.get_building_model(to_lp=to_lp, to_yaml=to_yaml, obj='cost', 
+                                                        emission_constraint=emission_constraint)
                 model_epsilon.run()
                 if to_nc:
                     model_epsilon.to_netcdf(path=self.store_folder  + '/' + self.name + f'_epsilon_{n_epsilon}.nc')
@@ -424,6 +424,9 @@ class EnergyHub:
                 df_tech_cap_pareto.loc[n_epsilon] = model_epsilon.get_formatted_array('energy_cap').to_pandas().iloc[0]
                 
             df_pareto = df_pareto.astype({'cost': float, 'emission': float})
+            print("Pareto front for building "+self.name+" is done. First row is emission-optimal, last row is cost-optimal.")
+            # show the pareto front
+            print(df_pareto)
             self.df_pareto = df_pareto
             self.df_tech_cap_pareto = df_tech_cap_pareto
 
@@ -495,8 +498,8 @@ class EnergyHub:
         self.df_tech_cap_pareto.loc[999] = model_current.get_formatted_array('energy_cap').to_pandas().iloc[0]
         self.df_tech_cap_pareto.fillna(0, inplace=True)
 
-        
-    def flatten_spikes(self, df: pd.DataFrame, column_name, percentile: float = 0.98, is_positive: bool = False):
+    @staticmethod
+    def flatten_spikes(df: pd.DataFrame, column_name, percentile: float = 0.98, is_positive: bool = False):
         # first fine non-zero values of the given column of the given dataframe
         # then calculate the 98th percentile of the non-zero values
         # then find the index of the values that are greater than the 98th percentile
@@ -514,9 +517,3 @@ class EnergyHub:
             df = - df
 
         return df
-
-    def flatten_spikes_demand(self, percentile:float = 0.98):
-        self.app = self.flatten_spikes(self.app, self.name, percentile, is_positive=False)
-        self.sh = self.flatten_spikes(self.sh, self.name, percentile, is_positive=False)
-        self.sc = self.flatten_spikes(self.sc, self.name, percentile, is_positive=False)
-        self.dhw = self.flatten_spikes(self.dhw, self.name, percentile, is_positive=False)

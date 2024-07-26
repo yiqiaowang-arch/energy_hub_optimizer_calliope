@@ -22,9 +22,4 @@ setup(
     packages=find_packages(),
     package_data={},
     include_package_data=True,
-    install_requires=[
-        'calliope==0.6.10',
-        'docplex==2.27.239',
-        'gurobipy==11.0.3',
-    ],
 )

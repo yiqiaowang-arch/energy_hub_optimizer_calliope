@@ -1,10 +1,24 @@
+# this file defines what would be shown on the dashboard and in the CLI.
 Energy Hub Optimizer:
 
-  - name: energy_hub_optimizer
+  - name: energy-hub-optimizer # need to be in kebab-case because it is used in the CLI
     label: Energy Hub Optimizer
     description: An optimization plugin for building energy hub using Calliope for the City Energy Analyst.
     interfaces: [cli, dashboard]
     module: cea_energy_hub_optimizer.energy_hub_optimizer
-    parameters: ["general:scenario", "energy_hub_optimizer:fudge-factor"]
+    parameters: [ "general:scenario", 
+                  "energy-hub-optimizer:buildings",
+                  "energy-hub-optimizer:solver", 
+                  "energy-hub-optimizer:number-of-epsilon-cut",
+                  "energy-hub-optimizer:approach-but-not-land-on-tip", 
+                  "energy-hub-optimizer:approach-percentile",
+                  "energy-hub-optimizer:skip-done-building", 
+                  "energy-hub-optimizer:get-current-solution", 
+                  "energy-hub-optimizer:flatten-spike",
+                  "energy-hub-optimizer:flatten-spike-percentile",
+                  "energy-hub-optimizer:max-retry",
+                  "energy-hub-optimizer:save-constraint-to-lp",
+                  "energy-hub-optimizer:save-energy-hub-to-yaml",
+                  "energy-hub-optimizer:save-result-to-nc",]
     input-files:
       - [get_total_demand]
