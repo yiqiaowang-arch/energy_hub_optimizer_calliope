@@ -351,12 +351,24 @@ class EnergyHub:
         if epsilon < 1:
             raise ValueError('There must be at least one epsilon cut!')
         
+        if approach_tip:
+            # if approach_tip is True, then there are in total epsilon+4 points in the pareto front: 
+            # emission-optimal, close-to-emission-optimal, epsilon points, close-to-cost-optimal, cost-optimal
+            # so we should locate cost-optimal at epsilon+3
+            idx_cost = epsilon+3
+            print(f'''Approaching tip of Pareto Front. \n
+                  Adding two more epsilon cuts close to the ends. \n
+                  Original: {epsilon} , now: {epsilon+2}''')
+        else:
+            idx_cost = epsilon+1
+            
         self.store_folder = store_folder
-        df_pareto = pd.DataFrame(columns=['cost', 'emission'], index=range(epsilon+2))
+        df_pareto = pd.DataFrame(columns=['cost', 'emission'], index=range(idx_cost+1))
         # read yaml file and get the list of technologies
         tech_list = self.calliope_config.get_key(f'locations.{self.name}.techs').keys() # type: ignore
         # calliope does not define the type of the return value, so it's ignored
-        df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(epsilon+2))
+        df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(idx_cost+1))
+        df_tech_cap_pareto.fillna(0, inplace=True)
         # first get the emission-optimal solution
         model_emission = self.get_building_model(to_lp=to_lp, to_yaml=to_yaml, obj='emission')
         model_emission.run()
@@ -380,13 +392,7 @@ class EnergyHub:
         # store the cost and emission in df_pareto
         # add epsilon name as row index, start with epsilon_0
         df_cost = model_cost.get_formatted_array('cost').sel(locs=self.name).to_pandas().transpose().sum(axis=0) # first column co2, second column monetary
-        if approach_tip:
-            # if approach_tip is True, then there are in total epsilon+4 points in the pareto front: 
-            # emission-optimal, close-to-emission-optimal, epsilon points, close-to-cost-optimal, cost-optimal
-            # so we should locate cost-optimal at epsilon+3
-            idx_cost = epsilon+3
-        else:
-            idx_cost = epsilon+1
+
         df_pareto.loc[idx_cost] = [df_cost['monetary'], df_cost['co2']]
         df_tech_cap_pareto.loc[idx_cost] = model_cost.get_formatted_array('energy_cap').to_pandas().iloc[0]
         # then get the epsilon-optimal solution
@@ -406,7 +412,7 @@ class EnergyHub:
                 del_emission_begin = np.diff(emission_array)[0]*approach_percentile
                 del_emission_end = np.diff(emission_array)[-1]*approach_percentile
                 epsilon_list = [emission_min+del_emission_begin] + epsilon_list + [emission_max-del_emission_end]
-            print(f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts: {epsilon}")
+            print(f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts: {idx_cost-1}")
             for i, emission_constraint in enumerate(epsilon_list):
                 n_epsilon = i+1
                 print(f'starting epsilon {n_epsilon}, life-time emission smaller or equal to {emission_constraint} kgCO2')

@@ -21,4 +21,7 @@ Energy Hub Optimizer:
                   "energy-hub-optimizer:save-energy-hub-to-yaml",
                   "energy-hub-optimizer:save-result-to-nc",]
     input-files:
-      - [get_total_demand]
+      - [get_demand_results_file]
+      - [PV_results]
+      - [PVT_results]
+      - [SC_results]

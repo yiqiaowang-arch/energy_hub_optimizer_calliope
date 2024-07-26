@@ -48,16 +48,13 @@ def main(config: cea.config.Configuration):
     # comments on _ensure_folder:
     # Return the *components joined together as a path to a folder and ensure that that folder exists on disc. 
     # If it doesn't exist yet, attempt to make it with os.makedirs.
-    max_retries = config.energy_hub_optimizer.max_retry
     for building in buildings:
-        retry_count =0
         building_name = str(building)
         if (building_name+'_pareto.csv' in os.listdir(store_folder)) and (config.energy_hub_optimizer.skip_done_building == True):
             # in case the user has done some buildings and don't want to redo them all over again
             print(building_name+' is already done, skipping...')
             continue
-        # while retry_count < max_retries:
-        #     try:
+
         energy_hub = EnergyHub(name=building, locator=locator, 
                                calliope_yaml_path=yaml_path, 
                                solver=config.energy_hub_optimizer.solver,
@@ -81,13 +78,6 @@ def main(config: cea.config.Configuration):
         df_pareto_aug.to_csv(store_folder+'/'+building_name+'_pareto.csv')
         print(building_name+' is optimized! Results saved in ' + store_folder)
         del energy_hub
-                # break
-            # except OSError:
-            #     retry_count += 1
-            #     print(f'OSError ignored! Retry {retry_count}/{max_retries}.')
-            #     if retry_count >= max_retries:
-            #         print(f'Max retries reached. Stopping optimization for {building_name}.')
-            #         break
 
 if __name__ == '__main__':
     main(cea.config.Configuration())
