@@ -16,7 +16,6 @@ Energy Hub Optimizer:
                   "energy-hub-optimizer:get-current-solution", 
                   "energy-hub-optimizer:flatten-spike",
                   "energy-hub-optimizer:flatten-spike-percentile",
-                  "energy-hub-optimizer:max-retry",
                   "energy-hub-optimizer:save-constraint-to-lp",
                   "energy-hub-optimizer:save-energy-hub-to-yaml",
                   "energy-hub-optimizer:save-result-to-nc",]
