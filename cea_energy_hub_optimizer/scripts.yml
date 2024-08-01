@@ -19,8 +19,5 @@ Energy Hub Optimizer:
                   "energy-hub-optimizer:save-constraint-to-lp",
                   "energy-hub-optimizer:save-energy-hub-to-yaml",
                   "energy-hub-optimizer:save-result-to-nc",]
-    input-files:
-      - [get_demand_results_file]
-      - [PV_results]
-      - [PVT_results]
-      - [SC_results]
+    # input-files:
+    #   - [get_energy_hub_pareto, building_name]

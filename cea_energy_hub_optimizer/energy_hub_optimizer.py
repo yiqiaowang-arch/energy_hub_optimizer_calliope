@@ -75,7 +75,7 @@ def main(config: cea.config.Configuration):
         if config.energy_hub_optimizer.get_current_solution:
             energy_hub.get_current_cost_emission()
         df_pareto_aug = energy_hub.df_pareto.merge(energy_hub.df_tech_cap_pareto, left_index=True, right_index=True)
-        df_pareto_aug.to_csv(store_folder+'/'+building_name+'_pareto.csv')
+        df_pareto_aug.to_csv(store_folder+'/'+building_name+'_pareto.csv', index=True, index_label='index')
         print(building_name+' is optimized! Results saved in ' + store_folder)
         del energy_hub
 

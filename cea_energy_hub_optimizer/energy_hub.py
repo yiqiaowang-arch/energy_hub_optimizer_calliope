@@ -356,8 +356,9 @@ class EnergyHub:
             # emission-optimal, close-to-emission-optimal, epsilon points, close-to-cost-optimal, cost-optimal
             # so we should locate cost-optimal at epsilon+3
             idx_cost = epsilon+3
-            print(f'''Approaching tip of Pareto Front. \n
-                  Adding two more epsilon cuts close to the ends. \n
+            print(f'''
+                  Approaching tip of Pareto Front. 
+                  Adding two more epsilon cuts close to the ends. 
                   Original: {epsilon} , now: {epsilon+2}''')
         else:
             idx_cost = epsilon+1

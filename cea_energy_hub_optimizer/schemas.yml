@@ -1,33 +1,26 @@
 energy_hub_optimizer:
   created_by:
-  - energy_hub_optimizer
-  file_path: outputs/data/calliope_energy_hub/B001_pareto.csv
+  - energy-hub-optimizer
+  file_path: outputs/data/calliope_energy_hub/{buildings}_pareto.csv
   file_type: csv
   schema:
     columns:
-      Name:
-        description: Unique building ID. It must start with a letter.
-        type: string
+      index:
+        description: index of pareto front solutions
+        type: int
         unit: NA
         values: alphanumeric
-      GFA_m2:
-        description: Gross floor area
+      cost:
+        description: life cycle monetary cost of the energy system
         type: float
-        unit: '[m2]'
+        unit: '[EUR]'
         min: 0.0
         values: '{0.0...n}'
-      QC_sys_MWhyr:
-        description: Total system cooling demand
+      emission:
+        description: life cycle carbon emissions of the energy system
         type: float
         min: 0.0
-        unit: '[MWh/yr]'
+        unit: '[kgCO2eq]'
         values: '{0.0...n}'
-        plot-color: blue
-      QH_sys_MWhyr:
-        description: Total system heating demand
-        type: float
-        min: 0.0
-        unit: '[MWh/yr]'
-        values: '{0.0...n}'
-        plot-color: red
+        # plot-color: blue
   used_by: []

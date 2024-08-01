@@ -1,13 +1,13 @@
 Energy Hub Optimizer:
-  - label: Total System Demand
+  - label: Pareto Front Results
     data:
       location: energy_hub_optimizer
-      index: Name
+      index: index # note that under current 
       fields:
-        - QC_sys_MWhyr
-        - QH_sys_MWhyr
+        - emission
+        - cost
     layout:
-      kind: bar
-      title: Total System Demand
+      kind: scatter
+      title: Pareto Front Results
       yTitle: "Energy Demand [MWh/yr]"
       xTitle: Building Name
