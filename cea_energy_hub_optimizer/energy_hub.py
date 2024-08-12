@@ -4,8 +4,7 @@ import pandas as pd
 import numpy as np
 import calliope
 import cea.inputlocator
-from cea.utilities.dbf import dbf_to_dataframe, dataframe_to_dbf # type: ignore
-from functools import wraps
+import os
 
 """
 set a class of building, which contains the information of building, including
@@ -27,12 +26,23 @@ class EnergyHub:
     def __init__(self, name: str, 
                  locator: cea.inputlocator.InputLocator, 
                  calliope_yaml_path: str, 
-                 solver='glpk',
-                 flatten_spikes=False, flatten_percentile=0.98):
+                 config: cea.config.Configuration):
+        """
+        Description:
+        This function initializes the building object, which contains the building's information.
+
+        Inputs:
+        - name:                     str, the name of the building
+        - locator:                  cea.inputlocator.InputLocator, the locator object has multiple methods that helps with locating certain file paths
+        - calliope_yaml_path:       str, the path to the yaml file that contains the energy hub configuration
+        - config:                   cea.config.Configuration, the configuration object that contains the user's input in plugin.config
+        """
+
         self.name: str = name
         self.locator = locator
         # locator.scenario returns a str of the scenario path, which includes /inputs and /outputs
         self.yaml_path: str = calliope_yaml_path
+        self.config = config
         calliope.set_log_verbosity(verbosity='error', include_solver_output=False, capture_warnings=False)
         
         # get type of emission system
@@ -56,17 +66,21 @@ class EnergyHub:
         self.calliope_config['locations'][self.name] = building_sub_dict_temp
         del building_sub_dict_temp
 
+        # set temporal resolution
+        self.calliope_config.set_key(key='model.time.function_options.resolution', value=self.config.energy_hub_optimizer.temporal_resolution)
+
         # set solver
-        self.calliope_config.set_key(key='run.solver', value=solver)
+        self.calliope_config.set_key(key='run.solver', value=self.config.energy_hub_optimizer.solver)
         # constarin wood supply to 0.5kWh/m2 of the building area + 400m2 surroundings
         self.calliope_config.set_key(key=f'locations.{self.name}.techs.wood_supply.constraints.energy_cap_max', 
                                             value=(self.area+400)*0.5*0.001)
-        # rename the building sub-dictionary to the building name
 
         self.get_demand_supply()
-        if flatten_spikes:
+        if self.config.energy_hub_optimizer.flatten_spike:
             for key in ['demand_el', 'demand_sh', 'demand_dhw', 'demand_sc']:
-                self.dict_timeseries_df[key] = self.flatten_spikes(df=self.dict_timeseries_df[key], column_name=self.name, percentile=flatten_percentile)
+                self.dict_timeseries_df[key] = self.flatten_spikes(df=self.dict_timeseries_df[key], 
+                                                                   column_name=self.name, 
+                                                                   percentile=self.config.energy_hub_optimizer.flatten_spike_percentile)
 
 
     def get_demand_supply(self):
@@ -79,10 +93,6 @@ class EnergyHub:
         """
         get_df = EnergyHub.get_timeseries_df # rename for simplicity
         demand_df = get_df(path=self.locator.get_demand_results_file(building=self.name, format='csv'))
-        pv_df = get_df(path=self.locator.PV_results(building=self.name))
-        pvt_df = get_df(path=self.locator.PVT_results(building=self.name))
-        scfp_df = get_df(path=self.locator.SC_results(building=self.name, panel_type='FP')) # flat panel solar collector
-        # scet_df = get_df(path=self.locator.SC_results(building=self.name, panel_type='ET')) # evacuated tube solar collector
 
         # time series data
         # read demand data
@@ -92,41 +102,87 @@ class EnergyHub:
         sc: pd.DataFrame = - demand_df[['Qcs_sys_kWh']].astype('float64').rename(columns={'Qcs_sys_kWh': self.name})
         dhw: pd.DataFrame = - demand_df[['Qww_sys_kWh']].astype('float64').rename(columns={'Qww_sys_kWh': self.name})
 
+        # if demand not included in config.energy_hub_optimizer.evaluated_demand, set to 0
+        for demand_type in ['electricity', 'space-heating', 'hot-water', 'space-cooling']:
+            if demand_type not in self.config.energy_hub_optimizer.evaluated_demand:
+                if demand_type == 'electricity':
+                    app[self.name] = 0
+                elif demand_type == 'space-heating':
+                    sh[self.name] = 0
+                elif demand_type == 'hot-water':
+                    dhw[self.name] = 0
+                elif demand_type == 'space-cooling':
+                    sc[self.name] = 0
+
+
         # read supply data
-        pv: pd.DataFrame = pv_df[['E_PV_gen_kWh']].astype('float64').rename(columns={'E_PV_gen_kWh': self.name})
-        pvt_e: pd.DataFrame = pvt_df[['E_PVT_gen_kWh']].astype('float64').rename(columns={'E_PVT_gen_kWh': self.name})
-        pvt_h: pd.DataFrame = pvt_df[['Q_PVT_gen_kWh']].astype('float64').rename(columns={'Q_PVT_gen_kWh': self.name})
-        scfp: pd.DataFrame = scfp_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
-        # scet: pd.DataFrame = scet_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
+        if 'PV' in self.config.energy_hub_optimizer.evaluated_solar_supply:
+            pv_path = self.locator.PV_results(building=self.name)
+            if not os.path.exists(pv_path):
+                raise FileNotFoundError(f'PV result file for building {self.name} not found at {pv_path}! Consider running the PV simulation first.')
+            pv_df = get_df(path=pv_path)
+            pv: pd.DataFrame = pv_df[['E_PV_gen_kWh']].astype('float64').rename(columns={'E_PV_gen_kWh': self.name})
+            # prepare intensity data, because calliope can only have one area for PV, PVT, SC to compete with. 
+            # For example, if building's area is 100m2, then the intensity is the generation divided by 100.
+            # Then, from the perspective of calliope, we might have 50m2 of PV, 30m2 of PVT, 20m2 of SC.
+            # This actually means that by carefully laying out the panels on the realistic building's facade and rooftop,
+            # we can achieve 50% of the maximal PV generation, 30% of the maximal PVT generation, and 20% of the maximal SC generation.
+            pv_intensity: pd.DataFrame = pv.astype('float64') / self.area
+        else:
+            pv_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
 
-        # prepare intensity data, because calliope can only have one area for PV, PVT, SC to compete with. 
-        # For example, if building's area is 100m2, then the intensity is the generation divided by 100.
-        # Then, from the perspective of calliope, we might have 50m2 of PV, 30m2 of PVT, 20m2 of SC.
-        # This actually means that by carefully laying out the panels on the realistic building's facade and rooftop,
-        # we can achieve 50% of the maximal PV generation, 30% of the maximal PVT generation, and 20% of the maximal SC generation.
-        pv_intensity: pd.DataFrame = pv.astype('float64') / self.area
-        pvt_e_intensity: pd.DataFrame = pvt_e.astype('float64') / self.area
-        pvt_h_intensity: pd.DataFrame = pvt_h.astype('float64') / self.area
+        if 'PVT' in self.config.energy_hub_optimizer.evaluated_solar_supply:
+            pvt_path = self.locator.PVT_results(building=self.name)
+            if not os.path.exists(pvt_path):
+                raise FileNotFoundError(f'PVT result file for building {self.name} not found at {pvt_path}! Consider running the PVT simulation first.')
+            pvt_df = get_df(path=pvt_path)
+            pvt_e: pd.DataFrame = pvt_df[['E_PVT_gen_kWh']].astype('float64').rename(columns={'E_PVT_gen_kWh': self.name})
+            pvt_h: pd.DataFrame = pvt_df[['Q_PVT_gen_kWh']].astype('float64').rename(columns={'Q_PVT_gen_kWh': self.name})
+            pvt_e_intensity: pd.DataFrame = pvt_e.astype('float64') / self.area
+            pvt_h_intensity: pd.DataFrame = pvt_h.astype('float64') / self.area
+            # because in PVT, heat comes with electricity and we can't control the ratio of heat to electricity,
+            # the heat production is set to be a scaled version of the electricity production.
+            # and this scaling factor is pvt_h_relative_intensity
+            # devide pvt_h with pvt_e element-wise to get relative intensity, which is still a dataframe.
+            # replace NaN and inf with 0s
+            df_pvt_h_relative_intensity = pvt_h_intensity.divide(pvt_e_intensity[self.name], axis=0).fillna(0)
+            df_pvt_h_relative_intensity.replace(np.inf, 0, inplace=True)
+            pvt_h_relative_intensity: pd.DataFrame = df_pvt_h_relative_intensity.astype('float64')
+        else:
+            pvt_e_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
+            pvt_h_relative_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
 
-        # because in PVT, heat comes with electricity and we can't control the ratio of heat to electricity,
-        # the heat production is set to be a scaled version of the electricity production.
-        # and this scaling factor is pvt_h_relative_intensity
-        # devide pvt_h with pvt_e element-wise to get relative intensity, which is still a dataframe.
-        # replace NaN and inf with 0
-        df_pvt_h_relative_intensity = pvt_h_intensity.divide(pvt_e_intensity[self.name], axis=0).fillna(0)
-        df_pvt_h_relative_intensity.replace(np.inf, 0, inplace=True)
-        pvt_h_relative_intensity: pd.DataFrame = df_pvt_h_relative_intensity.astype('float64')
-        scfp_intensity: pd.DataFrame = scfp.astype('float64') / self.area
+        if 'SCFP' in self.config.energy_hub_optimizer.evaluated_solar_supply:
+            scfp_path = self.locator.SC_results(building=self.name, panel_type='FP')
+            if not os.path.exists(scfp_path):
+                raise FileNotFoundError(f'Flat-panel SC result file for building {self.name} not found at {scfp_path}! Consider running the SC simulation first.')
+            scfp_df = get_df(path=scfp_path) # flat panel solar collector
+            scfp: pd.DataFrame = scfp_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
+            scfp_intensity: pd.DataFrame = scfp.astype('float64') / self.area
+        else:
+            scfp_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
+
+        if 'SCET' in self.config.energy_hub_optimizer.evaluated_solar_supply:
+            scet_path = self.locator.SC_results(building=self.name, panel_type='ET')
+            if not os.path.exists(scet_path):
+                raise FileNotFoundError(f'Evacuated tube SC result file for building {self.name} not found at {scet_path}! Consider running the SC simulation first.')
+            scet_df = get_df(path=scet_path) # evacuated tube solar collector
+            scet: pd.DataFrame = scet_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
+            scet_intensity: pd.DataFrame = scet.astype('float64') / self.area
+        else:
+            scet_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
+
         # scet_intensity: pd.DataFrame = scet.astype('float64') / self.area
-        self.dict_timeseries_df = {'demand_el':     app, # kW
-                                   'demand_sh':     sh, # kW
-                                   'demand_dhw':    dhw, # kW
-                                   'demand_sc':     sc, # kW
-                                   'supply_PV':     pv_intensity, # kW/m2
-                                   'supply_PVT_e':  pvt_e_intensity, # kW/m2
-                                   'supply_PVT_h':  pvt_h_relative_intensity, # dimensionless
-                                   'supply_SCFP':   scfp_intensity
-                                   }
+        self.dict_timeseries_df = { 'demand_el':     app, # kW
+                                    'demand_sh':     sh, # kW
+                                    'demand_dhw':    dhw, # kW
+                                    'demand_sc':     sc, # kW
+                                    'supply_PV':     pv_intensity, # kW/m2
+                                    'supply_PVT_e':  pvt_e_intensity, # kW/m2
+                                    'supply_PVT_h':  pvt_h_relative_intensity, # dimensionless
+                                    'supply_SCFP':   scfp_intensity, # kW/m2
+                                    'supply_SCET':   scet_intensity, # kW/m2
+                                }
         
     @staticmethod
     def get_timeseries_df(path: str) -> pd.DataFrame:

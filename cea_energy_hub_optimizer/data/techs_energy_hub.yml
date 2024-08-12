@@ -1,13 +1,13 @@
 ## definition for plot 8
 # set the model, run and group constraints
 model:
-    name: 'building in plot 8'
+    name: 'building_energy_hub'
     calliope_version: 0.6.10
     timeseries_data: {}
     time:
         function: 'resample'
         function_options:
-            resolution: '1d'
+            resolution: '1D'
 
 group_constraints:
    # A constraint group to apply a systemwide CO2 cap
@@ -65,24 +65,6 @@ locations:
                 constraints:
                     resource: df=demand_dhw
         available_area: 1000
-
-# set group constraints, to make sure that:
-# 1. GSHP_heat and GSHP_cooling are strictly coupled, they have the same capacity
-# 2. PV, PVT and SC are competing for the same area
-
-#group_constraints:
-#    GSHP_heat_cooling:
-#        techs: [GSHP_heat, GSHP_cooling]
-#        energy_cap_equals: 100
-#    DHDC_small_heat_cooling:
-#        techs: [DHDC_small_heat, DHDC_small_cooling]
-#        energy_cap_equals: 100
-#    DHDC_medium_heat_cooling:
-#        techs: [DHDC_medium_heat, DHDC_medium_cooling]
-#        energy_cap_equals: 100
-#    DHDC_large_heat_cooling:
-#        techs: [DHDC_large_heat, DHDC_large_cooling]
-#        energy_cap_equals: 100
 
 techs:
     # supply technologies

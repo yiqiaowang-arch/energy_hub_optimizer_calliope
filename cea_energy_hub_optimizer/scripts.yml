@@ -9,7 +9,10 @@ Energy Hub Optimizer:
     parameters: [ "general:scenario", 
                   "energy-hub-optimizer:buildings",
                   "energy-hub-optimizer:solver", 
+                  "energy-hub-optimizer:evaluated-demand",
+                  "energy-hub-optimizer:evaluated-solar-supply",
                   "energy-hub-optimizer:number-of-epsilon-cut",
+                  "energy-hub-optimizer:temporal-resolution",
                   "energy-hub-optimizer:approach-but-not-land-on-tip", 
                   "energy-hub-optimizer:approach-percentile",
                   "energy-hub-optimizer:skip-done-building", 
@@ -19,5 +22,6 @@ Energy Hub Optimizer:
                   "energy-hub-optimizer:save-constraint-to-lp",
                   "energy-hub-optimizer:save-energy-hub-to-yaml",
                   "energy-hub-optimizer:save-result-to-nc",]
-    # input-files:
-    #   - [get_energy_hub_pareto, building_name]
+    input-files:
+      - [get_demand_results_file, building_name]
+

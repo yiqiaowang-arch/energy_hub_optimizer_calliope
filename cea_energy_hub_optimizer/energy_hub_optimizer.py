@@ -57,12 +57,7 @@ def main(config: cea.config.Configuration):
 
         energy_hub = EnergyHub(name=building, locator=locator, 
                                calliope_yaml_path=yaml_path, 
-                               solver=config.energy_hub_optimizer.solver,
-                               flatten_spikes=config.energy_hub_optimizer.flatten_spike, 
-                               flatten_percentile=config.energy_hub_optimizer.flatten_spike_percentile)
-        # energy_hub.set_building_specific_config() # TODO: delete this line of code!
-        # if energy_hub.building_status['no_heat'] == True: # if the building has no heating system, not worthy to optimize because it's just a pavilion
-        #     continue
+                               config=config)
 
         energy_hub.get_pareto_front(epsilon=config.energy_hub_optimizer.number_of_epsilon_cut, 
                                     store_folder=store_folder,
