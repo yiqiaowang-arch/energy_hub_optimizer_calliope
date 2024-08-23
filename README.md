@@ -13,7 +13,7 @@ Open CEA console and enter the following command to install the plugin to CEA. I
 ```pip install -e PATH_OF_PLUGIN_FOLDER```
 For example:
     
-    ```pip install -e "C:/Users/wangy/Documents/GitHub/energy_hub_optimizer_calliope"```
+    ```pip install -e "C:/path/to/the/repository/energy_hub_optimizer_calliope"```
 
 (NOTE: PATH_OF_PLUGIN_FOLDER would be the DESIRED_PATH + 'cea_energy_hub_optimizer')
 
@@ -47,11 +47,11 @@ To enable auto-completion for both CEA's native methods and the venv that CEA us
 ```json
 {
     "python.analysis.extraPaths": [
-        "C:/Users/wangy/Documents/CityEnergyAnalyst/CityEnergyAnalyst"
+        "C:/path/to/the/repository/CityEnergyAnalyst/CityEnergyAnalyst"
     ]
 }
 ```
 2. Set the python interpreter to the one in the CEA venv, which is loacated in the **installation folder of CEA** (not the repository). For example, the path would be:
 ```
-C:/Users/wangy/Documents/CityEnergyAnalyst/Dependencies/micromamba/envs/cea/python.exe
+C:/path/to/the/installation/folder/CityEnergyAnalyst/Dependencies/micromamba/envs/cea/python.exe
 ```
