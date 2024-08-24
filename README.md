@@ -41,21 +41,6 @@ In the CEA console, enter the following command to enable the plugin in CEA:
 ```cea energy_hub_optimizer```
 Or in the CEA Dashboard, click on the left Tools - Energy Hub Optimizer - Energy Hub Optimizer to activate the GUI of plugin.
 
-## Development
-To enable auto-completion for both CEA's native methods and the venv that CEA uses, one need to do two things in VSCode:
-1. Add the following lines to the settings.json file (change the path to the path of your CEA **repository**):
-```json
-{
-    "python.analysis.extraPaths": [
-        "C:/path/to/the/repository/CityEnergyAnalyst/CityEnergyAnalyst"
-    ]
-}
-```
-2. Set the python interpreter to the one in the CEA venv, which is loacated in the **installation folder of CEA** (not the repository). For example, the path would be:
-```
-C:/path/to/the/installation/folder/CityEnergyAnalyst/Dependencies/micromamba/envs/cea/python.exe
-```
-
 ## Usage
 To set up a new energy hub optimization, one need to first configure the technology definitions in `cea_energy_hub_optimizer/data/techs_energy_hub.yml`. 
 
@@ -75,3 +60,17 @@ In the techs_energy_hub.yml file, one can see that there are three different kin
 
 Therefore, three different hypothetical linear DH technologies are set, as shown in the image above. The small one has `energy_cap_min=50` and `energy_cap_max=100`, middle `energy_cap_min=100` and `energy_cap_max=700` and large `energy_cap_min=700` and `energy_cap_max=2000`. The slope of this line is set as `energy_cap` in CHF/kW, and the intercept is set as `purchase` in CHF. Note that each technology must have the same CAPEX on their interceptions (100, 700 and 2000kW) to make sure that both technologies are indifferent to this capacity.
 
+## Development
+To enable auto-completion for both CEA's native methods and the venv that CEA uses, one need to do two things in VSCode:
+1. Add the following lines to the settings.json file (change the path to the path of your CEA **repository**):
+```json
+{
+    "python.analysis.extraPaths": [
+        "C:/path/to/the/repository/CityEnergyAnalyst/CityEnergyAnalyst"
+    ]
+}
+```
+2. Set the python interpreter to the one in the CEA venv, which is loacated in the **installation folder of CEA** (not the repository). For example, the path would be:
+```
+C:/path/to/the/installation/folder/CityEnergyAnalyst/Dependencies/micromamba/envs/cea/python.exe
+```
