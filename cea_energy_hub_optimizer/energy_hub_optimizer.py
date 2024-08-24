@@ -51,7 +51,7 @@ def main(config: cea.config.Configuration):
     # If it doesn't exist yet, attempt to make it with os.makedirs.
     for building in buildings:
         building_name = str(building)
-        if (building_name+'_pareto.csv' in os.listdir(store_folder)) and (config.energy_hub_optimizer.skip_done_building == True):
+        if (building_name+'_pareto.csv' in os.listdir(store_folder)) and (config.energy_hub_optimizer.skip_optimized_building == True):
             # in case the user has done some buildings and don't want to redo them all over again
             print(building_name+' is already done, skipping...')
             continue

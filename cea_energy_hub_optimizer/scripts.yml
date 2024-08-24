@@ -15,7 +15,7 @@ Energy Hub Optimizer:
                   "energy-hub-optimizer:temporal-resolution",
                   "energy-hub-optimizer:approach-but-not-land-on-tip", 
                   "energy-hub-optimizer:approach-percentile",
-                  "energy-hub-optimizer:skip-done-building", 
+                  "energy-hub-optimizer:skip-optimized-building", 
                   "energy-hub-optimizer:get-current-solution", 
                   "energy-hub-optimizer:flatten-spike",
                   "energy-hub-optimizer:flatten-spike-percentile",

@@ -7,17 +7,17 @@ model:
     time:
         function: 'resample'
         function_options:
-            resolution: '1D'
+            resolution: '1D' # other options: '1H', '1D', '1W', '1M'
 
 group_constraints:
    # A constraint group to apply a systemwide CO2 cap
    systemwide_co2_cap:
        cost_max:
-           co2:
+           co2: # NOTE: leave this empty to apply co2 constarints from the config
 
 run:
-    bigM: 1e8
-    cyclic_storage: true
+    bigM: 1e9 # change this when model is not converging
+    cyclic_storage: true # 
     objective_options:
         cost_class:
             co2: 0
@@ -33,7 +33,7 @@ run:
 
 # set locations
 locations:
-    Building:
+    Building: # don't change this line!
         techs:
             grid:
             wood_supply:
@@ -76,14 +76,15 @@ techs:
             parent: supply
             carrier_out: electricity
         constraints: # no other constraints needed
-            lifetime: 30
+            lifetime: 30 # years
         costs:
             monetary:
-                interest_rate: 0.05
-                om_prod: 0.24 # electricity price, CHF per kWh
+                interest_rate: 0.05 # 0.05 stands for 5% yearly interest rate
+                om_prod: 0.24 # electricity price, CHF/kWh
+                energy_cap: 0.1 # CHF per kW, cost to install power cables and transformers
             co2:
-                om_prod: 0.125 # CO2 emission, kg per kWh
-                om_annual: 0.001 # have this just to avoid too big sizing
+                om_prod: 0.125 # CO2 emission, kg/kWh
+                om_annual: 0.001 # CO2 emission for yearly maintenance
     wood_supply:
         essentials:
             name: 'Wood'
@@ -95,10 +96,11 @@ techs:
         costs:
             monetary:
                 interest_rate: 0.05
-                om_prod: 0.13 # wood price, CHF per kWh
+                om_prod: 0.13 # wood price, CHF/kWh
+                energy_cap: 0.1 # CHF/kW, cost to install wood storage
             co2:
                 om_prod: 0.023 # CO2 emission, kg per kWh
-                om_annual: 0.001 # have this just to avoid too big sizing
+                om_annual: 0.001 # CO2 emission for yearly maintenance
     DHDC_small_heat: #
         essentials:
             name: 'DH small'
@@ -107,15 +109,15 @@ techs:
             carrier_out: DHW
         constraints:
             energy_eff: 1
-            energy_cap_min: 20 # kW
-            energy_cap_max: 273.13 # kW
+            energy_cap_min: 50 # kW
+            energy_cap_max: 100 # kW
             lifetime: 30
         costs:
             monetary:
                 interest_rate: 0.05
-                energy_cap: 173.8751 # CHF per kW
+                energy_cap: 215.7 # CHF per kW
                 om_prod: 0.08 # heat price, CHF per kWh
-                purchase: 16337.6764 # CHF per device
+                purchase: 15128 # CHF per device
                 om_annual: 146 # yearly maintenance cost based on energy (power) capacity
             co2:
                 om_prod: 0.046 # CO2 emission, kg per kWh
@@ -128,8 +130,8 @@ techs:
             carrier_out: cooling
         constraints:
             energy_eff: 1
-            energy_cap_min: 20 # kW
-            energy_cap_max: 273.13 # kW
+            energy_cap_min: 50 # kW
+            energy_cap_max: 100 # kW
             lifetime: 30
         costs:
             monetary:
@@ -147,16 +149,16 @@ techs:
             carrier_out: DHW
         constraints:
             energy_eff: 1
-            energy_cap_min: 273.13 # kW
-            energy_cap_max: 848.75 # kW
+            energy_cap_min: 100 # kW
+            energy_cap_max: 700 # kW
             lifetime: 30
         costs:
             monetary:
                 interest_rate: 0.05
-                energy_cap: 96.2914 # CHF per kW
-                om_prod: 0.08 # heat/cooling price, CHF per kWh
-                purchase: 37528.4855 # CHF per device
-                om_annual: 146
+                energy_cap: 116.97 # CHF/kW
+                om_prod: 0.08 # heat/cooling price, CHF/kWh
+                purchase: 29589.53132 # CHF/device
+                om_annual: 146 # CHF/year
             co2:
                 om_prod: 0.046 # CO2 emission, kg per kWh
                 om_annual: 0.0011 # have this just to avoid too big sizing
@@ -168,8 +170,8 @@ techs:
             carrier_out: cooling
         constraints:
             energy_eff: 1
-            energy_cap_min: 273.13 # kW
-            energy_cap_max: 848.75 # kW
+            energy_cap_min: 100 # kW
+            energy_cap_max: 700 # kW
             lifetime: 30
         costs:
             monetary:
@@ -189,15 +191,15 @@ techs:
             carrier_out: DHW
         constraints:
             energy_eff: 1
-            energy_cap_min: 848.75 # kW
+            energy_cap_min: 700 # kW
             energy_cap_max: 2000 # kW
             lifetime: 30
         costs:
             monetary:
                 interest_rate: 0.05
-                energy_cap: 62.5738 # CHF per kW
+                energy_cap: 68.76 # CHF per kW
                 om_prod: 0.08 # heat/cooling price, CHF per kWh
-                purchase: 66146.4332 # CHF per device
+                purchase: 58746 # CHF per device
                 om_annual: 146
             co2:
                 om_prod: 0.046 # CO2 emission, kg per kWh
@@ -210,7 +212,7 @@ techs:
             carrier_out: cooling
         constraints:
             energy_eff: 1
-            energy_cap_min: 848.75 # kW
+            energy_cap_min: 700 # kW
             energy_cap_max: 2000 # kW
             lifetime: 30
         costs:
