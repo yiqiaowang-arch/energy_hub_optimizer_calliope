@@ -29,7 +29,11 @@ Then, one need to register this plugin in cea-config. In the CEA console, enter 
 ```python
 cea-config write --general:plugins cea_energy_hub_optimizer.energy_hub_optimizer.EnergyHubOptimizer
 ```
-Note that this line will overwrite other existing plugins. If you have other plugins installed, you can add them to the list by separating them with commas. 
+Note that this line will overwrite other existing plugins. If you have other plugins installed, you can add them to the list by separating them with commas. For example:
+```python
+cea-config write --general:plugins cea_energy_hub_optimizer.energy_hub_optimizer.EnergyHubOptimizer, --general:plugins other_plugin, --general:plugins another_plugin
+```
+You should include **ALL the plugins** in that command, otherwise you may lose already installed plugins.
 
 Now we need to install solvers. 
 - The default solver for calliope is glpk, which is already pre-installed along with calliope conda package.

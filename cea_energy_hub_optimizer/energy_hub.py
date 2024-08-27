@@ -1,5 +1,5 @@
 # geopandas and cea will be automatically included after the plugin is installed in the CEA environment
-import geopandas as gpd # type: ignore
+import geopandas as gpd
 import pandas as pd
 import numpy as np
 import calliope
