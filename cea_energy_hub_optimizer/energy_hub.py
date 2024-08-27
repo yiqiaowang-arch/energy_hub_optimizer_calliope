@@ -1,15 +1,26 @@
-# geopandas and cea will be automatically included after the plugin is installed in the CEA environment
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 import calliope
 import cea.inputlocator
+import cea.config
 import os
 
 """
-set a class of building, which contains the information of building, including
-building id as string, area as real, building location as a dictionary {lat: real, lon: real}
-building emission system temperature as integer
+set an energy hub, with the following attributes:
+- name:                 str                             name of the building
+- locator:              cea.inputlocator.InputLocator   locator object has multiple methods that helps with locating certain file paths
+- yaml_path:            str                             path to the yaml file that contains the energy hub configuration
+- config:               cea.config.Configuration        configuration object that contains the user's input in plugin.config
+- emission_type:        str                             type of emission system, either 'HVAC_HEATING_AS1' or 'HVAC_HEATING_AS4'
+- area:                 float                           area of the building
+- location:             dict                            location of the building, with keys 'lat' and 'lon'
+- calliope_config:      calliope.AttrDict               calliope configuration object from the yaml file
+- dict_timeseries_df:   dict: [str, pd.DataFrame]       dictionary of timeseries dataframes, with keys 'demand_el', 'demand_sh', 'demand_dhw', 'demand_sc', 'supply_PV', 'supply_PVT_e', 'supply_PVT_h', 'supply_SCFP', 'supply_SCET'
+
+
+
+
 the following are in an array of 8760 elements, each element is a real number:
 appliance and demand, heating demand, cooling demand, hot water demand,
 PV generation, PVT generation, solar collector generation
@@ -48,18 +59,18 @@ class EnergyHub:
         # get type of emission system
         # emission_dict = {'HVAC_HEATING_AS1': 80, # radiator, needs high supply temperature
         #                  'HVAC_HEATING_AS4': 45  # floor heating, needs low supply temperature
-        #                  } # output temperature of the heating emission system (TODO: check if it's currently used)
+        #                  } # output temperature of the heating emission system
         air_conditioning_df: pd.DataFrame = gpd.read_file(self.locator.get_building_air_conditioning(), ignore_geometry=True)
         air_conditioning_df.set_index(keys='Name', inplace=True)
         self.emission_type: str = str(air_conditioning_df.loc[self.name, 'type_hs'])
         # self.emission_temp: int = emission_dict[self.emission_type]
 
         # get building area
-        zone = gpd.read_file(self.locator.get_zone_geometry())
+        zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
         zone.index = zone['Name']
         self.area: float = zone.loc[self.name, 'geometry'].area
-        self.location: dict = {'lat': zone.loc[self.name, 'geometry'].centroid.y,
-                               'lon': zone.loc[self.name, 'geometry'].centroid.x}
+        self.location: dict[str, float] = {'lat': float(zone.loc[self.name, 'geometry'].centroid.y),
+                                           'lon': float(zone.loc[self.name, 'geometry'].centroid.x)}
         
         self.calliope_config: calliope.AttrDict = calliope.AttrDict.from_yaml(self.yaml_path)
         building_sub_dict_temp = self.calliope_config['locations'].pop('Building')
@@ -173,16 +184,16 @@ class EnergyHub:
             scet_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
 
         # scet_intensity: pd.DataFrame = scet.astype('float64') / self.area
-        self.dict_timeseries_df = { 'demand_el':     app, # kW
-                                    'demand_sh':     sh, # kW
-                                    'demand_dhw':    dhw, # kW
-                                    'demand_sc':     sc, # kW
-                                    'supply_PV':     pv_intensity, # kW/m2
-                                    'supply_PVT_e':  pvt_e_intensity, # kW/m2
-                                    'supply_PVT_h':  pvt_h_relative_intensity, # dimensionless
-                                    'supply_SCFP':   scfp_intensity, # kW/m2
-                                    'supply_SCET':   scet_intensity, # kW/m2
-                                }
+        self.dict_timeseries_df: dict[str, pd.DataFrame] = {'demand_el':     app, # kW
+                                                            'demand_sh':     sh, # kW
+                                                            'demand_dhw':    dhw, # kW
+                                                            'demand_sc':     sc, # kW
+                                                            'supply_PV':     pv_intensity, # kW/m2
+                                                            'supply_PVT_e':  pvt_e_intensity, # kW/m2
+                                                            'supply_PVT_h':  pvt_h_relative_intensity, # dimensionless
+                                                            'supply_SCFP':   scfp_intensity, # kW/m2
+                                                            'supply_SCET':   scet_intensity, # kW/m2
+                                                            }
         
     @staticmethod
     def get_timeseries_df(path: str) -> pd.DataFrame:
