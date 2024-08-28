@@ -52,6 +52,7 @@ locations:
             wood_boiler:
             PV:
             SCFP:
+            SCET:
             DHW_to_heat:
             ASHP:
             GSHP:
@@ -99,6 +100,7 @@ techs:
             carrier_out: wood
         constraints:
             energy_cap_max: 2000 # kW, since there are limited wood supply. Value could be modified based on the availability of wood
+            lifetime: 20
         costs:
             monetary:
                 interest_rate: 0.05
@@ -283,7 +285,7 @@ techs:
             name: 'Solar collector flat plate'
             color: '#ff6728'
             parent: supply
-            carrier_out: DHW
+            carrier_out: heat
         constraints:
             resource: df=supply_SCFP
             resource_unit: energy_per_area
@@ -294,6 +296,26 @@ techs:
             monetary:
                 interest_rate: 0.05
                 energy_cap: 850 # CHF/kW
+                om_annual_investment_fraction: 0.01 # fraction of purchase cost
+            co2:
+                om_prod: 0.015 # CO2 emission, kg/kWh
+                om_annual: 0.001 # have this just to avoid too big sizing
+    SCET:
+        essentials:
+            name: 'Solar collector evacuated tube'
+            color: '#ff6728'
+            parent: supply
+            carrier_out: DHW # evacuated tube can heat up water to higher temperature
+        constraints:
+            resource: df=supply_SCET
+            resource_unit: energy_per_area
+            energy_eff: 1
+            resource_area_per_energy_cap: 2 # 2m2/kWp
+            lifetime: 15
+        costs:
+            monetary:
+                interest_rate: 0.05
+                energy_cap: 1000 # CHF/kW
                 om_annual_investment_fraction: 0.01 # fraction of purchase cost
             co2:
                 om_prod: 0.015 # CO2 emission, kg/kWh
@@ -314,7 +336,7 @@ techs:
         costs:
             monetary:
                 interest_rate: 0.05
-    ASHP:
+    ASHP: # if you consider adding more ASHPs or changing its COP, please check cea_energy_hub_optimizer.energy_hub.get_cop_timeseries() to make sure that the script still finds your COP definition.
         essentials:
             name: 'ASHP SH/SC'
             color: '#676767'
@@ -336,7 +358,7 @@ techs:
                 om_annual: 11 # USD/kW, annual maintenance cost based on energy (power) capacity
             co2:
                 om_annual: 0.001 # have this just to avoid too big sizing
-    GSHP:
+    GSHP: # ground temperature is more or less stable, so we don't need temperature-sensitive COP for GSHP
         essentials:
             name: 'GSHP SH/SC'
             color: '#ffda10'

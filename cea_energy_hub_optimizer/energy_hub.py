@@ -92,6 +92,9 @@ class EnergyHub:
                 self.dict_timeseries_df[key] = self.flatten_spikes(df=self.dict_timeseries_df[key], 
                                                                    column_name=self.name, 
                                                                    percentile=self.config.energy_hub_optimizer.flatten_spike_percentile)
+        
+        if self.config.energy_hub_optimizer.temperature_sensitive_cop:
+            self.get_cop_timeseries()
 
 
     def get_demand_supply(self):
@@ -195,6 +198,57 @@ class EnergyHub:
                                                             'supply_SCET':   scet_intensity, # kW/m2
                                                             }
         
+    def get_cop_timeseries(self):
+        """
+        Description:
+        This method reads exterior temperature from the epw file, and calculates the COP of the heat pump based on the nominal COP of ASHP 
+        between outdoor air at 10degC and hot water at 60degC.
+        First, energy efficiency ratio (EER) is calculated as the ratio of the nominal COP and Carnot COP at nominal condition.
+        Then, for every timestep, the real COP is calculated as the ratio of the EER and the Carnot COP based on its outdoor temperature.
+        Finally, the cooling COP is calculated using the same EER, but under different nominal conditions.
+        The cooling nominal condition is 30degC outdoor air and 10degC chilled water.
+
+        The results of two COPs are stored in two dataframes and added as values of the dict_timeseries_df dictionary.
+        """
+
+        # read epw file using locator method
+        epw_path = self.locator.get_weather_file()
+
+        columns = [
+            'year', 'month', 'day', 'hour', 'minute', 'datasource', 'drybulb_C', 'dewpoint_C', 'relhum_percent',
+            'atmos_pressure_Pa', 'exthorrad_Wh/m2', 'extdirrad_Wh/m2', 'horirsky_Wh/m2', 'glohorrad_Wh/m2',
+            'dirnorrad_Wh/m2', 'difhorrad_Wh/m2', 'glohorillum_lux', 'dirnorillum_lux', 'difhorillum_lux',
+            'zenlum_lux', 'winddir_deg', 'windspd_m/s', 'totskycvr_tenths', 'opaqskycvr_tenths', 'visibility_km',
+            'ceiling_hgt_m', 'presweathobs', 'presweathcodes', 'precip_wtr_mm', 'aerosol_opt_thousandths',
+            'snowdepth_cm', 'days_last_snow', 'Albedo', 'liq_precip_depth_mm', 'liq_precip_rate_Hour'
+        ]
+
+        # Read the EPW file using pandas read_csv
+        epw_df = pd.read_csv(epw_path, skiprows=8, header=None, names=columns)
+
+        # Convert columns to appropriate data types
+        epw_df = epw_df.apply(pd.to_numeric, errors='ignore')
+
+        # get the app demand data for its index, and create a new df caled cop_dhw with that index and the drybulb_C column from epw_df
+        app = self.dict_timeseries_df['demand_el']
+        EER = self.config.energy_hub_optimizer.nominal_cop / ((60+273.15)/(60-10))
+        epw_df['COP_dhw'] = ((60 + 273.15) / (60 - epw_df['drybulb_C'])) * EER
+        epw_df['COP_sc'] = ((10 + 273.15) / (30 - epw_df['drybulb_C'])) * EER
+
+        # create a new dataframe with the index of app, and columns of COP_dhw and COP_sc
+        # first, initialize the dataframe with zeros
+        cop_dhw = pd.DataFrame(epw_df['COP_dhw'].values, index=app.index, columns=[self.name])
+        cop_sc = pd.DataFrame(epw_df['COP_sc'].values, index=app.index, columns=[self.name])
+
+        # add them back to the dict_timeseries_df
+        self.dict_timeseries_df['COP_dhw'] = cop_dhw
+        self.dict_timeseries_df['COP_sc'] = cop_sc
+
+        self.calliope_config.set_key(key=f'locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.DHW', 
+                                     value='df=COP_dhw')
+        self.calliope_config.set_key(key=f'locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.cooling', 
+                                     value='df=COP_sc')
+        
     @staticmethod
     def get_timeseries_df(path: str) -> pd.DataFrame:
         """
@@ -226,7 +280,6 @@ class EnergyHub:
             raise ValueError("The dataframe does not contain a 'DATE' column.")
         
         return df
-
 
     def set_building_specific_config(self):
         """
@@ -319,7 +372,6 @@ class EnergyHub:
 
         del building_status_dfs_list, building_status, name
 
-
     def get_building_model(self,
                            to_lp=False, to_yaml=False,
                            obj='cost',
@@ -371,7 +423,6 @@ class EnergyHub:
             model.save_commented_model_yaml(self.store_folder+'/'+self.name+'.yaml')
         return model
     
-
     def get_pareto_front(self, epsilon:int, 
                          store_folder: str,
                          approach_tip=False, approach_percentile=0.01,
@@ -504,7 +555,6 @@ class EnergyHub:
             self.df_pareto = df_pareto
             self.df_tech_cap_pareto = df_tech_cap_pareto
 
-    
     def get_current_cost_emission(self):
         """
         Description:
