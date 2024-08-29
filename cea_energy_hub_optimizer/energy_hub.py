@@ -86,18 +86,18 @@ class EnergyHub:
         self.calliope_config.set_key(key=f'locations.{self.name}.techs.wood_supply.constraints.energy_cap_max', 
                                             value=(self.area+400)*0.5*0.001)
 
-        self.get_demand_supply()
+        self.getDemandSupply()
         if self.config.energy_hub_optimizer.flatten_spike:
             for key in ['demand_el', 'demand_sh', 'demand_dhw', 'demand_sc']:
-                self.dict_timeseries_df[key] = self.flatten_spikes(df=self.dict_timeseries_df[key], 
+                self.dict_timeseries_df[key] = self.flattenSpikes(df=self.dict_timeseries_df[key], 
                                                                    column_name=self.name, 
                                                                    percentile=self.config.energy_hub_optimizer.flatten_spike_percentile)
         
         if self.config.energy_hub_optimizer.temperature_sensitive_cop:
-            self.get_cop_timeseries()
+            self.getCopTimeseries()
 
 
-    def get_demand_supply(self):
+    def getDemandSupply(self):
         """
         Description:
         This method reads the input scenario_path, following the CEA result file structure, finds the pre-computed 
@@ -105,7 +105,7 @@ class EnergyHub:
         along with supply from PV, PVT and flat-panel solar collectors (SC_FP). 
         Currently, each timeseries is an independent dataframe. TODO: merge all dataframes into one!
         """
-        get_df = EnergyHub.get_timeseries_df # rename for simplicity
+        get_df = EnergyHub.getTimeseriesDf # rename for simplicity
         demand_df = get_df(path=self.locator.get_demand_results_file(building=self.name, format='csv'))
 
         # time series data
@@ -198,7 +198,7 @@ class EnergyHub:
                                                             'supply_SCET':   scet_intensity, # kW/m2
                                                             }
         
-    def get_cop_timeseries(self):
+    def getCopTimeseries(self):
         """
         Description:
         This method reads exterior temperature from the epw file, and calculates the COP of the heat pump based on the nominal COP of ASHP 
@@ -239,6 +239,7 @@ class EnergyHub:
         # first, initialize the dataframe with zeros
         cop_dhw = pd.DataFrame(epw_df['COP_dhw'].values, index=app.index, columns=[self.name])
         cop_sc = pd.DataFrame(epw_df['COP_sc'].values, index=app.index, columns=[self.name])
+        del epw_df
 
         # add them back to the dict_timeseries_df
         self.dict_timeseries_df['COP_dhw'] = cop_dhw
@@ -250,7 +251,7 @@ class EnergyHub:
                                      value='df=COP_sc')
         
     @staticmethod
-    def get_timeseries_df(path: str) -> pd.DataFrame:
+    def getTimeseriesDf(path: str) -> pd.DataFrame:
         """
         Description:
         This function reads the timeseries csv files from the path, and returns a dictionary of dataframes.
@@ -281,7 +282,7 @@ class EnergyHub:
         
         return df
 
-    def set_building_specific_config(self):
+    def setBuildingSpecificConfig(self):
         """
         Description:
         This function sets the building specific configuration for the building model.
@@ -372,10 +373,10 @@ class EnergyHub:
 
         del building_status_dfs_list, building_status, name
 
-    def get_building_model(self,
-                           to_lp=False, to_yaml=False,
-                           obj='cost',
-                           emission_constraint=None) -> calliope.Model:
+    def getBuildingModel(self,
+                         to_lp=False, to_yaml=False,
+                         obj='cost',
+                         emission_constraint=None) -> calliope.Model:
         """
         Description:
         This function gets building parameters and read the scenario files to create a calliope model for the building.
@@ -423,10 +424,10 @@ class EnergyHub:
             model.save_commented_model_yaml(self.store_folder+'/'+self.name+'.yaml')
         return model
     
-    def get_pareto_front(self, epsilon:int, 
-                         store_folder: str,
-                         approach_tip=False, approach_percentile=0.01,
-                         to_lp=False, to_yaml=False, to_nc=False):
+    def getParetoFront(self, epsilon:int, 
+                       store_folder: str,
+                       approach_tip=False, approach_percentile=0.01,
+                       to_lp=False, to_yaml=False, to_nc=False):
         """
         Description:
         This function finds the pareto front of one building regarding cost and emission.
@@ -489,7 +490,7 @@ class EnergyHub:
         df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(idx_cost+1))
         df_tech_cap_pareto.fillna(0, inplace=True)
         # first get the emission-optimal solution
-        model_emission = self.get_building_model(to_lp=to_lp, to_yaml=to_yaml, obj='emission')
+        model_emission = self.getBuildingModel(to_lp=to_lp, to_yaml=to_yaml, obj='emission')
         model_emission.run()
         if to_nc:
             model_emission.to_netcdf(path=self.store_folder + '/' + self.name+'_emission.nc')
@@ -502,7 +503,7 @@ class EnergyHub:
         df_tech_cap_pareto.loc[0] = model_emission.get_formatted_array('energy_cap').to_pandas().iloc[0]
         
         # then get the cost-optimal solution
-        model_cost = self.get_building_model(to_lp=to_lp, to_yaml=to_yaml, obj='cost')
+        model_cost = self.getBuildingModel(to_lp=to_lp, to_yaml=to_yaml, obj='cost')
         # run model cost, and find both cost and emission of this result
         model_cost.run()
         if to_nc:
@@ -535,7 +536,7 @@ class EnergyHub:
             for i, emission_constraint in enumerate(epsilon_list):
                 n_epsilon = i+1
                 print(f'starting epsilon {n_epsilon}, life-time emission smaller or equal to {emission_constraint} kgCO2')
-                model_epsilon = self.get_building_model(to_lp=to_lp, to_yaml=to_yaml, obj='cost', 
+                model_epsilon = self.getBuildingModel(to_lp=to_lp, to_yaml=to_yaml, obj='cost', 
                                                         emission_constraint=emission_constraint)
                 model_epsilon.run()
                 if to_nc:
@@ -555,7 +556,7 @@ class EnergyHub:
             self.df_pareto = df_pareto
             self.df_tech_cap_pareto = df_tech_cap_pareto
 
-    def get_current_cost_emission(self):
+    def getCurrentCostEmission(self):
         """
         Description:
         This function reads the current technology setup of the building, delete all irrelevant technologies,
@@ -609,7 +610,7 @@ class EnergyHub:
             if tech in self.df_tech_cap_pareto.columns:
                 self.calliope_config.del_key(f'locations.{self.name}.techs.{tech}')
         
-        model_current = self.get_building_model(flatten_spikes=False, 
+        model_current = self.getBuildingModel(flatten_spikes=False, 
                                                 flatten_percentile=0.98, to_lp=False, to_yaml=False, 
                                                 obj='cost')
         print(f'calculating current cost and emission for building {self.name}')
@@ -623,7 +624,7 @@ class EnergyHub:
         self.df_tech_cap_pareto.fillna(0, inplace=True)
 
     @staticmethod
-    def flatten_spikes(df: pd.DataFrame, column_name, percentile: float = 0.98, is_positive: bool = False):
+    def flattenSpikes(df: pd.DataFrame, column_name, percentile: float = 0.98, is_positive: bool = False):
         # first fine non-zero values of the given column of the given dataframe
         # then calculate the 98th percentile of the non-zero values
         # then find the index of the values that are greater than the 98th percentile

@@ -60,16 +60,16 @@ def main(config: cea.config.Configuration):
                                calliope_yaml_path=yaml_path, 
                                config=config)
 
-        energy_hub.get_pareto_front(epsilon=config.energy_hub_optimizer.number_of_epsilon_cut, 
-                                    store_folder=store_folder,
-                                    approach_tip=config.energy_hub_optimizer.approach_but_not_land_on_tip,
-                                    approach_percentile=config.energy_hub_optimizer.approach_percentile,
-                                    to_lp=config.energy_hub_optimizer.save_constraint_to_lp, 
-                                    to_yaml=config.energy_hub_optimizer.save_energy_hub_to_yaml,
-                                    to_nc=config.energy_hub_optimizer.save_result_to_nc)
+        energy_hub.getParetoFront(epsilon=config.energy_hub_optimizer.number_of_epsilon_cut, 
+                                  store_folder=store_folder,
+                                  approach_tip=config.energy_hub_optimizer.approach_but_not_land_on_tip,
+                                  approach_percentile=config.energy_hub_optimizer.approach_percentile,
+                                  to_lp=config.energy_hub_optimizer.save_constraint_to_lp, 
+                                  to_yaml=config.energy_hub_optimizer.save_energy_hub_to_yaml,
+                                  to_nc=config.energy_hub_optimizer.save_result_to_nc)
         
         if config.energy_hub_optimizer.get_current_solution:
-            energy_hub.get_current_cost_emission()
+            energy_hub.getCurrentCostEmission()
         df_pareto_aug = energy_hub.df_pareto.merge(energy_hub.df_tech_cap_pareto, left_index=True, right_index=True)
         df_pareto_aug.to_csv(store_folder+'/'+building_name+'_pareto.csv', index=True, index_label='index')
         print(building_name+' is optimized! Results saved in ' + store_folder)
