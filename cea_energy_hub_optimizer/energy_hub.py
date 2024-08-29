@@ -98,12 +98,15 @@ class EnergyHub:
 
 
     def getDemandSupply(self):
-        """
-        Description:
-        This method reads the input scenario_path, following the CEA result file structure, finds the pre-computed 
-        result csvs for demand (electricity (E), heating (Qhs), cooling (Qcs) and hot water (Qww)),
-        along with supply from PV, PVT and flat-panel solar collectors (SC_FP). 
-        Currently, each timeseries is an independent dataframe. TODO: merge all dataframes into one!
+        """getDemandSupply generates the timeseries dataframes for demand and supply of the building from CEA's results.
+
+        This function reads the demand and supply data from the CEA's results in CEA's output folder. 
+        Specificly, it reads electricity (app), space heating (sh), hot water (dhw), and space cooling (sc) demand data 
+        from the demand_results.csv file, and reads PV, PVT, SCFP, SCET supply data from the corresponding results files.
+
+        In case the user only cares for certain types of demand and supply, the function will set the unwanted demand and supply to 0.
+        
+        Finally, each timeseries is stored in a dataframe, and then stored in a dictionary, in order to be used in the calliope model.
         """
         get_df = EnergyHub.getTimeseriesDf # rename for simplicity
         demand_df = get_df(path=self.locator.get_demand_results_file(building=self.name, format='csv'))
@@ -130,11 +133,9 @@ class EnergyHub:
 
 
         # read supply data
+        # PV
         if 'PV' in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            pv_path = self.locator.PV_results(building=self.name)
-            if not os.path.exists(pv_path):
-                raise FileNotFoundError(f'PV result file for building {self.name} not found at {pv_path}! Consider running the PV simulation first.')
-            pv_df = get_df(path=pv_path)
+            pv_df = get_df(path=self.locator.PV_results(building=self.name))
             pv: pd.DataFrame = pv_df[['E_PV_gen_kWh']].astype('float64').rename(columns={'E_PV_gen_kWh': self.name})
             # prepare intensity data, because calliope can only have one area for PV, PVT, SC to compete with. 
             # For example, if building's area is 100m2, then the intensity is the generation divided by 100.
@@ -145,11 +146,9 @@ class EnergyHub:
         else:
             pv_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
 
+        # PVT
         if 'PVT' in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            pvt_path = self.locator.PVT_results(building=self.name)
-            if not os.path.exists(pvt_path):
-                raise FileNotFoundError(f'PVT result file for building {self.name} not found at {pvt_path}! Consider running the PVT simulation first.')
-            pvt_df = get_df(path=pvt_path)
+            pvt_df = get_df(path=self.locator.PVT_results(building=self.name))
             pvt_e: pd.DataFrame = pvt_df[['E_PVT_gen_kWh']].astype('float64').rename(columns={'E_PVT_gen_kWh': self.name})
             pvt_h: pd.DataFrame = pvt_df[['Q_PVT_gen_kWh']].astype('float64').rename(columns={'Q_PVT_gen_kWh': self.name})
             pvt_e_intensity: pd.DataFrame = pvt_e.astype('float64') / self.area
@@ -166,27 +165,23 @@ class EnergyHub:
             pvt_e_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
             pvt_h_relative_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
 
+        # SCFP
         if 'SCFP' in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            scfp_path = self.locator.SC_results(building=self.name, panel_type='FP')
-            if not os.path.exists(scfp_path):
-                raise FileNotFoundError(f'Flat-panel SC result file for building {self.name} not found at {scfp_path}! Consider running the SC simulation first.')
-            scfp_df = get_df(path=scfp_path) # flat panel solar collector
+            scfp_df = get_df(path=self.locator.SC_results(building=self.name, panel_type='FP')) # flat panel solar collector
             scfp: pd.DataFrame = scfp_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
             scfp_intensity: pd.DataFrame = scfp.astype('float64') / self.area
         else:
             scfp_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
 
+        # SCET
         if 'SCET' in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            scet_path = self.locator.SC_results(building=self.name, panel_type='ET')
-            if not os.path.exists(scet_path):
-                raise FileNotFoundError(f'Evacuated tube SC result file for building {self.name} not found at {scet_path}! Consider running the SC simulation first.')
-            scet_df = get_df(path=scet_path) # evacuated tube solar collector
+            scet_df = get_df(path=self.locator.SC_results(building=self.name, panel_type='ET')) # evacuated tube solar collector
             scet: pd.DataFrame = scet_df[['Q_SC_gen_kWh']].astype('float64').rename(columns={'Q_SC_gen_kWh': self.name})
             scet_intensity: pd.DataFrame = scet.astype('float64') / self.area
         else:
             scet_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
 
-        # scet_intensity: pd.DataFrame = scet.astype('float64') / self.area
+        # add all dataframes to the dict_timeseries_df
         self.dict_timeseries_df: dict[str, pd.DataFrame] = {'demand_el':     app, # kW
                                                             'demand_sh':     sh, # kW
                                                             'demand_dhw':    dhw, # kW
