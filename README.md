@@ -1,6 +1,8 @@
 # energy_hub_optimizer
 An optimization plugin for building energy hub using Calliope for the City Energy Analyst.
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 ## Download
 To install, clone this repo to a desired path (you would need to have `git` installed to run this command. Alternatively you can also run this command in the CEA console, which
 comes with `git` pre-installed):
