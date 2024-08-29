@@ -6,7 +6,8 @@ import cea.inputlocator
 import cea.config
 import os
 
-"""
+""" A class definition of a single-building energy hub optimization model.
+
 set an energy hub, with the following attributes:
 - name:                 str                             name of the building
 - locator:              cea.inputlocator.InputLocator   locator object has multiple methods that helps with locating certain file paths
@@ -17,20 +18,7 @@ set an energy hub, with the following attributes:
 - location:             dict                            location of the building, with keys 'lat' and 'lon'
 - calliope_config:      calliope.AttrDict               calliope configuration object from the yaml file
 - dict_timeseries_df:   dict: [str, pd.DataFrame]       dictionary of timeseries dataframes, with keys 'demand_el', 'demand_sh', 'demand_dhw', 'demand_sc', 'supply_PV', 'supply_PVT_e', 'supply_PVT_h', 'supply_SCFP', 'supply_SCET'
-
-
-
-
-the following are in an array of 8760 elements, each element is a real number:
-appliance and demand, heating demand, cooling demand, hot water demand,
-PV generation, PVT generation, solar collector generation
-I want to specify only the name of building and path of the folder that contains the data
-and the class will automatically read the data and store them in the class
-the data is stored in multiple subfolders of the path, some are for demand, some are for generation
-the data is stored in csv files, each file contains the data of one building
-the file name is the building id, or builidng id + PV, or building id + PVT, or building id + sc
 """
-
 
 
 class EnergyHub:
@@ -38,15 +26,15 @@ class EnergyHub:
                  locator: cea.inputlocator.InputLocator, 
                  calliope_yaml_path: str, 
                  config: cea.config.Configuration):
-        """
-        Description:
-        This function initializes the building object, which contains the building's information.
+        """__init__ initializes the EnergyHub class with the given parameters.
 
-        Inputs:
-        - name:                     str, the name of the building
-        - locator:                  cea.inputlocator.InputLocator, the locator object has multiple methods that helps with locating certain file paths
-        - calliope_yaml_path:       str, the path to the yaml file that contains the energy hub configuration
-        - config:                   cea.config.Configuration, the configuration object that contains the user's input in plugin.config
+        This function initializes the EnergyHub class with the given parameters, and calls other methods to preprocess the data.
+
+        Args:
+            name (str): name of the building that follows CEA convention
+            locator (cea.inputlocator.InputLocator): the locator object that helps locate different files
+            calliope_yaml_path (str): the path to the yaml file that contains the calliope energy hub configuration
+            config (cea.config.Configuration): the configuration object that contains user inputs in plugin.config
         """
 
         self.name: str = name
@@ -94,7 +82,18 @@ class EnergyHub:
                                                                    percentile=self.config.energy_hub_optimizer.flatten_spike_percentile)
         
         if self.config.energy_hub_optimizer.temperature_sensitive_cop:
-            self.getCopTimeseries()
+            print('temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature.')
+            # create a new dataframe with the index of app, and columns of COP_dhw and COP_sc
+            # first, initialize the dataframe with zeros
+            cop_dhw = pd.DataFrame(EnergyHub.epw_df['COP_dhw'].values, index=self.dict_timeseries_df['demand_el'].index, columns=[self.name])
+            cop_sc = pd.DataFrame(EnergyHub.epw_df['COP_sc'].values, index=self.dict_timeseries_df['demand_el'].index, columns=[self.name])
+            # add them back to the dict_timeseries_df
+            self.dict_timeseries_df['COP_dhw'] = cop_dhw
+            self.dict_timeseries_df['COP_sc'] = cop_sc
+            self.calliope_config.set_key(key=f'locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.DHW', 
+                                        value='df=COP_dhw')
+            self.calliope_config.set_key(key=f'locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.cooling', 
+                                        value='df=COP_sc')
 
 
     def getDemandSupply(self):
@@ -193,21 +192,25 @@ class EnergyHub:
                                                             'supply_SCET':   scet_intensity, # kW/m2
                                                             }
         
-    def getCopTimeseries(self):
-        """
-        Description:
+
+    @classmethod
+    def getCopTimeseries(cls, locator: cea.inputlocator.InputLocator, config: cea.config.Configuration):
+        """getCopTimeseries read epw file and calculate the COP of DHW and SC for each time step, and store them in a dataframe.
+
         This method reads exterior temperature from the epw file, and calculates the COP of the heat pump based on the nominal COP of ASHP 
         between outdoor air at 10degC and hot water at 60degC.
-        First, energy efficiency ratio (EER) is calculated as the ratio of the nominal COP and Carnot COP at nominal condition.
+        First,exergy efficiency is calculated as the ratio of the nominal COP and Carnot COP at nominal condition.
         Then, for every timestep, the real COP is calculated as the ratio of the EER and the Carnot COP based on its outdoor temperature.
         Finally, the cooling COP is calculated using the same EER, but under different nominal conditions.
         The cooling nominal condition is 30degC outdoor air and 10degC chilled water.
 
-        The results of two COPs are stored in two dataframes and added as values of the dict_timeseries_df dictionary.
-        """
 
+        Args:
+            locator (cea.inputlocator.InputLocator): CEA's locator class, which helps locate the epw file
+            config (cea.config.Configuration): simulation config,  which contains the nominal COP of the ASHP
+        """
         # read epw file using locator method
-        epw_path = self.locator.get_weather_file()
+        epw_path = locator.get_weather_file()
 
         columns = [
             'year', 'month', 'day', 'hour', 'minute', 'datasource', 'drybulb_C', 'dewpoint_C', 'relhum_percent',
@@ -225,33 +228,29 @@ class EnergyHub:
         epw_df = epw_df.apply(pd.to_numeric, errors='ignore')
 
         # get the app demand data for its index, and create a new df caled cop_dhw with that index and the drybulb_C column from epw_df
-        app = self.dict_timeseries_df['demand_el']
-        EER = self.config.energy_hub_optimizer.nominal_cop / ((60+273.15)/(60-10))
-        epw_df['COP_dhw'] = ((60 + 273.15) / (60 - epw_df['drybulb_C'])) * EER
-        epw_df['COP_sc'] = ((10 + 273.15) / (30 - epw_df['drybulb_C'])) * EER
 
-        # create a new dataframe with the index of app, and columns of COP_dhw and COP_sc
-        # first, initialize the dataframe with zeros
-        cop_dhw = pd.DataFrame(epw_df['COP_dhw'].values, index=app.index, columns=[self.name])
-        cop_sc = pd.DataFrame(epw_df['COP_sc'].values, index=app.index, columns=[self.name])
-        del epw_df
+        exergy_eff = config.energy_hub_optimizer.nominal_cop / ((60+273.15)/(60-10))
+        epw_df['COP_dhw'] = ((60 + 273.15) / (60 - epw_df['drybulb_C'])) * exergy_eff
+        epw_df['COP_sc'] = ((10 + 273.15) / (30 - epw_df['drybulb_C'])) * exergy_eff
+        cls.epw_df = epw_df
 
-        # add them back to the dict_timeseries_df
-        self.dict_timeseries_df['COP_dhw'] = cop_dhw
-        self.dict_timeseries_df['COP_sc'] = cop_sc
-
-        self.calliope_config.set_key(key=f'locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.DHW', 
-                                     value='df=COP_dhw')
-        self.calliope_config.set_key(key=f'locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.cooling', 
-                                     value='df=COP_sc')
         
     @staticmethod
     def getTimeseriesDf(path: str) -> pd.DataFrame:
         """
-        Description:
+
         This function reads the timeseries csv files from the path, and returns a dictionary of dataframes.
         Due to calliope requirements, the index of the dataframe is set to be datetime, and the column name is set to be the building name.
 
+        Args:
+            path (str): path to the timeseries csv or dbf file
+
+        Raises:
+            ValueError: path must end with .csv or .dbf
+            ValueError: The dataframe does not contain a 'DATE' column.
+
+        Returns:
+            pd.DataFrame: dataframe that contains the whole CSV information, with the index set to 't' for its time.
         """
         # if path ends with .csv, then read the csv file and return the dataframe
         # if ends with .dbf, read the dbf file and return the dataframe

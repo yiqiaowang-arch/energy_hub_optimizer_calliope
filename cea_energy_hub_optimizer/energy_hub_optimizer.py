@@ -30,14 +30,15 @@ class EnergyHubOptimizer(cea.plugin.CeaPlugin):
     pass
 
 
-def main(config: cea.config.Configuration):
-    """
-    This is the main entry point to your script. Any parameters used by your script must be present in the ``config``
-    parameter. The CLI will call this ``main`` function passing in a ``config`` object after adjusting the configuration
-    to reflect parameters passed on the command line / user interface
+def main(config: cea.config.Configuration) -> None:
+    """main main function for the energy hub optimizer.
 
-    :param cea.config.Configuration config: The configuration for this script, restricted to the scripts parameters.
-    :return: None
+    following the config, this function initializes each building as an energy hub and optimizes for a pareto front of this building. 
+    The results are saved in the subfolder 'calliope_energy_hub' in the optimization results folder, as a csv file.
+
+    Args:
+        config (cea.config.Configuration): this is the configuration object that is passed by the CEA scripts. 
+            User can modify their config using the CEA GUI.
     """
     check_solar_technology(config)
     warnings.filterwarnings('ignore')
@@ -46,9 +47,8 @@ def main(config: cea.config.Configuration):
     yaml_path = os.path.join(os.path.dirname(__file__), 'data', 'techs_energy_hub.yml')
     store_folder: str = locator._ensure_folder(locator.get_optimization_results_folder(), 'calliope_energy_hub')
     calliope.set_log_verbosity(verbosity='error', include_solver_output=False, capture_warnings=False)
-    # comments on _ensure_folder: 
-    # Return the *components joined together as a path to a folder and ensure that that folder exists on disc. 
-    # If it doesn't exist yet, attempt to make it with os.makedirs.
+    EnergyHub.getCopTimeseries(locator, config) # read epw and get COP from the weather file, in case the user wants to use temperature-dependent COP
+
     for building in buildings:
         building_name = str(building)
         if (building_name+'_pareto.csv' in os.listdir(store_folder)) and (config.energy_hub_optimizer.skip_optimized_building == True):
@@ -76,17 +76,19 @@ def main(config: cea.config.Configuration):
         del energy_hub
 
 
-def check_solar_technology(config: cea.config.Configuration):
-    """
-    Check if the solar technology has been pre-evaluated by CEA. If not, raise an error.
+def check_solar_technology(config: cea.config.Configuration) -> None:
+    """check_solar_technology ensures that all building that are to be optimized have the necessary solar technology results.
+
     This function replaced the input check in the script.yml file, because there one needs to specify the technologies 
     beforehand. In our script, we have the freedom to include the technologies we want to evaluate, so we need to read
     the choices first and check them more dynamically.
 
-    On the other hand, the demand of each building must be available anyway, so we don't need to check that in the function.
-    Instead, scripts.yml will check if each building has a demand profile csv available.
+    Raises:
+        FileNotFoundError: if not all buildings have the necessary solar technology results, the script is aborted.
 
-    :param cea.config.Configuration config: The configuration for this script, restricted to the scripts parameters.
+    Args:
+        config (cea.config.Configuration): this is the configuration object that is passed by the CEA scripts. 
+            User can modify their config using the CEA GUI.
     """
     tech_list = config.energy_hub_optimizer.evaluated_solar_supply
     print(f"""
