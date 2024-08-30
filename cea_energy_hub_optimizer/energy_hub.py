@@ -4,7 +4,7 @@ import numpy as np
 import calliope
 import cea.inputlocator
 import cea.config
-import os
+from cea.optimization_new import districtEnergySystem
 
 """ A class definition of a single-building energy hub optimization model.
 
@@ -31,7 +31,7 @@ class EnergyHub:
     ):
         """__init__ initializes the EnergyHub class with the given parameters.
 
-        This function initializes the EnergyHub class with the given parameters, and calls other methods to preprocess the data.
+        This function initializes a single-building energy hub optimization model.
 
         Args:
             name (str): name of the building that follows CEA convention
@@ -41,9 +41,14 @@ class EnergyHub:
         """
 
         self.name: str = name
+        self.names = [
+            name
+        ]  # for compatibility between the single building model and the district model
         self.locator = locator
         # locator.scenario returns a str of the scenario path, which includes /inputs and /outputs
-        self.yaml_path: str = calliope_yaml_path
+        self.calliope_config: calliope.AttrDict = calliope.AttrDict.from_yaml(
+            calliope_yaml_path
+        )
         self.config = config
         calliope.set_log_verbosity(
             verbosity="error", include_solver_output=False, capture_warnings=False
@@ -69,18 +74,17 @@ class EnergyHub:
             "lon": float(zone.loc[self.name, "geometry"].centroid.x),
         }
 
-        self.calliope_config: calliope.AttrDict = calliope.AttrDict.from_yaml(
-            self.yaml_path
-        )
-        building_sub_dict_temp = self.calliope_config["locations"].pop("Building")
-        self.calliope_config["locations"][self.name] = building_sub_dict_temp
-        del building_sub_dict_temp
-
         # set temporal resolution
         self.calliope_config.set_key(
             key="model.time.function_options.resolution",
             value=self.config.energy_hub_optimizer.temporal_resolution,
         )
+
+        building_sub_dict_temp: calliope.AttrDict = self.calliope_config[
+            "locations"
+        ].pop("Building")
+        self.calliope_config["locations"][self.name] = building_sub_dict_temp
+        del building_sub_dict_temp
 
         # set solver
         self.calliope_config.set_key(
@@ -97,7 +101,6 @@ class EnergyHub:
             for key in ["demand_el", "demand_sh", "demand_dhw", "demand_sc"]:
                 self.dict_timeseries_df[key] = self.flattenSpikes(
                     df=self.dict_timeseries_df[key],
-                    column_name=self.name,
                     percentile=self.config.energy_hub_optimizer.flatten_spike_percentile,
                 )
 
@@ -105,27 +108,23 @@ class EnergyHub:
             print(
                 "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
             )
-            # create a new dataframe with the index of app, and columns of COP_dhw and COP_sc
-            # first, initialize the dataframe with zeros
             cop_dhw = pd.DataFrame(
-                EnergyHub.epw_df["COP_dhw"].values,
+                data={key: EnergyHub.epw_df["COP_dhw"].array for key in self.names},
                 index=self.dict_timeseries_df["demand_el"].index,
-                columns=[self.name],
             )
             cop_sc = pd.DataFrame(
-                EnergyHub.epw_df["COP_sc"].values,
+                data={key: EnergyHub.epw_df["COP_sc"].array for key in self.names},
                 index=self.dict_timeseries_df["demand_el"].index,
-                columns=[self.name],
             )
             # add them back to the dict_timeseries_df
             self.dict_timeseries_df["COP_dhw"] = cop_dhw
             self.dict_timeseries_df["COP_sc"] = cop_sc
             self.calliope_config.set_key(
-                key=f"locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
+                key="techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
                 value="df=COP_dhw",
             )
             self.calliope_config.set_key(
-                key=f"locations.{self.name}.techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
+                key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
                 value="df=COP_sc",
             )
 
@@ -139,147 +138,191 @@ class EnergyHub:
         In case the user only cares for certain types of demand and supply, the function will set the unwanted demand and supply to 0.
 
         Finally, each timeseries is stored in a dataframe, and then stored in a dictionary, in order to be used in the calliope model.
+        TODO: Optimize the function to read the demand and supply data in parallel.
+
+        Returns:
+            None: the function stores the timeseries dataframes in the class attribute dict_timeseries_df
         """
-        get_df = EnergyHub.getTimeseriesDf  # rename for simplicity
-        demand_df = get_df(
-            path=self.locator.get_demand_results_file(building=self.name, format="csv")
-        )
+        # rename for simplicity
+        get_df = EnergyHub.getTimeseriesDf
+        app_ls = []
+        sh_ls = []
+        dhw_ls = []
+        sc_ls = []
+        pv_ls = []
+        pvt_e_ls = []
+        pvt_h_ls = []
+        scfp_ls = []
+        scet_ls = []
+        for building_name in self.names:
+            demand_df = get_df(
+                path=self.locator.get_demand_results_file(
+                    building=building_name, format="csv"
+                )
+            )
 
-        # time series data
-        # read demand data
-        # demand_df = demand_df[['E_sys_kWh', 'Qhs_sys_kWh', 'Qcs_sys_kWh', 'Qww_sys_kWh']]
-        app: pd.DataFrame = (
-            -demand_df[["E_sys_kWh"]]
-            .astype("float64")
-            .rename(columns={"E_sys_kWh": self.name})
-        )
-        sh: pd.DataFrame = (
-            -demand_df[["Qhs_sys_kWh"]]
-            .astype("float64")
-            .rename(columns={"Qhs_sys_kWh": self.name})
-        )
-        sc: pd.DataFrame = (
-            -demand_df[["Qcs_sys_kWh"]]
-            .astype("float64")
-            .rename(columns={"Qcs_sys_kWh": self.name})
-        )
-        dhw: pd.DataFrame = (
-            -demand_df[["Qww_sys_kWh"]]
-            .astype("float64")
-            .rename(columns={"Qww_sys_kWh": self.name})
-        )
-
-        # if demand not included in config.energy_hub_optimizer.evaluated_demand, set to 0
-        for demand_type in [
-            "electricity",
-            "space-heating",
-            "hot-water",
-            "space-cooling",
-        ]:
-            if demand_type not in self.config.energy_hub_optimizer.evaluated_demand:
-                if demand_type == "electricity":
-                    app[self.name] = 0
-                elif demand_type == "space-heating":
-                    sh[self.name] = 0
-                elif demand_type == "hot-water":
-                    dhw[self.name] = 0
-                elif demand_type == "space-cooling":
-                    sc[self.name] = 0
-
-        # read supply data
-        # PV
-        if "PV" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            pv_df = get_df(path=self.locator.PV_results(building=self.name))
-            pv: pd.DataFrame = (
-                pv_df[["E_PV_gen_kWh"]]
+            # time series data
+            # read demand data
+            # demand_df = demand_df[['E_sys_kWh', 'Qhs_sys_kWh', 'Qcs_sys_kWh', 'Qww_sys_kWh']]
+            app: pd.DataFrame = (
+                -demand_df[["E_sys_kWh"]]
                 .astype("float64")
-                .rename(columns={"E_PV_gen_kWh": self.name})
+                .rename(columns={"E_sys_kWh": building_name})
             )
-            # prepare intensity data, because calliope can only have one area for PV, PVT, SC to compete with.
-            # For example, if building's area is 100m2, then the intensity is the generation divided by 100.
-            # Then, from the perspective of calliope, we might have 50m2 of PV, 30m2 of PVT, 20m2 of SC.
-            # This actually means that by carefully laying out the panels on the realistic building's facade and rooftop,
-            # we can achieve 50% of the maximal PV generation, 30% of the maximal PVT generation, and 20% of the maximal SC generation.
-            pv_intensity: pd.DataFrame = pv.astype("float64") / self.area
-        else:
-            pv_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
-
-        # PVT
-        if "PVT" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            pvt_df = get_df(path=self.locator.PVT_results(building=self.name))
-            pvt_e: pd.DataFrame = (
-                pvt_df[["E_PVT_gen_kWh"]]
+            sh: pd.DataFrame = (
+                -demand_df[["Qhs_sys_kWh"]]
                 .astype("float64")
-                .rename(columns={"E_PVT_gen_kWh": self.name})
+                .rename(columns={"Qhs_sys_kWh": building_name})
             )
-            pvt_h: pd.DataFrame = (
-                pvt_df[["Q_PVT_gen_kWh"]]
+            sc: pd.DataFrame = (
+                -demand_df[["Qcs_sys_kWh"]]
                 .astype("float64")
-                .rename(columns={"Q_PVT_gen_kWh": self.name})
+                .rename(columns={"Qcs_sys_kWh": building_name})
             )
-            pvt_e_intensity: pd.DataFrame = pvt_e.astype("float64") / self.area
-            pvt_h_intensity: pd.DataFrame = pvt_h.astype("float64") / self.area
-            # because in PVT, heat comes with electricity and we can't control the ratio of heat to electricity,
-            # the heat production is set to be a scaled version of the electricity production.
-            # and this scaling factor is pvt_h_relative_intensity
-            # devide pvt_h with pvt_e element-wise to get relative intensity, which is still a dataframe.
-            # replace NaN and inf with 0s
-            df_pvt_h_relative_intensity = pvt_h_intensity.divide(
-                pvt_e_intensity[self.name], axis=0
-            ).fillna(0)
-            df_pvt_h_relative_intensity.replace(np.inf, 0, inplace=True)
-            pvt_h_relative_intensity: pd.DataFrame = df_pvt_h_relative_intensity.astype(
-                "float64"
-            )
-        else:
-            pvt_e_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
-            pvt_h_relative_intensity = pd.DataFrame(
-                0, index=app.index, columns=[self.name]
+            dhw: pd.DataFrame = (
+                -demand_df[["Qww_sys_kWh"]]
+                .astype("float64")
+                .rename(columns={"Qww_sys_kWh": building_name})
             )
 
-        # SCFP
-        if "SCFP" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            scfp_df = get_df(
-                path=self.locator.SC_results(building=self.name, panel_type="FP")
-            )  # flat panel solar collector
-            scfp: pd.DataFrame = (
-                scfp_df[["Q_SC_gen_kWh"]]
-                .astype("float64")
-                .rename(columns={"Q_SC_gen_kWh": self.name})
-            )
-            scfp_intensity: pd.DataFrame = scfp.astype("float64") / self.area
-        else:
-            scfp_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
+            # Mapping demand types to their corresponding DataFrames
+            demand_map = {
+                "electricity": app,
+                "space-heating": sh,
+                "hot-water": dhw,
+                "space-cooling": sc,
+            }
 
-        # SCET
-        if "SCET" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-            scet_df = get_df(
-                path=self.locator.SC_results(building=self.name, panel_type="ET")
-            )  # evacuated tube solar collector
-            scet: pd.DataFrame = (
-                scet_df[["Q_SC_gen_kWh"]]
-                .astype("float64")
-                .rename(columns={"Q_SC_gen_kWh": self.name})
-            )
-            scet_intensity: pd.DataFrame = scet.astype("float64") / self.area
-        else:
-            scet_intensity = pd.DataFrame(0, index=app.index, columns=[self.name])
+            # If demand not included in config.energy_hub_optimizer.evaluated_demand, set to 0
+            for demand_type, df in demand_map.items():
+                if demand_type not in self.config.energy_hub_optimizer.evaluated_demand:
+                    df[building_name] = 0
+
+            # read supply data. Note if the user don't want to evaluate a certain type of supply, probably there's also no file for that.
+            # so we need to create a dataframe with the same index as app, but with 0s manually.
+            # PV
+            if "PV" in self.config.energy_hub_optimizer.evaluated_solar_supply:
+                pv_df = get_df(path=self.locator.PV_results(building=building_name))
+                pv: pd.DataFrame = (
+                    pv_df[["E_PV_gen_kWh"]]
+                    .astype("float64")
+                    .rename(columns={"E_PV_gen_kWh": building_name})
+                )
+                # prepare intensity data, because calliope can only have one area for PV, PVT, SC to compete with.
+                # For example, if building's area is 100m2, then the intensity is the generation divided by 100.
+                # Then, from the perspective of calliope, we might have 50m2 of PV, 30m2 of PVT, 20m2 of SC.
+                # This actually means that by carefully laying out the panels on the realistic building's facade and rooftop,
+                # we can achieve 50% of the maximal PV generation, 30% of the maximal PVT generation, and 20% of the maximal SC generation.
+                pv_intensity: pd.DataFrame = pv.astype("float64") / self.area
+            else:
+                pv_intensity = pd.DataFrame(0, index=app.index, columns=[building_name])
+
+            # PVT
+            if "PVT" in self.config.energy_hub_optimizer.evaluated_solar_supply:
+                pvt_df = get_df(path=self.locator.PVT_results(building=building_name))
+                pvt_e: pd.DataFrame = (
+                    pvt_df[["E_PVT_gen_kWh"]]
+                    .astype("float64")
+                    .rename(columns={"E_PVT_gen_kWh": building_name})
+                )
+                pvt_h: pd.DataFrame = (
+                    pvt_df[["Q_PVT_gen_kWh"]]
+                    .astype("float64")
+                    .rename(columns={"Q_PVT_gen_kWh": building_name})
+                )
+                pvt_e_intensity: pd.DataFrame = pvt_e.astype("float64") / self.area
+                pvt_h_intensity: pd.DataFrame = pvt_h.astype("float64") / self.area
+                # because in PVT, heat comes with electricity and we can't control the ratio of heat to electricity,
+                # the heat production is set to be a scaled version of the electricity production.
+                # and this scaling factor is pvt_h_relative_intensity
+                # devide pvt_h with pvt_e element-wise to get relative intensity, which is still a dataframe.
+                # replace NaN and inf with 0s
+                df_pvt_h_relative_intensity = pvt_h_intensity.divide(
+                    pvt_e_intensity[building_name], axis=0
+                ).fillna(0)
+                df_pvt_h_relative_intensity.replace(np.inf, 0, inplace=True)
+                pvt_h_relative_intensity: pd.DataFrame = (
+                    df_pvt_h_relative_intensity.astype("float64")
+                )
+            else:
+                pvt_e_intensity = pd.DataFrame(
+                    0, index=app.index, columns=[building_name]
+                )
+                pvt_h_relative_intensity = pd.DataFrame(
+                    0, index=app.index, columns=[building_name]
+                )
+
+            # SCFP
+            if "SCFP" in self.config.energy_hub_optimizer.evaluated_solar_supply:
+                scfp_df = get_df(
+                    path=self.locator.SC_results(
+                        building=building_name, panel_type="FP"
+                    )
+                )  # flat panel solar collector
+                scfp: pd.DataFrame = (
+                    scfp_df[["Q_SC_gen_kWh"]]
+                    .astype("float64")
+                    .rename(columns={"Q_SC_gen_kWh": building_name})
+                )
+                scfp_intensity: pd.DataFrame = scfp.astype("float64") / self.area
+            else:
+                scfp_intensity = pd.DataFrame(
+                    0, index=app.index, columns=[building_name]
+                )
+
+            # SCET
+            if "SCET" in self.config.energy_hub_optimizer.evaluated_solar_supply:
+                scet_df = get_df(
+                    path=self.locator.SC_results(
+                        building=building_name, panel_type="ET"
+                    )
+                )  # evacuated tube solar collector
+                scet: pd.DataFrame = (
+                    scet_df[["Q_SC_gen_kWh"]]
+                    .astype("float64")
+                    .rename(columns={"Q_SC_gen_kWh": building_name})
+                )
+                scet_intensity: pd.DataFrame = scet.astype("float64") / self.area
+            else:
+                scet_intensity = pd.DataFrame(
+                    0, index=app.index, columns=[building_name]
+                )
+
+            app_ls.append(app)
+            sh_ls.append(sh)
+            dhw_ls.append(dhw)
+            sc_ls.append(sc)
+            pv_ls.append(pv_intensity)
+            pvt_e_ls.append(pvt_e_intensity)
+            pvt_h_ls.append(pvt_h_relative_intensity)
+            scfp_ls.append(scfp_intensity)
+            scet_ls.append(scet_intensity)
+
+        app_agg = pd.concat(app_ls, axis=1)
+        sh_agg = pd.concat(sh_ls, axis=1)
+        dhw_agg = pd.concat(dhw_ls, axis=1)
+        sc_agg = pd.concat(sc_ls, axis=1)
+        pv_intensity_agg = pd.concat(pv_ls, axis=1)
+        pvt_e_intensity_agg = pd.concat(pvt_e_ls, axis=1)
+        pvt_h_relative_intensity_agg = pd.concat(pvt_h_ls, axis=1)
+        scfp_intensity_agg = pd.concat(scfp_ls, axis=1)
+        scet_intensity_agg = pd.concat(scet_ls, axis=1)
 
         # add all dataframes to the dict_timeseries_df
         self.dict_timeseries_df: dict[str, pd.DataFrame] = {
-            "demand_el": app,  # kW
-            "demand_sh": sh,  # kW
-            "demand_dhw": dhw,  # kW
-            "demand_sc": sc,  # kW
-            "supply_PV": pv_intensity,  # kW/m2
-            "supply_PVT_e": pvt_e_intensity,  # kW/m2
-            "supply_PVT_h": pvt_h_relative_intensity,  # dimensionless
-            "supply_SCFP": scfp_intensity,  # kW/m2
-            "supply_SCET": scet_intensity,  # kW/m2
+            "demand_el": app_agg,  # kW
+            "demand_sh": sh_agg,  # kW
+            "demand_dhw": dhw_agg,  # kW
+            "demand_sc": sc_agg,  # kW
+            "supply_PV": pv_intensity_agg,  # kW/m2
+            "supply_PVT_e": pvt_e_intensity_agg,  # kW/m2
+            "supply_PVT_h": pvt_h_relative_intensity_agg,  # dimensionless
+            "supply_SCFP": scfp_intensity_agg,  # kW/m2
+            "supply_SCET": scet_intensity_agg,  # kW/m2
         }
 
     @classmethod
-    def getCopTimeseries(
+    def getWeatherData(
         cls, locator: cea.inputlocator.InputLocator, config: cea.config.Configuration
     ):
         """getCopTimeseries read epw file and calculate the COP of DHW and SC for each time step, and store them in a dataframe.
@@ -367,7 +410,7 @@ class EnergyHub:
             ValueError: The dataframe does not contain a 'DATE' column.
 
         Returns:
-            pd.DataFrame: dataframe that contains the whole CSV information, with the index set to 't' for its time.
+            df (pd.DataFrame): dataframe that contains the whole CSV information, with the index set to 't' for its time.
         """
         # if path ends with .csv, then read the csv file and return the dataframe
         # if ends with .dbf, read the dbf file and return the dataframe
@@ -392,166 +435,6 @@ class EnergyHub:
             raise ValueError("The dataframe does not contain a 'DATE' column.")
 
         return df
-
-    def setBuildingSpecificConfig(self):
-        """
-        Description:
-        This function sets the building specific configuration for the building model.
-        - If the building is not in the district heating area, delete the district heating technologies keys.
-        - If the building is only renovated (not rebuilt), set the original GSHP and ASHP costs to 0
-            because they are already installed.
-            Also, if they want to change to another technology, set the costs higher because
-            changing heating system in an existing building costs more.
-        - If the building is rebuilt, set the costs to normal.
-        - This function assumes that no ASHP is used for Dhw in any original buildings.
-
-        Inputs:
-        - self:                     Building object
-        - building_specific_config: calliope.AttrDict
-        - building_status:          pd.Series
-
-        Outputs:
-        - building_specific_config: calliope.AttrDict (modified)
-        """
-        name = self.name
-
-        building_status_dfs_list = [
-            pd.read_csv(
-                self.scenario_path + r"\inputs\is_disheat.csv", index_col=0
-            ),  # when the building is included in district heating zones
-            pd.read_csv(
-                self.scenario_path + r"\inputs\Rebuild.csv", index_col=0
-            ),  # when will the building be rebuilt
-            pd.read_csv(
-                self.scenario_path + r"\inputs\Renovation.csv", index_col=0
-            ),  # when will the building be renovated
-            gpd.read_file(
-                self.scenario_path + r"\inputs\building-properties\supply_systems.dbf",
-                ignore_geometry=True,
-            ).set_index("Name")[
-                ["type_hs"]
-            ],  # building's current heating system type
-        ]
-
-        # these dataframes all have index as building names
-        # we need to create a pd.Series for each building across all dataframes
-        building_status_df = pd.concat(building_status_dfs_list, axis=1).fillna(0)
-        building_status: object = building_status_df.loc[name]
-        building_status.fillna(False, inplace=True)
-        building_status["is_disheat"] = building_status["DisHeat"].astype(bool)
-        building_status["is_rebuilt"] = building_status["Rebuild"].astype(bool)
-        building_status["is_renovated"] = building_status["Renovation"].astype(bool)
-        building_status["already_GSHP"] = (
-            building_status["type_hs"] == "HVAC_HEATING_AS6"
-        )
-        building_status["already_ASHP"] = (
-            building_status["type_hs"] == "HVAC_HEATING_AS7"
-        )
-        building_status["no_heat"] = building_status["type_hs"] == "HVAC_HEATING_AS0"
-        self.building_status = building_status
-
-        # if building is not in district heating area, delete the district heating technologies keys
-        if not building_status["is_disheat"]:
-            self.calliope_config.del_key(f"locations.{self.name}.techs.DHDC_small_heat")
-            self.calliope_config.del_key(
-                f"locations.{self.name}.techs.DHDC_medium_heat"
-            )
-            self.calliope_config.del_key(f"locations.{self.name}.techs.DHDC_large_heat")
-
-        # if building is not rebuilt, set GSHP and ASHP costs higher
-        if building_status[
-            "is_rebuilt"
-        ]:  # rebuilt, so everything is possible and price is normal
-            pass
-        elif building_status[
-            "is_renovated"
-        ]:  # renovated, can do GSHP and ASHP but price higher
-            if building_status[
-                "already_GSHP"
-            ]:  # already has GSHP, only need to set ASHP price higher, and GSHP price to 0
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.purchase", 0
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.energy_cap", 0
-                )
-
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.purchase", 18086
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.energy_cap", 1360
-                )
-            elif building_status[
-                "already_ASHP"
-            ]:  # ASHP for heating no cost; but ASHP for DHW higher; also GSHP higher
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.purchase", 39934
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.energy_cap", 1316
-                )
-
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.purchase", 0
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.energy_cap", 0
-                )
-            else:  # no GSHP and no ASHP, set both to higher price
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.purchase", 39934
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.energy_cap", 1316
-                )
-
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.purchase", 18086
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.energy_cap", 1360
-                )
-        else:  # not new, so no new GSHP but new ASHP allowed; however if they are already with GSHP or ASHP, then no corresponding cost is applied
-            if building_status["already_GSHP"]:
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.purchase", 0
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.GSHP.costs.monetary.energy_cap", 0
-                )
-
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.purchase", 18086
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.energy_cap", 1360
-                )
-            elif building_status[
-                "already_ASHP"
-            ]:  # no previous GSHP, so delete GSHP keys;
-                self.calliope_config.del_key(f"locations.{self.name}.techs.GSHP")
-                self.calliope_config.del_key(
-                    f"locations.{self.name}.techs.geothermal_boreholes"
-                )
-
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.purchase", 0
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.energy_cap", 0
-                )
-            else:  # no previous GSHP and no previous ASHP, so delete GSHP keys and higher ASHP keys
-                self.calliope_config.del_key(f"locations.{self.name}.techs.GSHP")
-
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.purchase", 18086
-                )
-                self.calliope_config.set_key(
-                    f"locations.{self.name}.techs.ASHP.costs.monetary.energy_cap", 1360
-                )
-
-        del building_status_dfs_list, building_status, name
 
     def getBuildingModel(
         self, to_lp=False, to_yaml=False, obj="cost", emission_constraint=None
@@ -908,24 +791,53 @@ class EnergyHub:
     @staticmethod
     def flattenSpikes(
         df: pd.DataFrame,
-        column_name,
         percentile: float = 0.98,
         is_positive: bool = False,
-    ):
-        # first fine non-zero values of the given column of the given dataframe
-        # then calculate the 98th percentile of the non-zero values
-        # then find the index of the values that are greater than the 98th percentile
-        # then set the values of the index to the 98th percentile
-        # then return the dataframe
-        # the input dataframe should have a datetime index
-        if not is_positive:
-            df = -df
+    ) -> pd.DataFrame:
+        """
+        This function removes extreme values in the DataFrame by setting them to a lower percentile value.
 
-        nonzero_subset = df[df[column_name] != 0]
-        percentile_value = nonzero_subset[column_name].quantile(1 - percentile)
-        df.loc[df[column_name] > percentile_value, column_name] = percentile_value
+        - Currently, this will change the integral of the original timeseries.
+        - Also, the function cannot handle negative values when is_positive is True, or data with both positive and negative values.
 
-        if not is_positive:
-            df = -df
+        Args:
+            df (pd.DataFrame): dataframe that contain only numbers.
+            percentile (float, optional): The part of non-zero values that are preserved in flattening (the rest is flattened). Defaults to 0.98.
+            is_positive (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            ValueError: if not all values in the DataFrame are numbers
+            ValueError: if all columns in the DataFrame don't have at least one non-zero value
+            ValueError: if columns have both positive and negative values
+
+        Returns:
+            df (pd.DataFrame): the DataFrame with the extreme values flattened
+        """
+        # Check if all values in the DataFrame are numbers
+        if not df.applymap(lambda x: isinstance(x, (int, float))).all().all():
+            raise ValueError("All values in the DataFrame must be numbers")
+
+        # check if columns don't have both positive and negative values
+        if is_positive:
+            if not df.applymap(lambda x: x >= 0).all().all():
+                raise ValueError(
+                    "All columns in the DataFrame must have only non-negative values"
+                )
+        else:
+            if not df.applymap(lambda x: x <= 0).all().all():
+                raise ValueError(
+                    "All columns in the DataFrame must have only non-positivve values"
+                )
+
+        for column_name in df.columns:
+            if not is_positive:
+                df[column_name] = -df[column_name]
+
+            nonzero_subset = df[df[column_name] != 0]
+            percentile_value = nonzero_subset[column_name].quantile(1 - percentile)
+            df.loc[df[column_name] > percentile_value, column_name] = percentile_value
+
+            if not is_positive:
+                df[column_name] = -df[column_name]
 
         return df

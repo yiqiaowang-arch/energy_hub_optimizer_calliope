@@ -53,7 +53,7 @@ def main(config: cea.config.Configuration) -> None:
     calliope.set_log_verbosity(
         verbosity="error", include_solver_output=False, capture_warnings=False
     )
-    EnergyHub.getCopTimeseries(
+    EnergyHub.getWeatherData(
         locator, config
     )  # read epw and get COP from the weather file, in case the user wants to use temperature-dependent COP
 
