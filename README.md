@@ -80,3 +80,8 @@ To enable auto-completion for both CEA's native methods and the venv that CEA us
 ```
 C:/path/to/the/installation/folder/CityEnergyAnalyst/Dependencies/micromamba/envs/cea/python.exe
 ```
+## Licenses
+
+This project is licensed under the MIT License. Additionally, it includes components licensed under the Apache License 2.0.
+
+- [Calliope](https://github.com/calliope-project/calliope), licensed under Apache 2.0.
