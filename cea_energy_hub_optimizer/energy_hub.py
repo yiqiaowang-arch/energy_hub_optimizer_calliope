@@ -17,7 +17,9 @@ set an energy hub, with the following attributes:
 - area:                 float                           area of the building
 - location:             dict                            location of the building, with keys 'lat' and 'lon'
 - calliope_config:      calliope.AttrDict               calliope configuration object from the yaml file
-- dict_timeseries_df:   dict: [str, pd.DataFrame]       dictionary of timeseries dataframes, with keys 'demand_el', 'demand_sh', 'demand_dhw', 'demand_sc', 'supply_PV', 'supply_PVT_e', 'supply_PVT_h', 'supply_SCFP', 'supply_SCET'
+- dict_timeseries_df:   dict: [str, pd.DataFrame]       dictionary of timeseries dataframes, with keys 'demand_electricity', 
+                                                        'demand_space_heating', 'demand_hot_water', 'demand_space_cooling', 
+                                                        'supply_PV', 'supply_PVT_e', 'supply_PVT_h', 'supply_SCFP', 'supply_SCET'
 """
 
 
@@ -98,7 +100,12 @@ class EnergyHub:
 
         self.getDemandSupply()
         if self.config.energy_hub_optimizer.flatten_spike:
-            for key in ["demand_el", "demand_sh", "demand_dhw", "demand_sc"]:
+            for key in [
+                "demand_electricity",
+                "demand_space_heating",
+                "demand_hot_water",
+                "demand_space_cooling",
+            ]:
                 self.dict_timeseries_df[key] = self.flattenSpikes(
                     df=self.dict_timeseries_df[key],
                     percentile=self.config.energy_hub_optimizer.flatten_spike_percentile,
@@ -110,11 +117,11 @@ class EnergyHub:
             )
             cop_dhw = pd.DataFrame(
                 data={key: EnergyHub.epw_df["COP_dhw"].array for key in self.names},
-                index=self.dict_timeseries_df["demand_el"].index,
+                index=self.dict_timeseries_df["demand_electricity"].index,
             )
             cop_sc = pd.DataFrame(
                 data={key: EnergyHub.epw_df["COP_sc"].array for key in self.names},
-                index=self.dict_timeseries_df["demand_el"].index,
+                index=self.dict_timeseries_df["demand_electricity"].index,
             )
             # add them back to the dict_timeseries_df
             self.dict_timeseries_df["COP_dhw"] = cop_dhw
@@ -188,9 +195,9 @@ class EnergyHub:
             # Mapping demand types to their corresponding DataFrames
             demand_map = {
                 "electricity": app,
-                "space-heating": sh,
-                "hot-water": dhw,
-                "space-cooling": sc,
+                "space_heating": sh,
+                "hot_water": dhw,
+                "space_cooling": sc,
             }
 
             # If demand not included in config.energy_hub_optimizer.evaluated_demand, set to 0
@@ -310,10 +317,10 @@ class EnergyHub:
 
         # add all dataframes to the dict_timeseries_df
         self.dict_timeseries_df: dict[str, pd.DataFrame] = {
-            "demand_el": app_agg,  # kW
-            "demand_sh": sh_agg,  # kW
-            "demand_dhw": dhw_agg,  # kW
-            "demand_sc": sc_agg,  # kW
+            "demand_electricity": app_agg,  # kW
+            "demand_space_heating": sh_agg,  # kW
+            "demand_hot_water": dhw_agg,  # kW
+            "demand_space_cooling": sc_agg,  # kW
             "supply_PV": pv_intensity_agg,  # kW/m2
             "supply_PVT_e": pvt_e_intensity_agg,  # kW/m2
             "supply_PVT_h": pvt_h_relative_intensity_agg,  # dimensionless

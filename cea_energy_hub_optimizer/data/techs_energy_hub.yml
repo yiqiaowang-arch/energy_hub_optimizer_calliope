@@ -453,7 +453,7 @@ techs:
             parent: demand
             carrier: electricity
         constraints:
-            resource: df=demand_el
+            resource: df=demand_electricity
 
     # then comes SH, SC, DHW demand
     # SH demand
@@ -464,7 +464,7 @@ techs:
             parent: demand
             carrier: heat
         constraints:
-            resource: df=demand_sh
+            resource: df=demand_space_heating
 
     # SC demand
     demand_space_cooling:
@@ -474,7 +474,7 @@ techs:
             parent: demand
             carrier: cooling
         constraints:
-            resource: df=demand_sc
+            resource: df=demand_space_cooling
 
     # DHW demand
     demand_hot_water:
@@ -484,7 +484,7 @@ techs:
             parent: demand
             carrier: DHW
         constraints:
-            resource: df=demand_dhw
+            resource: df=demand_hot_water
 
     # transmission technologies
     electrical_cable:
