@@ -152,58 +152,64 @@ class EnergyHub:
         """
         # rename for simplicity
         get_df = EnergyHub.getTimeseriesDf
-        app_ls = []
-        sh_ls = []
-        dhw_ls = []
-        sc_ls = []
+        # app_ls = []
+        # sh_ls = []
+        # dhw_ls = []
+        # sc_ls = []
         pv_ls = []
         pvt_e_ls = []
         pvt_h_ls = []
         scfp_ls = []
         scet_ls = []
+
+        from cea_energy_hub_optimizer.utils import Demand
+
+        demands = Demand(self.config, self.locator, self.names)
+        app = demands.demand_dict["demand_electricity"]
+
         for building_name in self.names:
-            demand_df = get_df(
-                path=self.locator.get_demand_results_file(
-                    building=building_name, format="csv"
-                )
-            )
+            # demand_df = get_df(
+            #     path=self.locator.get_demand_results_file(
+            #         building=building_name, format="csv"
+            #     )
+            # )
 
-            # time series data
-            # read demand data
-            # demand_df = demand_df[['E_sys_kWh', 'Qhs_sys_kWh', 'Qcs_sys_kWh', 'Qww_sys_kWh']]
-            app: pd.DataFrame = (
-                -demand_df[["E_sys_kWh"]]
-                .astype("float64")
-                .rename(columns={"E_sys_kWh": building_name})
-            )
-            sh: pd.DataFrame = (
-                -demand_df[["Qhs_sys_kWh"]]
-                .astype("float64")
-                .rename(columns={"Qhs_sys_kWh": building_name})
-            )
-            sc: pd.DataFrame = (
-                -demand_df[["Qcs_sys_kWh"]]
-                .astype("float64")
-                .rename(columns={"Qcs_sys_kWh": building_name})
-            )
-            dhw: pd.DataFrame = (
-                -demand_df[["Qww_sys_kWh"]]
-                .astype("float64")
-                .rename(columns={"Qww_sys_kWh": building_name})
-            )
+            # # time series data
+            # # read demand data
+            # # demand_df = demand_df[['E_sys_kWh', 'Qhs_sys_kWh', 'Qcs_sys_kWh', 'Qww_sys_kWh']]
+            # app: pd.DataFrame = (
+            #     -demand_df[["E_sys_kWh"]]
+            #     .astype("float64")
+            #     .rename(columns={"E_sys_kWh": building_name})
+            # )
+            # sh: pd.DataFrame = (
+            #     -demand_df[["Qhs_sys_kWh"]]
+            #     .astype("float64")
+            #     .rename(columns={"Qhs_sys_kWh": building_name})
+            # )
+            # sc: pd.DataFrame = (
+            #     -demand_df[["Qcs_sys_kWh"]]
+            #     .astype("float64")
+            #     .rename(columns={"Qcs_sys_kWh": building_name})
+            # )
+            # dhw: pd.DataFrame = (
+            #     -demand_df[["Qww_sys_kWh"]]
+            #     .astype("float64")
+            #     .rename(columns={"Qww_sys_kWh": building_name})
+            # )
 
-            # Mapping demand types to their corresponding DataFrames
-            demand_map = {
-                "electricity": app,
-                "space_heating": sh,
-                "hot_water": dhw,
-                "space_cooling": sc,
-            }
+            # # Mapping demand types to their corresponding DataFrames
+            # demand_map = {
+            #     "electricity": app,
+            #     "space_heating": sh,
+            #     "hot_water": dhw,
+            #     "space_cooling": sc,
+            # }
 
-            # If demand not included in config.energy_hub_optimizer.evaluated_demand, set to 0
-            for demand_type, df in demand_map.items():
-                if demand_type not in self.config.energy_hub_optimizer.evaluated_demand:
-                    df[building_name] = 0
+            # # If demand not included in config.energy_hub_optimizer.evaluated_demand, set to 0
+            # for demand_type, df in demand_map.items():
+            #     if demand_type not in self.config.energy_hub_optimizer.evaluated_demand:
+            #         df[building_name] = 0
 
             # read supply data. Note if the user don't want to evaluate a certain type of supply, probably there's also no file for that.
             # so we need to create a dataframe with the same index as app, but with 0s manually.
@@ -295,37 +301,38 @@ class EnergyHub:
                     0, index=app.index, columns=[building_name]
                 )
 
-            app_ls.append(app)
-            sh_ls.append(sh)
-            dhw_ls.append(dhw)
-            sc_ls.append(sc)
+            # app_ls.append(app)
+            # sh_ls.append(sh)
+            # dhw_ls.append(dhw)
+            # sc_ls.append(sc)
             pv_ls.append(pv_intensity)
             pvt_e_ls.append(pvt_e_intensity)
             pvt_h_ls.append(pvt_h_relative_intensity)
             scfp_ls.append(scfp_intensity)
             scet_ls.append(scet_intensity)
 
-        app_agg = pd.concat(app_ls, axis=1)
-        sh_agg = pd.concat(sh_ls, axis=1)
-        dhw_agg = pd.concat(dhw_ls, axis=1)
-        sc_agg = pd.concat(sc_ls, axis=1)
+        # app_agg = pd.concat(app_ls, axis=1)
+        # sh_agg = pd.concat(sh_ls, axis=1)
+        # dhw_agg = pd.concat(dhw_ls, axis=1)
+        # sc_agg = pd.concat(sc_ls, axis=1)
         pv_intensity_agg = pd.concat(pv_ls, axis=1)
         pvt_e_intensity_agg = pd.concat(pvt_e_ls, axis=1)
         pvt_h_relative_intensity_agg = pd.concat(pvt_h_ls, axis=1)
         scfp_intensity_agg = pd.concat(scfp_ls, axis=1)
         scet_intensity_agg = pd.concat(scet_ls, axis=1)
 
+        supply_dict: dict[str, pd.DataFrame] = {
+            "supply_PV": pv_intensity_agg,
+            "supply_PVT_e": pvt_e_intensity_agg,
+            "supply_PVT_h": pvt_h_relative_intensity_agg,
+            "supply_SCFP": scfp_intensity_agg,
+            "supply_SCET": scet_intensity_agg,
+        }
+
         # add all dataframes to the dict_timeseries_df
         self.dict_timeseries_df: dict[str, pd.DataFrame] = {
-            "demand_electricity": app_agg,  # kW
-            "demand_space_heating": sh_agg,  # kW
-            "demand_hot_water": dhw_agg,  # kW
-            "demand_space_cooling": sc_agg,  # kW
-            "supply_PV": pv_intensity_agg,  # kW/m2
-            "supply_PVT_e": pvt_e_intensity_agg,  # kW/m2
-            "supply_PVT_h": pvt_h_relative_intensity_agg,  # dimensionless
-            "supply_SCFP": scfp_intensity_agg,  # kW/m2
-            "supply_SCET": scet_intensity_agg,  # kW/m2
+            **demands.demand_dict,
+            **supply_dict,
         }
 
     @classmethod
@@ -597,6 +604,8 @@ class EnergyHub:
                 f"cost-optimal and emission-optimal of building {self.name} have the same emission, no pareto front"
             )
             self.df_pareto = df_pareto
+            self.df_tech_cap_pareto = df_tech_cap_pareto
+            print(df_pareto)
         else:
             emission_max = df_cost["co2"]
             emission_min = df_emission["co2"]
