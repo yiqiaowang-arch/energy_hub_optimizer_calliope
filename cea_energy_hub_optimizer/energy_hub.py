@@ -2,17 +2,17 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import calliope
-import cea.inputlocator
-import cea.config
-from cea.optimization_new import districtEnergySystem
+from cea.inputlocator import InputLocator
+from cea.config import Configuration
+from cea.utilities import epwreader
 
 """ A class definition of a single-building energy hub optimization model.
 
 set an energy hub, with the following attributes:
 - name:                 str                             name of the building
-- locator:              cea.inputlocator.InputLocator   locator object has multiple methods that helps with locating certain file paths
+- locator:              InputLocator                    locator object has multiple methods that helps with locating certain file paths
 - yaml_path:            str                             path to the yaml file that contains the energy hub configuration
-- config:               cea.config.Configuration        configuration object that contains the user's input in plugin.config
+- config:               Configuration        configuration object that contains the user's input in plugin.config
 - emission_type:        str                             type of emission system, either 'HVAC_HEATING_AS1' or 'HVAC_HEATING_AS4'
 - area:                 float                           area of the building
 - location:             dict                            location of the building, with keys 'lat' and 'lon'
@@ -25,9 +25,9 @@ class EnergyHub:
     def __init__(
         self,
         name: str,
-        locator: cea.inputlocator.InputLocator,
+        locator: InputLocator,
         calliope_yaml_path: str,
-        config: cea.config.Configuration,
+        config: Configuration,
     ):
         """__init__ initializes the EnergyHub class with the given parameters.
 
@@ -35,9 +35,9 @@ class EnergyHub:
 
         Args:
             name (str): name of the building that follows CEA convention
-            locator (cea.inputlocator.InputLocator): the locator object that helps locate different files
+            locator (InputLocator): the locator object that helps locate different files
             calliope_yaml_path (str): the path to the yaml file that contains the calliope energy hub configuration
-            config (cea.config.Configuration): the configuration object that contains user inputs in plugin.config
+            config (Configuration): the configuration object that contains user inputs in plugin.config
         """
 
         self.name: str = name
@@ -322,71 +322,23 @@ class EnergyHub:
         }
 
     @classmethod
-    def getWeatherData(
-        cls, locator: cea.inputlocator.InputLocator, config: cea.config.Configuration
-    ):
-        """getCopTimeseries read epw file and calculate the COP of DHW and SC for each time step, and store them in a dataframe.
-
-        This method reads exterior temperature from the epw file, and calculates the COP of the heat pump based on the nominal COP of ASHP
-        between outdoor air at 10degC and hot water at 60degC.
-        First,exergy efficiency is calculated as the ratio of the nominal COP and Carnot COP at nominal condition.
-        Then, for every timestep, the real COP is calculated as the ratio of the EER and the Carnot COP based on its outdoor temperature.
-        Finally, the cooling COP is calculated using the same EER, but under different nominal conditions.
-        The cooling nominal condition is 30degC outdoor air and 10degC chilled water.
+    def getWeatherData(cls, locator: InputLocator, config: Configuration):
+        """
+        reads the epw file (using CEA's utility) and calculates the COP of the ASHP based on the outdoor air temperature.
 
 
         Args:
-            locator (cea.inputlocator.InputLocator): CEA's locator class, which helps locate the epw file
-            config (cea.config.Configuration): simulation config,  which contains the nominal COP of the ASHP
+            locator (InputLocator): CEA's locator class, which helps locate the epw file
+            config (Configuration): simulation config,  which contains the nominal COP of the ASHP
+
+        Returns:
+            None: the function stores the epw data in the class attribute `EnergyHub.epw_df`.
         """
         # read epw file using locator method
         epw_path = locator.get_weather_file()
 
-        columns = [
-            "year",
-            "month",
-            "day",
-            "hour",
-            "minute",
-            "datasource",
-            "drybulb_C",
-            "dewpoint_C",
-            "relhum_percent",
-            "atmos_pressure_Pa",
-            "exthorrad_Wh/m2",
-            "extdirrad_Wh/m2",
-            "horirsky_Wh/m2",
-            "glohorrad_Wh/m2",
-            "dirnorrad_Wh/m2",
-            "difhorrad_Wh/m2",
-            "glohorillum_lux",
-            "dirnorillum_lux",
-            "difhorillum_lux",
-            "zenlum_lux",
-            "winddir_deg",
-            "windspd_m/s",
-            "totskycvr_tenths",
-            "opaqskycvr_tenths",
-            "visibility_km",
-            "ceiling_hgt_m",
-            "presweathobs",
-            "presweathcodes",
-            "precip_wtr_mm",
-            "aerosol_opt_thousandths",
-            "snowdepth_cm",
-            "days_last_snow",
-            "Albedo",
-            "liq_precip_depth_mm",
-            "liq_precip_rate_Hour",
-        ]
-
         # Read the EPW file using pandas read_csv
-        epw_df = pd.read_csv(epw_path, skiprows=8, header=None, names=columns)
-
-        # Convert columns to appropriate data types
-        epw_df = epw_df.apply(pd.to_numeric, errors="ignore")
-
-        # get the app demand data for its index, and create a new df caled cop_dhw with that index and the drybulb_C column from epw_df
+        epw_df: pd.DataFrame = epwreader.epw_reader(epw_path)
 
         exergy_eff = config.energy_hub_optimizer.nominal_cop / (
             (60 + 273.15) / (60 - 10)
