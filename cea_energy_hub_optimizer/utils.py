@@ -1,48 +1,188 @@
+from hmac import new
 import pandas as pd
 from cea.utilities.epwreader import epw_reader
-from typing import Optional, Union, Iterable, List
+from typing import Optional, Union, Iterable, List, Dict
 from cea.config import Configuration
 from cea.inputlocator import InputLocator
 
 
-class Demand:
-    def __init__(self, config: Configuration, locator: InputLocator, nodes: List[str]):
+class EnergyIO:
+    def __init__(
+        self,
+        config: Configuration,
+        locator: InputLocator,
+        mapping_dict: Dict[str, str],
+        nodes: List[str],
+    ):
         self.config = config
         self.locator = locator
         self.nodes = nodes
-        self.mapping_dict = {
-            "electricity": "E_sys_kWh",
-            "space_heating": "Qhs_sys_kWh",
-            "space_cooling": "Qcs_sys_kWh",
-            "hot_water": "Qww_sys_kWh",
+        self.mapping_dict = mapping_dict
+        self.result_dict: dict[str, TimeSeriesDf] = {
+            f"{key}": TimeSeriesDf(columns=self.nodes, locator=self.locator)
+            for key in self.mapping_dict.keys()
         }
-        self.demand_dict: dict[str, TimeSeriesDf] = {
-            f"demand_{cat}": TimeSeriesDf(columns=self.nodes, locator=self.locator)
-            for cat in self.mapping_dict.keys()
-        }
-        self.get_demand()
+        self.get_energy()
 
-    def get_node_demand(self, node: str):
-        demand_path = self.locator.get_demand_results_file(node)
-        demand_df = pd.read_csv(demand_path, usecols=self.mapping_dict.values())
-        # first, check if the node is in the demand_dict value dataframes. If not, add the column to all dataframes
-        for cat in self.mapping_dict.keys():
-            if node not in self.demand_dict[f"demand_{cat}"].columns:
-                self.demand_dict[cat].add_columns(node)
+    def get_node_energy(self, node: str):
+        raise NotImplementedError(
+            "This method should be implemented in the child class"
+        )
 
-            if cat in self.config.energy_hub_optimizer.evaluated_demand:
-                self.demand_dict[f"demand_{cat}"][node] = -demand_df[
-                    self.mapping_dict[cat]
-                ].to_numpy()
-                # negative sign is used for convention, as energy demand is negative and supply is positive
-                # to_numpy() is used to avoid index mismatch, as long as the length of the dataframe is the same
-
-    def get_nodes_demand(self, nodes: List[str]):
+    def get_nodes_energy(self, nodes: List[str]):
         for node in nodes:
-            self.get_node_demand(node)
+            self.get_node_energy(node)
 
-    def get_demand(self):
-        self.get_nodes_demand(self.nodes)
+    def get_energy(self):
+        self.get_nodes_energy(self.nodes)
+
+
+class Demand(EnergyIO):
+    def __init__(self, config: Configuration, locator: InputLocator, nodes: List[str]):
+        self.mapping_dict = {
+            "demand_electricity": "E_sys_kWh",
+            "demand_space_heating": "Qhs_sys_kWh",
+            "demand_space_cooling": "Qcs_sys_kWh",
+            "demand_hot_water": "Qww_sys_kWh",
+        }
+        super().__init__(config, locator, self.mapping_dict, nodes)
+
+    def get_node_energy(self, node: str):
+        demand_path = self.locator.get_demand_results_file(building=node)
+        demand_df = pd.read_csv(demand_path, usecols=self.mapping_dict.values())
+        for key in self.mapping_dict.keys():
+            if node not in self.result_dict[key].columns:
+                self.result_dict[key].add_columns(node)
+
+            if key in self.config.energy_hub_optimizer.evaluated_demand:
+                self.result_dict[key][node] = -demand_df[
+                    self.mapping_dict[key]
+                ].to_numpy()
+
+
+class SolarEnergy(EnergyIO):
+    def __init__(
+        self,
+        config: Configuration,
+        locator: InputLocator,
+        mapping_dict: Dict[str, str],
+        nodes: List[str],
+        area: Optional[Dict[str, float]] = None,
+    ):
+        self.area = area
+        super().__init__(config, locator, mapping_dict, nodes)
+
+    def divide_by_area(self, node: str, result_key: str):
+        if self.area and node in self.area:
+            self.result_dict[result_key][node] /= self.area[node]
+
+    def get_node_energy(self, node: str):
+        raise NotImplementedError("Subclasses should implement this method.")
+
+
+class PV(SolarEnergy):
+    def __init__(
+        self,
+        config: Configuration,
+        locator: InputLocator,
+        nodes: List[str],
+        area: Optional[Dict[str, float]] = None,
+    ):
+        mapping_dict = {"supply_PV": "E_PV_gen_kWh"}
+        super().__init__(config, locator, mapping_dict, nodes, area)
+
+    def get_node_energy(self, node: str):
+        if node not in self.result_dict["supply_PV"].columns:
+            self.result_dict["supply_PV"].add_columns(node)
+
+        if "PV" in self.config.energy_hub_optimizer.evaluated_solar_supply:
+            pv_path = self.locator.PV_results(building=node)
+            pv_df = pd.read_csv(pv_path, usecols=["E_PV_gen_kWh"])
+            self.result_dict["supply_PV"][node] = pv_df["E_PV_gen_kWh"].to_numpy()
+
+        self.divide_by_area(node, "supply_PV")
+
+
+class PVT(SolarEnergy):
+    def __init__(
+        self,
+        config: Configuration,
+        locator: InputLocator,
+        nodes: List[str],
+        area: Optional[Dict[str, float]] = None,
+    ):
+        mapping_dict = {
+            "supply_PVT_e": "E_PVT_gen_kWh",
+            "supply_PVT_h": "Q_PVT_gen_kWh",
+        }
+        super().__init__(config, locator, mapping_dict, nodes, area)
+
+    def get_node_energy(self, node: str):
+        if node not in self.result_dict["supply_PVT_e"].columns:
+            self.result_dict["supply_PVT_e"].add_columns(node)
+
+        if "PVT" in self.config.energy_hub_optimizer.evaluated_solar_supply:
+            pvt_path = self.locator.PVT_results(building=node)
+            pvt_df = pd.read_csv(pvt_path, usecols=self.mapping_dict.values())
+            self.result_dict["supply_PVT_e"][node] = pvt_df["E_PVT_gen_kWh"].to_numpy()
+            self.result_dict["supply_PVT_h"][node] = (
+                pvt_df["Q_PVT_gen_kWh"].to_numpy() / pvt_df["E_PVT_gen_kWh"].to_numpy()
+            )
+
+        self.divide_by_area(node, "supply_PVT_e")
+
+
+class SC(SolarEnergy):
+    def __init__(
+        self,
+        config: Configuration,
+        locator: InputLocator,
+        nodes: List[str],
+        panel_type: str,
+        area: Optional[Dict[str, float]] = None,
+    ):
+        mapping_dict = {f"supply_SC{panel_type}": "Q_SC_gen_kWh"}
+        self.panel_type = panel_type
+        super().__init__(config, locator, mapping_dict, nodes, area)
+
+    def get_node_energy(self, node: str):
+        result_key = f"supply_SC{self.panel_type}"
+        if node not in self.result_dict[result_key].columns:
+            self.result_dict[result_key].add_columns(node)
+
+        if (
+            f"SC{self.panel_type}"
+            in self.config.energy_hub_optimizer.evaluated_solar_supply
+        ):
+            sc_path = self.locator.SC_results(building=node, panel_type=self.panel_type)
+            sc_df = pd.read_csv(sc_path, usecols=["Q_SC_gen_kWh"])
+            self.result_dict[result_key][node] = sc_df["Q_SC_gen_kWh"].to_numpy()
+
+        self.divide_by_area(node, result_key)
+
+
+class COP:
+    def __init__(self, config: Configuration, locator: InputLocator, nodes: List[str]):
+        self.config = config
+        self.cop_dict: Dict[str, TimeSeriesDf] = {
+            "cop_dhw": TimeSeriesDf(columns=nodes, locator=locator),
+            "cop_sc": TimeSeriesDf(columns=nodes, locator=locator),
+        }
+
+        epw_df = TimeSeriesDf._epw_data
+        exergy_eff = config.energy_hub_optimizer.nominal_cop / (
+            (60 + 273.15) / (60 - 10)
+        )
+
+        cop_dhw_arr = (
+            (60 + 273.15) / (60 - epw_df["drybulb_C"].to_numpy())
+        ) * exergy_eff
+        cop_sc_arr = (
+            (10 + 273.15) / (30 - epw_df["drybulb_C"].to_numpy())
+        ) * exergy_eff
+
+        self.cop_dict["cop_dhw"].loc[:, :] = cop_dhw_arr[:, None]
+        self.cop_dict["cop_sc"].loc[:, :] = cop_sc_arr[:, None]
 
 
 # define a class which is a pd dataframe, having the index as epw's timestep and index's name as "t"

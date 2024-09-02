@@ -4,7 +4,7 @@ import numpy as np
 import calliope
 from cea.inputlocator import InputLocator
 from cea.config import Configuration
-from cea.utilities import epwreader
+from cea_energy_hub_optimizer.utils import Demand, PV, PVT, SC, COP
 
 """ A class definition of a single-building energy hub optimization model.
 
@@ -98,7 +98,22 @@ class EnergyHub:
             value=(self.area + 400) * 0.5 * 0.001,
         )
 
-        self.getDemandSupply()
+        demands = Demand(self.config, self.locator, self.names)
+        PVs = PV(self.config, self.locator, self.names, {self.name: self.area})
+        PVTs = PVT(self.config, self.locator, self.names, {self.name: self.area})
+        SCETs = SC(self.config, self.locator, self.names, "ET", {self.name: self.area})
+        SCFPs = SC(self.config, self.locator, self.names, "FP", {self.name: self.area})
+        COPs = COP(self.config, self.locator, self.names)
+        # divide the supplies with self.area
+
+        self.dict_timeseries_df: dict[str, pd.DataFrame] = {
+            **demands.result_dict,
+            **PVs.result_dict,
+            **PVTs.result_dict,
+            **SCETs.result_dict,
+            **SCFPs.result_dict,
+            **COPs.cop_dict,
+        }
         if self.config.energy_hub_optimizer.flatten_spike:
             for key in [
                 "demand_electricity",
@@ -115,292 +130,14 @@ class EnergyHub:
             print(
                 "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
             )
-            cop_dhw = pd.DataFrame(
-                data={key: EnergyHub.epw_df["COP_dhw"].array for key in self.names},
-                index=self.dict_timeseries_df["demand_electricity"].index,
-            )
-            cop_sc = pd.DataFrame(
-                data={key: EnergyHub.epw_df["COP_sc"].array for key in self.names},
-                index=self.dict_timeseries_df["demand_electricity"].index,
-            )
-            # add them back to the dict_timeseries_df
-            self.dict_timeseries_df["COP_dhw"] = cop_dhw
-            self.dict_timeseries_df["COP_sc"] = cop_sc
             self.calliope_config.set_key(
                 key="techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
-                value="df=COP_dhw",
+                value="df=cop_dhw",
             )
             self.calliope_config.set_key(
                 key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
-                value="df=COP_sc",
+                value="df=cop_sc",
             )
-
-    def getDemandSupply(self):
-        """getDemandSupply generates the timeseries dataframes for demand and supply of the building from CEA's results.
-
-        This function reads the demand and supply data from the CEA's results in CEA's output folder.
-        Specificly, it reads electricity (app), space heating (sh), hot water (dhw), and space cooling (sc) demand data
-        from the demand_results.csv file, and reads PV, PVT, SCFP, SCET supply data from the corresponding results files.
-
-        In case the user only cares for certain types of demand and supply, the function will set the unwanted demand and supply to 0.
-
-        Finally, each timeseries is stored in a dataframe, and then stored in a dictionary, in order to be used in the calliope model.
-        TODO: Optimize the function to read the demand and supply data in parallel.
-
-        Returns:
-            None: the function stores the timeseries dataframes in the class attribute dict_timeseries_df
-        """
-        # rename for simplicity
-        get_df = EnergyHub.getTimeseriesDf
-        # app_ls = []
-        # sh_ls = []
-        # dhw_ls = []
-        # sc_ls = []
-        pv_ls = []
-        pvt_e_ls = []
-        pvt_h_ls = []
-        scfp_ls = []
-        scet_ls = []
-
-        from cea_energy_hub_optimizer.utils import Demand
-
-        demands = Demand(self.config, self.locator, self.names)
-        app = demands.demand_dict["demand_electricity"]
-
-        for building_name in self.names:
-            # demand_df = get_df(
-            #     path=self.locator.get_demand_results_file(
-            #         building=building_name, format="csv"
-            #     )
-            # )
-
-            # # time series data
-            # # read demand data
-            # # demand_df = demand_df[['E_sys_kWh', 'Qhs_sys_kWh', 'Qcs_sys_kWh', 'Qww_sys_kWh']]
-            # app: pd.DataFrame = (
-            #     -demand_df[["E_sys_kWh"]]
-            #     .astype("float64")
-            #     .rename(columns={"E_sys_kWh": building_name})
-            # )
-            # sh: pd.DataFrame = (
-            #     -demand_df[["Qhs_sys_kWh"]]
-            #     .astype("float64")
-            #     .rename(columns={"Qhs_sys_kWh": building_name})
-            # )
-            # sc: pd.DataFrame = (
-            #     -demand_df[["Qcs_sys_kWh"]]
-            #     .astype("float64")
-            #     .rename(columns={"Qcs_sys_kWh": building_name})
-            # )
-            # dhw: pd.DataFrame = (
-            #     -demand_df[["Qww_sys_kWh"]]
-            #     .astype("float64")
-            #     .rename(columns={"Qww_sys_kWh": building_name})
-            # )
-
-            # # Mapping demand types to their corresponding DataFrames
-            # demand_map = {
-            #     "electricity": app,
-            #     "space_heating": sh,
-            #     "hot_water": dhw,
-            #     "space_cooling": sc,
-            # }
-
-            # # If demand not included in config.energy_hub_optimizer.evaluated_demand, set to 0
-            # for demand_type, df in demand_map.items():
-            #     if demand_type not in self.config.energy_hub_optimizer.evaluated_demand:
-            #         df[building_name] = 0
-
-            # read supply data. Note if the user don't want to evaluate a certain type of supply, probably there's also no file for that.
-            # so we need to create a dataframe with the same index as app, but with 0s manually.
-            # PV
-            if "PV" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-                pv_df = get_df(path=self.locator.PV_results(building=building_name))
-                pv: pd.DataFrame = (
-                    pv_df[["E_PV_gen_kWh"]]
-                    .astype("float64")
-                    .rename(columns={"E_PV_gen_kWh": building_name})
-                )
-                # prepare intensity data, because calliope can only have one area for PV, PVT, SC to compete with.
-                # For example, if building's area is 100m2, then the intensity is the generation divided by 100.
-                # Then, from the perspective of calliope, we might have 50m2 of PV, 30m2 of PVT, 20m2 of SC.
-                # This actually means that by carefully laying out the panels on the realistic building's facade and rooftop,
-                # we can achieve 50% of the maximal PV generation, 30% of the maximal PVT generation, and 20% of the maximal SC generation.
-                pv_intensity: pd.DataFrame = pv.astype("float64") / self.area
-            else:
-                pv_intensity = pd.DataFrame(0, index=app.index, columns=[building_name])
-
-            # PVT
-            if "PVT" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-                pvt_df = get_df(path=self.locator.PVT_results(building=building_name))
-                pvt_e: pd.DataFrame = (
-                    pvt_df[["E_PVT_gen_kWh"]]
-                    .astype("float64")
-                    .rename(columns={"E_PVT_gen_kWh": building_name})
-                )
-                pvt_h: pd.DataFrame = (
-                    pvt_df[["Q_PVT_gen_kWh"]]
-                    .astype("float64")
-                    .rename(columns={"Q_PVT_gen_kWh": building_name})
-                )
-                pvt_e_intensity: pd.DataFrame = pvt_e.astype("float64") / self.area
-                pvt_h_intensity: pd.DataFrame = pvt_h.astype("float64") / self.area
-                # because in PVT, heat comes with electricity and we can't control the ratio of heat to electricity,
-                # the heat production is set to be a scaled version of the electricity production.
-                # and this scaling factor is pvt_h_relative_intensity
-                # devide pvt_h with pvt_e element-wise to get relative intensity, which is still a dataframe.
-                # replace NaN and inf with 0s
-                df_pvt_h_relative_intensity = pvt_h_intensity.divide(
-                    pvt_e_intensity[building_name], axis=0
-                ).fillna(0)
-                df_pvt_h_relative_intensity.replace(np.inf, 0, inplace=True)
-                pvt_h_relative_intensity: pd.DataFrame = (
-                    df_pvt_h_relative_intensity.astype("float64")
-                )
-            else:
-                pvt_e_intensity = pd.DataFrame(
-                    0, index=app.index, columns=[building_name]
-                )
-                pvt_h_relative_intensity = pd.DataFrame(
-                    0, index=app.index, columns=[building_name]
-                )
-
-            # SCFP
-            if "SCFP" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-                scfp_df = get_df(
-                    path=self.locator.SC_results(
-                        building=building_name, panel_type="FP"
-                    )
-                )  # flat panel solar collector
-                scfp: pd.DataFrame = (
-                    scfp_df[["Q_SC_gen_kWh"]]
-                    .astype("float64")
-                    .rename(columns={"Q_SC_gen_kWh": building_name})
-                )
-                scfp_intensity: pd.DataFrame = scfp.astype("float64") / self.area
-            else:
-                scfp_intensity = pd.DataFrame(
-                    0, index=app.index, columns=[building_name]
-                )
-
-            # SCET
-            if "SCET" in self.config.energy_hub_optimizer.evaluated_solar_supply:
-                scet_df = get_df(
-                    path=self.locator.SC_results(
-                        building=building_name, panel_type="ET"
-                    )
-                )  # evacuated tube solar collector
-                scet: pd.DataFrame = (
-                    scet_df[["Q_SC_gen_kWh"]]
-                    .astype("float64")
-                    .rename(columns={"Q_SC_gen_kWh": building_name})
-                )
-                scet_intensity: pd.DataFrame = scet.astype("float64") / self.area
-            else:
-                scet_intensity = pd.DataFrame(
-                    0, index=app.index, columns=[building_name]
-                )
-
-            # app_ls.append(app)
-            # sh_ls.append(sh)
-            # dhw_ls.append(dhw)
-            # sc_ls.append(sc)
-            pv_ls.append(pv_intensity)
-            pvt_e_ls.append(pvt_e_intensity)
-            pvt_h_ls.append(pvt_h_relative_intensity)
-            scfp_ls.append(scfp_intensity)
-            scet_ls.append(scet_intensity)
-
-        # app_agg = pd.concat(app_ls, axis=1)
-        # sh_agg = pd.concat(sh_ls, axis=1)
-        # dhw_agg = pd.concat(dhw_ls, axis=1)
-        # sc_agg = pd.concat(sc_ls, axis=1)
-        pv_intensity_agg = pd.concat(pv_ls, axis=1)
-        pvt_e_intensity_agg = pd.concat(pvt_e_ls, axis=1)
-        pvt_h_relative_intensity_agg = pd.concat(pvt_h_ls, axis=1)
-        scfp_intensity_agg = pd.concat(scfp_ls, axis=1)
-        scet_intensity_agg = pd.concat(scet_ls, axis=1)
-
-        supply_dict: dict[str, pd.DataFrame] = {
-            "supply_PV": pv_intensity_agg,
-            "supply_PVT_e": pvt_e_intensity_agg,
-            "supply_PVT_h": pvt_h_relative_intensity_agg,
-            "supply_SCFP": scfp_intensity_agg,
-            "supply_SCET": scet_intensity_agg,
-        }
-
-        # add all dataframes to the dict_timeseries_df
-        self.dict_timeseries_df: dict[str, pd.DataFrame] = {
-            **demands.demand_dict,
-            **supply_dict,
-        }
-
-    @classmethod
-    def getWeatherData(cls, locator: InputLocator, config: Configuration):
-        """
-        reads the epw file (using CEA's utility) and calculates the COP of the ASHP based on the outdoor air temperature.
-
-
-        Args:
-            locator (InputLocator): CEA's locator class, which helps locate the epw file
-            config (Configuration): simulation config,  which contains the nominal COP of the ASHP
-
-        Returns:
-            None: the function stores the epw data in the class attribute `EnergyHub.epw_df`.
-        """
-        # read epw file using locator method
-        epw_path = locator.get_weather_file()
-
-        # Read the EPW file using pandas read_csv
-        epw_df: pd.DataFrame = epwreader.epw_reader(epw_path)
-
-        exergy_eff = config.energy_hub_optimizer.nominal_cop / (
-            (60 + 273.15) / (60 - 10)
-        )
-        epw_df["COP_dhw"] = ((60 + 273.15) / (60 - epw_df["drybulb_C"])) * exergy_eff
-        epw_df["COP_sc"] = ((10 + 273.15) / (30 - epw_df["drybulb_C"])) * exergy_eff
-        cls.epw_df = epw_df
-
-    @staticmethod
-    def getTimeseriesDf(path: str) -> pd.DataFrame:
-        """
-
-        This function reads the timeseries csv files from the path, and returns a dictionary of dataframes.
-        Due to calliope requirements, the index of the dataframe is set to be datetime, and the column name is set to be the building name.
-
-        Args:
-            path (str): path to the timeseries csv or dbf file
-
-        Raises:
-            ValueError: path must end with .csv or .dbf
-            ValueError: The dataframe does not contain a 'DATE' column.
-
-        Returns:
-            df (pd.DataFrame): dataframe that contains the whole CSV information, with the index set to 't' for its time.
-        """
-        # if path ends with .csv, then read the csv file and return the dataframe
-        # if ends with .dbf, read the dbf file and return the dataframe
-
-        if path.endswith(".csv"):
-            df = pd.read_csv(path)
-        elif path.endswith(".dbf"):
-            df = gpd.read_file(path, ignore_geometry=True)
-        else:
-            raise ValueError("path must end with .csv or .dbf")
-
-        df.fillna(0, inplace=True)
-        col_mapping = {col.lower(): col for col in df.columns}
-        # this is because the date column could be 'DATE' or 'Date'
-        if "date" in col_mapping:
-            date_col = col_mapping["date"]
-            df[date_col] = pd.to_datetime(df[date_col])
-            df.set_index(date_col, inplace=True)
-            df.index = df.index.tz_localize(None)
-            df.index.rename("t", inplace=True)
-        else:
-            raise ValueError("The dataframe does not contain a 'DATE' column.")
-
-        return df
 
     def getBuildingModel(
         self, to_lp=False, to_yaml=False, obj="cost", emission_constraint=None
