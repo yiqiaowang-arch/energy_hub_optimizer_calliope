@@ -4,7 +4,7 @@ import numpy as np
 import calliope
 from cea.inputlocator import InputLocator
 from cea.config import Configuration
-from cea_energy_hub_optimizer.utils import Demand, PV, PVT, SC, COP
+from cea_energy_hub_optimizer.timeseries import Demand, PV, PVT, SC, COP
 
 """ A class definition of a single-building energy hub optimization model.
 
