@@ -40,6 +40,10 @@ class EnergyIO:
     def get_energy(self):
         self.get_nodes_energy()
 
+    def flatten_spikes(self, percentile: float = 0.98, is_positive: bool = False):
+        for key in self.result_dict.keys():
+            self.result_dict[key].flattenSpikes(percentile, is_positive)
+
 
 class Demand(EnergyIO):
     def __init__(
@@ -302,3 +306,56 @@ class TimeSeriesDf(pd.DataFrame):
                 self[column] = 0.0
             else:
                 raise ValueError(f"{column} is already in the dataframe")
+
+    def flattenSpikes(
+        self,
+        percentile: float = 0.98,
+        is_positive: bool = False,
+    ) -> pd.DataFrame:
+        """
+        This function removes extreme values in the DataFrame by setting them to a lower percentile value.
+
+        - Currently, this will change the integral of the original timeseries.
+        - Also, the function cannot handle negative values when is_positive is True, or data with both positive and negative values.
+
+        Args:
+            df (pd.DataFrame): dataframe that contain only numbers.
+            percentile (float, optional): The part of non-zero values that are preserved in flattening (the rest is flattened). Defaults to 0.98.
+            is_positive (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            ValueError: if not all values in the DataFrame are numbers
+            ValueError: if all columns in the DataFrame don't have at least one non-zero value
+            ValueError: if columns have both positive and negative values
+
+        Returns:
+            df (pd.DataFrame): the DataFrame with the extreme values flattened
+        """
+        # Check if all values in the DataFrame are numbers
+        if not self.applymap(lambda x: isinstance(x, (int, float))).all().all():
+            raise ValueError("All values in the DataFrame must be numbers")
+
+        # check if columns don't have both positive and negative values
+        if is_positive:
+            if not self.applymap(lambda x: x >= 0).all().all():
+                raise ValueError(
+                    "All columns in the DataFrame must have only non-negative values"
+                )
+        else:
+            if not self.applymap(lambda x: x <= 0).all().all():
+                raise ValueError(
+                    "All columns in the DataFrame must have only non-positivve values"
+                )
+
+        for column_name in self.columns:
+            if not is_positive:
+                self[column_name] = -self[column_name]
+
+            nonzero_subset = self[self[column_name] != 0]
+            percentile_value = nonzero_subset[column_name].quantile(1 - percentile)
+            self.loc[self[column_name] > percentile_value, column_name] = (
+                percentile_value
+            )
+
+            if not is_positive:
+                self[column_name] = -self[column_name]

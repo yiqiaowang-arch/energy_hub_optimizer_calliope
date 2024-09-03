@@ -64,7 +64,12 @@ class EnergyHub:
         SCFPs = SC(self.cea_config, self.locator, "FP", self.district)
         COPs = COP(self.cea_config, self.locator, self.district)
         # fmt: on
-        # divide the supplies with self.area
+
+        if self.cea_config.energy_hub_optimizer.flatten_spike:
+            demands.flatten_spikes(
+                percentile=self.cea_config.energy_hub_optimizer.flatten_spike_percentile,
+                is_positive=False,
+            )
 
         self.dict_timeseries_df: dict[str, pd.DataFrame] = {
             **demands.result_dict,
@@ -74,17 +79,6 @@ class EnergyHub:
             **SCFPs.result_dict,
             **COPs.cop_dict,
         }
-        if self.cea_config.energy_hub_optimizer.flatten_spike:
-            for key in [
-                "demand_electricity",
-                "demand_space_heating",
-                "demand_hot_water",
-                "demand_space_cooling",
-            ]:
-                self.dict_timeseries_df[key] = self.flattenSpikes(
-                    df=self.dict_timeseries_df[key],
-                    percentile=self.cea_config.energy_hub_optimizer.flatten_spike_percentile,
-                )
 
     def getBuildingModel(
         self, to_lp=False, to_yaml=False, obj="cost", emission_constraint=None
@@ -122,17 +116,11 @@ class EnergyHub:
         )
         if to_lp:
             model.to_lp(
-                self.store_folder
-                + "/"
-                + self.district.buildings[0].name
-                + ".lp"  # TODO: think of better naming convention
+                f"{self.store_folder}/{self.district.buildings[0].name}.lp"  # TODO: think of better naming convention
             )
         if to_yaml:
             model.save_commented_model_yaml(
-                self.store_folder
-                + "/"
-                + self.district.buildings[0].name
-                + ".yaml"  # TODO: think of better naming convention
+                f"{self.store_folder}/{self.district.buildings[0].name}.yaml"  # TODO: think of better naming convention
             )
         return model
 
@@ -215,12 +203,7 @@ class EnergyHub:
         model_emission.run()
         if to_nc:
             model_emission.to_netcdf(
-                path=self.store_folder
-                + "/"
-                + self.district.buildings[
-                    0
-                ].name  # TODO: think of better naming convention
-                + "_emission.nc"
+                f"{self.store_folder}/{self.district.buildings[0].name}_emission.nc"  # TODO: think of better naming convention
             )
         print("optimization for emission is done")
         # store the cost and emission in df_pareto
@@ -246,12 +229,7 @@ class EnergyHub:
         model_cost.run()
         if to_nc:
             model_cost.to_netcdf(
-                path=self.store_folder
-                + "/"
-                + self.district.buildings[
-                    0
-                ].name  # TODO: think of better naming convention
-                + "_cost.nc"
+                f"{self.store_folder}/{self.district.buildings[0].name}_cost.nc"  # TODO: think of better naming convention
             )
         print("optimization for cost is done")
         # store the cost and emission in df_pareto
@@ -443,57 +421,3 @@ class EnergyHub:
             model_current.get_formatted_array("energy_cap").to_pandas().iloc[0]
         )
         self.df_tech_cap_pareto.fillna(0, inplace=True)
-
-    @staticmethod
-    def flattenSpikes(
-        df: pd.DataFrame,
-        percentile: float = 0.98,
-        is_positive: bool = False,
-    ) -> pd.DataFrame:
-        """
-        This function removes extreme values in the DataFrame by setting them to a lower percentile value.
-
-        - Currently, this will change the integral of the original timeseries.
-        - Also, the function cannot handle negative values when is_positive is True, or data with both positive and negative values.
-
-        Args:
-            df (pd.DataFrame): dataframe that contain only numbers.
-            percentile (float, optional): The part of non-zero values that are preserved in flattening (the rest is flattened). Defaults to 0.98.
-            is_positive (bool, optional): _description_. Defaults to False.
-
-        Raises:
-            ValueError: if not all values in the DataFrame are numbers
-            ValueError: if all columns in the DataFrame don't have at least one non-zero value
-            ValueError: if columns have both positive and negative values
-
-        Returns:
-            df (pd.DataFrame): the DataFrame with the extreme values flattened
-        """
-        # Check if all values in the DataFrame are numbers
-        if not df.applymap(lambda x: isinstance(x, (int, float))).all().all():
-            raise ValueError("All values in the DataFrame must be numbers")
-
-        # check if columns don't have both positive and negative values
-        if is_positive:
-            if not df.applymap(lambda x: x >= 0).all().all():
-                raise ValueError(
-                    "All columns in the DataFrame must have only non-negative values"
-                )
-        else:
-            if not df.applymap(lambda x: x <= 0).all().all():
-                raise ValueError(
-                    "All columns in the DataFrame must have only non-positivve values"
-                )
-
-        for column_name in df.columns:
-            if not is_positive:
-                df[column_name] = -df[column_name]
-
-            nonzero_subset = df[df[column_name] != 0]
-            percentile_value = nonzero_subset[column_name].quantile(1 - percentile)
-            df.loc[df[column_name] > percentile_value, column_name] = percentile_value
-
-            if not is_positive:
-                df[column_name] = -df[column_name]
-
-        return df
