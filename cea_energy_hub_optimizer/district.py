@@ -1,6 +1,5 @@
 import pandas as pd
 import geopandas as gpd
-from os import PathLike
 from typing import List, Union, Optional
 from calliope import AttrDict
 from cea.inputlocator import InputLocator
@@ -58,7 +57,7 @@ class District:
         cea_config: Configuration,
         locator: InputLocator,
         building_names: Union[str, List[str]],
-        yml_path: PathLike,
+        yml_path: str,
     ):
         if isinstance(building_names, str):
             building_names = [building_names]
@@ -83,10 +82,10 @@ class District:
             self.locator.get_building_air_conditioning(), ignore_geometry=True
         )
         air_conditioning.set_index("Name", inplace=True)
-        self.zone: gpd.GeoDataFrame = zone.loc[self.buildings_names]
-        self.air_conditioning: pd.DataFrame = air_conditioning.loc[self.buildings_names]
+        self.zone = zone.loc[self.buildings_names]
+        self.air_conditioning = air_conditioning.loc[self.buildings_names]
 
-    def _get_techs_from_yaml(self, yml_path: PathLike):
+    def _get_techs_from_yaml(self, yml_path: str):
         self.tech_dict = TechAttrDict(
             cea_config=self.cea_config, locator=self.locator, yml_path=yml_path
         )
@@ -103,14 +102,12 @@ class District:
         self.tech_dict._add_locations_from_building(building)
 
     @property
-    def buildings_names(self):
+    def buildings_names(self) -> List[str]:
         return [building.name for building in self.buildings]
 
 
 class TechAttrDict(AttrDict):
-    def __init__(
-        self, cea_config: Configuration, locator: InputLocator, yml_path: PathLike
-    ):
+    def __init__(self, cea_config: Configuration, locator: InputLocator, yml_path: str):
         # Initialize the AttrDict part
         super().__init__()
 

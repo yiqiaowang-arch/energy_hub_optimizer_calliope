@@ -1,11 +1,9 @@
 import pandas as pd
 from cea.utilities.epwreader import epw_reader
-from typing import Optional, Union, Iterable, List, Dict, TYPE_CHECKING
+from typing import Optional, Union, Iterable, Dict
 from cea.config import Configuration
 from cea.inputlocator import InputLocator
-
-if TYPE_CHECKING:
-    from cea.config import CalliopeConfig, Building
+from cea_energy_hub_optimizer.district import District, Building
 
 
 class EnergyIO:
@@ -14,16 +12,15 @@ class EnergyIO:
         cea_config: Configuration,
         locator: InputLocator,
         mapping_dict: Dict[str, str],
-        calliope_config: "CalliopeConfig",
+        district: District,
     ):
         self.cea_config = cea_config
         self.locator = locator
-        self.calliope_config = calliope_config
+        self.district = district
         self.mapping_dict = mapping_dict
-        self.buildings: List["Building"] = self.calliope_config.district.buildings
         self.result_dict: dict[str, TimeSeriesDf] = {
             f"{key}": TimeSeriesDf(
-                columns=[building.name for building in self.buildings],
+                columns=self.district.buildings_names,
                 locator=self.locator,
             )
             for key in self.mapping_dict.keys()
@@ -37,7 +34,7 @@ class EnergyIO:
         )
 
     def get_nodes_energy(self):
-        for building in self.buildings:
+        for building in self.district.buildings:
             self.get_node_energy(building)
 
     def get_energy(self):
@@ -49,7 +46,7 @@ class Demand(EnergyIO):
         self,
         cea_config: Configuration,
         locator: InputLocator,
-        calliope_config: "CalliopeConfig",
+        district: District,
     ):
         self.mapping_dict = {
             "demand_electricity": "E_sys_kWh",
@@ -57,7 +54,7 @@ class Demand(EnergyIO):
             "demand_space_cooling": "Qcs_sys_kWh",
             "demand_hot_water": "Qww_sys_kWh",
         }
-        super().__init__(cea_config, locator, self.mapping_dict, calliope_config)
+        super().__init__(cea_config, locator, self.mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         demand_path = self.locator.get_demand_results_file(building=building.name)
@@ -78,14 +75,12 @@ class SolarEnergy(EnergyIO):
         cea_config: Configuration,
         locator: InputLocator,
         mapping_dict: Dict[str, str],
-        calliope_config: "CalliopeConfig",
+        district: District,
     ):
-        super().__init__(cea_config, locator, mapping_dict, calliope_config)
+        super().__init__(cea_config, locator, mapping_dict, district)
 
     def divide_by_area(self, result_key: str):
-        # if self.area and node in self.area:
-        #     self.result_dict[result_key][node] /= self.area[node]
-        for building in self.buildings:
+        for building in self.district.buildings:
             self.result_dict[result_key][building.name] /= building.area
 
     def get_node_energy(self, node: str):
@@ -97,10 +92,10 @@ class PV(SolarEnergy):
         self,
         cea_config: Configuration,
         locator: InputLocator,
-        calliope_config: "CalliopeConfig",
+        district: District,
     ):
         mapping_dict = {"supply_PV": "E_PV_gen_kWh"}
-        super().__init__(cea_config, locator, mapping_dict, calliope_config)
+        super().__init__(cea_config, locator, mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         if building.name not in self.result_dict["supply_PV"].columns:
@@ -121,13 +116,13 @@ class PVT(SolarEnergy):
         self,
         cea_config: Configuration,
         locator: InputLocator,
-        calliope_config: "CalliopeConfig",
+        district: District,
     ):
         mapping_dict = {
             "supply_PVT_e": "E_PVT_gen_kWh",
             "supply_PVT_h": "Q_PVT_gen_kWh",
         }
-        super().__init__(cea_config, locator, mapping_dict, calliope_config)
+        super().__init__(cea_config, locator, mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         if building.name not in self.result_dict["supply_PVT_e"].columns:
@@ -152,11 +147,11 @@ class SC(SolarEnergy):
         cea_config: Configuration,
         locator: InputLocator,
         panel_type: str,
-        calliope_config: "CalliopeConfig",
+        district: District,
     ):
         mapping_dict = {f"supply_SC{panel_type}": "Q_SC_gen_kWh"}
         self.panel_type = panel_type
-        super().__init__(cea_config, locator, mapping_dict, calliope_config)
+        super().__init__(cea_config, locator, mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         result_key = f"supply_SC{self.panel_type}"
@@ -183,15 +178,12 @@ class COP:
         self,
         cea_config: Configuration,
         locator: InputLocator,
-        calliope_config: "CalliopeConfig",
+        district: District,
     ):
-        building_names = [
-            building.name for building in calliope_config.district.buildings
-        ]
         self.cea_config = cea_config
         self.cop_dict: Dict[str, TimeSeriesDf] = {
-            "cop_dhw": TimeSeriesDf(columns=building_names, locator=locator),
-            "cop_sc": TimeSeriesDf(columns=building_names, locator=locator),
+            "cop_dhw": TimeSeriesDf(columns=district.buildings_names, locator=locator),
+            "cop_sc": TimeSeriesDf(columns=district.buildings_names, locator=locator),
         }
 
         epw_df = TimeSeriesDf._epw_data

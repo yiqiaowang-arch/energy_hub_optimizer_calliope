@@ -5,7 +5,7 @@ from typing import Union, List
 from cea.inputlocator import InputLocator
 from cea.config import Configuration
 from cea_energy_hub_optimizer.timeseries import Demand, PV, PVT, SC, COP
-from cea_energy_hub_optimizer.config_gen import District
+from cea_energy_hub_optimizer.district import District
 
 """ A class definition of a single-building energy hub optimization model.
 
@@ -57,12 +57,12 @@ class EnergyHub:
             self.district.tech_dict.set_cop_timeseries()
 
         # fmt: off
-        demands = Demand(self.cea_config, self.locator, self.district.tech_dict)
-        PVs = PV(self.cea_config, self.locator, self.district.tech_dict)
-        PVTs = PVT(self.cea_config, self.locator, self.district.tech_dict)
-        SCETs = SC(self.cea_config, self.locator, "ET", self.district.tech_dict)
-        SCFPs = SC(self.cea_config, self.locator, "FP", self.district.tech_dict)
-        COPs = COP(self.cea_config, self.locator, self.district.tech_dict)
+        demands = Demand(self.cea_config, self.locator, self.district)
+        PVs = PV(self.cea_config, self.locator, self.district)
+        PVTs = PVT(self.cea_config, self.locator, self.district)
+        SCETs = SC(self.cea_config, self.locator, "ET", self.district)
+        SCFPs = SC(self.cea_config, self.locator, "FP", self.district)
+        COPs = COP(self.cea_config, self.locator, self.district)
         # fmt: on
         # divide the supplies with self.area
 
