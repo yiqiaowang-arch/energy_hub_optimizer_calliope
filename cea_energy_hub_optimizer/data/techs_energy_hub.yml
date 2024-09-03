@@ -38,32 +38,32 @@ run:
 
 
 # set locations
-locations:
-    Building: # in the script, this key name will be changed to the actual building name. e.g. Building -> B10001
-        techs: # list of the technologies available for this particular building
-            grid:
-            wood_supply:
-            DHDC_small_heat:
-            # DHDC_small_cooling:
-            DHDC_medium_heat:
-            # DHDC_medium_cooling:
-            DHDC_large_heat:
-            # DHDC_large_cooling:
-            wood_boiler:
-            PV:
-            SCFP:
-            SCET:
-            DHW_to_heat:
-            ASHP:
-            GSHP:
-            battery:
-            DHW_storage:
-            heat_storage:
-            demand_electricity:
-            demand_space_heating:
-            demand_space_cooling:
-            demand_hot_water:
-        available_area: # m2, leave blank because this will be overwritten later in the script
+# locations:
+    # Building: # in the script, this key name will be changed to the actual building name. e.g. Building -> B10001
+    #     techs: # list of the technologies available for this particular building
+    #         grid:
+    #         wood_supply:
+    #         DHDC_small_heat:
+    #         # DHDC_small_cooling:
+    #         DHDC_medium_heat:
+    #         # DHDC_medium_cooling:
+    #         DHDC_large_heat:
+    #         # DHDC_large_cooling:
+    #         wood_boiler:
+    #         PV:
+    #         SCFP:
+    #         SCET:
+    #         DHW_to_heat:
+    #         ASHP:
+    #         GSHP:
+    #         battery:
+    #         DHW_storage:
+    #         heat_storage:
+    #         demand_electricity:
+    #         demand_space_heating:
+    #         demand_space_cooling:
+    #         demand_hot_water:
+    #     available_area: # m2, leave blank because this will be overwritten later in the script
 
 techs:
     # supply technologies
@@ -125,26 +125,26 @@ techs:
             co2:
                 om_prod: 0.046 # CO2 emission, kg/kWh
                 om_annual: 0.001 # have this just to avoid too big sizing
-    DHDC_small_cooling: #
-        essentials:
-            name: 'DC small'
-            color: '#E37A72'
-            parent: supply
-            carrier_out: cooling
-        constraints:
-            energy_eff: 1
-            energy_cap_min: 50 # kW
-            energy_cap_max: 100 # kW
-            lifetime: 30
-        costs:
-            monetary:
-                interest_rate: 0.05
-                om_prod: 0.037 # cooling price, CHF/kWh
-                om_annual: 131 # yearly maintenance cost based on energy (power) capacity
-                # no additional CAPEX because DH can also provide DC.
-            co2:
-                om_prod: 0.046 # CO2 emission, kg/kWh
-                om_annual: 0.001 # have this just to avoid too big sizing
+    # DHDC_small_cooling: #
+    #     essentials:
+    #         name: 'DC small'
+    #         color: '#E37A72'
+    #         parent: supply
+    #         carrier_out: cooling
+    #     constraints:
+    #         energy_eff: 1
+    #         energy_cap_min: 50 # kW
+    #         energy_cap_max: 100 # kW
+    #         lifetime: 30
+    #     costs:
+    #         monetary:
+    #             interest_rate: 0.05
+    #             om_prod: 0.037 # cooling price, CHF/kWh
+    #             om_annual: 131 # yearly maintenance cost based on energy (power) capacity
+    #             # no additional CAPEX because DH can also provide DC.
+    #         co2:
+    #             om_prod: 0.046 # CO2 emission, kg/kWh
+    #             om_annual: 0.001 # have this just to avoid too big sizing
     DHDC_medium_heat:
         essentials:
             name: 'DH medium'
@@ -166,27 +166,27 @@ techs:
             co2:
                 om_prod: 0.046 # CO2 emission, kg/kWh
                 om_annual: 0.0011 # have this just to avoid too big sizing
-    DHDC_medium_cooling:
-        essentials:
-            name: 'DC medium'
-            color: '#E37A72'
-            parent: supply
-            carrier_out: cooling
-        constraints:
-            energy_eff: 1
-            energy_cap_min: 100 # kW
-            energy_cap_max: 700 # kW
-            lifetime: 30
-        costs:
-            monetary:
-                interest_rate: 0.05
-                # energy_cap: 115 # CHF/kW
-                om_prod: 0.037 # heat/cooling price, CHF/kWh
-                # purchase: 29589 # CHF/device
-                om_annual: 131
-            co2:
-                om_prod: 0.046 # CO2 emission, kg/kWh
-                om_annual: 0.0011 # have this just to avoid too big sizing
+    # DHDC_medium_cooling:
+    #     essentials:
+    #         name: 'DC medium'
+    #         color: '#E37A72'
+    #         parent: supply
+    #         carrier_out: cooling
+    #     constraints:
+    #         energy_eff: 1
+    #         energy_cap_min: 100 # kW
+    #         energy_cap_max: 700 # kW
+    #         lifetime: 30
+    #     costs:
+    #         monetary:
+    #             interest_rate: 0.05
+    #             # energy_cap: 115 # CHF/kW
+    #             om_prod: 0.037 # heat/cooling price, CHF/kWh
+    #             # purchase: 29589 # CHF/device
+    #             om_annual: 131
+    #         co2:
+    #             om_prod: 0.046 # CO2 emission, kg/kWh
+    #             om_annual: 0.0011 # have this just to avoid too big sizing
     DHDC_large_heat: #
         essentials:
             name: 'DH large'
@@ -208,27 +208,27 @@ techs:
             co2:
                 om_prod: 0.046 # CO2 emission, kg/kWh
                 om_annual: 0.0012 # have this just to avoid too big sizing
-    DHDC_large_cooling: #
-        essentials:
-            name: 'DC large'
-            color: '#E37A72'
-            parent: supply
-            carrier_out: cooling
-        constraints:
-            energy_eff: 1
-            energy_cap_min: 700 # kW
-            energy_cap_max: 2000 # kW
-            lifetime: 30
-        costs:
-            monetary:
-                interest_rate: 0.05
-                # energy_cap: 65 # CHF/kW
-                om_prod: 0.037 # heat/cooling price, CHF/kWh
-                # purchase: 66851 # CHF/device
-                om_annual: 131
-            co2:
-                om_prod: 0.046 # CO2 emission, kg/kWh
-                om_annual: 0.0012 # have this just to avoid too big sizing
+    # DHDC_large_cooling: #
+    #     essentials:
+    #         name: 'DC large'
+    #         color: '#E37A72'
+    #         parent: supply
+    #         carrier_out: cooling
+    #     constraints:
+    #         energy_eff: 1
+    #         energy_cap_min: 700 # kW
+    #         energy_cap_max: 2000 # kW
+    #         lifetime: 30
+    #     costs:
+    #         monetary:
+    #             interest_rate: 0.05
+    #             # energy_cap: 65 # CHF/kW
+    #             om_prod: 0.037 # heat/cooling price, CHF/kWh
+    #             # purchase: 66851 # CHF/device
+    #             om_annual: 131
+    #         co2:
+    #             om_prod: 0.046 # CO2 emission, kg/kWh
+    #             om_annual: 0.0012 # have this just to avoid too big sizing
     wood_boiler:
         essentials:
             name: 'Wood boiler DHW'
@@ -486,42 +486,50 @@ techs:
         constraints:
             resource: df=demand_hot_water
 
-    # transmission technologies
-    electrical_cable:
-        essentials:
-            name: 'Electrical cable'
-            color: '#000000'
-            parent: transmission
-            carrier: electricity
-        constraints:
-            energy_con: True
-            energy_prod: True
-        costs:
-            monetary:
-                purchase_per_distance: 10 # USD/m
+    # # transmission technologies
+    # electrical_cable:
+    #     essentials:
+    #         name: 'Electrical cable'
+    #         color: '#000000'
+    #         parent: transmission
+    #         carrier: electricity
+    #     constraints:
+    #         energy_con: True
+    #         energy_prod: True
+    #         lifetime: 1
+    #     costs:
+    #         monetary:
+    #             purchase_per_distance: 10 # USD/m
+    #             interest_rate: 0
                 
-    hot_water_pipe:
-        essentials:
-            name: 'Hot water pipe'
-            color: '#000000'
-            parent: transmission
-            carrier: DHW
-        constraints:
-            energy_con: True
-            energy_prod: True
-        costs:
-            monetary:
-                purchase_per_distance: 10 # USD/m
+    # hot_water_pipe:
+    #     essentials:
+    #         name: 'Hot water pipe'
+    #         color: '#000000'
+    #         parent: transmission
+    #         carrier: DHW
+    #     constraints:
+    #         energy_con: True
+    #         energy_prod: True
+    #         lifetime: 1
+    #         interest_rate: 0
+    #     costs:
+    #         monetary:
+    #             purchase_per_distance: 10 # USD/m
+    #             interest_rate: 0
 
-    cold_water_pipe:
-        essentials:
-            name: 'Cold water pipe'
-            color: '#000000'
-            parent: transmission
-            carrier: cooling
-        constraints:
-            energy_con: True
-            energy_prod: True
-        costs:
-            monetary:
-                purchase_per_distance: 10 # USD/m
+    # cold_water_pipe:
+    #     essentials:
+    #         name: 'Cold water pipe'
+    #         color: '#000000'
+    #         parent: transmission
+    #         carrier: cooling
+    #     constraints:
+    #         energy_con: True
+    #         energy_prod: True
+    #         lifetime: 1
+    #         interest_rate: 0
+    #     costs:
+    #         monetary:
+    #             purchase_per_distance: 10 # USD/m
+    #             interest_rate: 0

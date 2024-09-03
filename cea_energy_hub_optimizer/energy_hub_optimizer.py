@@ -64,7 +64,10 @@ def main(config: cea.config.Configuration) -> None:
             continue
 
         energy_hub = EnergyHub(
-            name=building, locator=locator, calliope_yaml_path=yaml_path, config=config
+            buildings=building_name,
+            locator=locator,
+            calliope_yaml_path=yaml_path,
+            config=config,
         )
 
         energy_hub.getParetoFront(

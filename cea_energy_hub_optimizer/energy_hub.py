@@ -1,10 +1,11 @@
-import geopandas as gpd
 import pandas as pd
 import numpy as np
 import calliope
+from typing import Union, List
 from cea.inputlocator import InputLocator
 from cea.config import Configuration
 from cea_energy_hub_optimizer.timeseries import Demand, PV, PVT, SC, COP
+from cea_energy_hub_optimizer.config_gen import District, CalliopeConfig
 
 """ A class definition of a single-building energy hub optimization model.
 
@@ -26,7 +27,7 @@ set an energy hub, with the following attributes:
 class EnergyHub:
     def __init__(
         self,
-        name: str,
+        buildings: Union[str, List[str]],
         locator: InputLocator,
         calliope_yaml_path: str,
         config: Configuration,
@@ -41,69 +42,81 @@ class EnergyHub:
             calliope_yaml_path (str): the path to the yaml file that contains the calliope energy hub configuration
             config (Configuration): the configuration object that contains user inputs in plugin.config
         """
-
-        self.name: str = name
-        self.names = [
-            name
-        ]  # for compatibility between the single building model and the district model
+        self.cea_config = config
         self.locator = locator
-        # locator.scenario returns a str of the scenario path, which includes /inputs and /outputs
-        self.calliope_config: calliope.AttrDict = calliope.AttrDict.from_yaml(
-            calliope_yaml_path
+        self.district = District(config, locator, buildings)
+        self.calliope_config = CalliopeConfig(config, locator, calliope_yaml_path)
+        self.calliope_config.add_techs_from_district(self.district)
+        self.calliope_config.set_temporal_resolution(
+            self.cea_config.energy_hub_optimizer.temporal_resolution
         )
-        self.config = config
-        calliope.set_log_verbosity(
-            verbosity="error", include_solver_output=False, capture_warnings=False
-        )
+        self.calliope_config.set_solver(self.cea_config.energy_hub_optimizer.solver)
+        self.calliope_config.set_wood_availaility(extra_area=400, energy_density=0.5)
+        # self.calliope_config.select_evaluated_demand()
+        # self.calliope_config.select_evaluated_solar_supply()
+        if self.cea_config.energy_hub_optimizer.temperature_sensitive_cop:
+            self.calliope_config.set_cop_timeseries()
+
+        # self.name: str = name
+        # self.names = [
+        #     name
+        # ]  # for compatibility between the single building model and the district model
+        # self.locator = locator
+        # # locator.scenario returns a str of the scenario path, which includes /inputs and /outputs
+        # self.calliope_config: calliope.AttrDict = calliope.AttrDict.from_yaml(
+        #     calliope_yaml_path
+        # )
+        # self.cea_config = config
 
         # get type of emission system
         # emission_dict = {'HVAC_HEATING_AS1': 80, # radiator, needs high supply temperature
         #                  'HVAC_HEATING_AS4': 45  # floor heating, needs low supply temperature
         #                  } # output temperature of the heating emission system
-        air_conditioning_df: pd.DataFrame = gpd.read_file(
-            self.locator.get_building_air_conditioning(), ignore_geometry=True
-        )
-        air_conditioning_df.set_index(keys="Name", inplace=True)
-        self.emission_type: str = str(air_conditioning_df.loc[self.name, "type_hs"])
-        # self.emission_temp: int = emission_dict[self.emission_type]
+        # air_conditioning_df: pd.DataFrame = gpd.read_file(
+        #     self.locator.get_building_air_conditioning(), ignore_geometry=True
+        # )
+        # air_conditioning_df.set_index(keys="Name", inplace=True)
+        # self.emission_type: str = str(air_conditioning_df.loc[self.name, "type_hs"])
+        # # self.emission_temp: int = emission_dict[self.emission_type]
 
-        # get building area
-        zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
-        zone.index = zone["Name"]
-        self.area: float = zone.loc[self.name, "geometry"].area
-        self.location: dict[str, float] = {
-            "lat": float(zone.loc[self.name, "geometry"].centroid.y),
-            "lon": float(zone.loc[self.name, "geometry"].centroid.x),
-        }
+        # # get building area
+        # zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
+        # zone.index = zone["Name"]
+        # self.area: float = zone.loc[self.name, "geometry"].area
+        # self.location: dict[str, float] = {
+        #     "lat": float(zone.loc[self.name, "geometry"].centroid.y),
+        #     "lon": float(zone.loc[self.name, "geometry"].centroid.x),
+        # }
 
-        # set temporal resolution
-        self.calliope_config.set_key(
-            key="model.time.function_options.resolution",
-            value=self.config.energy_hub_optimizer.temporal_resolution,
-        )
+        # # set temporal resolution
+        # self.calliope_config.set_key(
+        #     key="model.time.function_options.resolution",
+        #     value=self.config.energy_hub_optimizer.temporal_resolution,
+        # )
 
-        building_sub_dict_temp: calliope.AttrDict = self.calliope_config[
-            "locations"
-        ].pop("Building")
-        self.calliope_config["locations"][self.name] = building_sub_dict_temp
-        del building_sub_dict_temp
+        # building_sub_dict_temp: calliope.AttrDict = self.calliope_config[
+        #     "locations"
+        # ].pop("Building")
+        # self.calliope_config["locations"][self.name] = building_sub_dict_temp
+        # del building_sub_dict_temp
 
         # set solver
-        self.calliope_config.set_key(
-            key="run.solver", value=self.config.energy_hub_optimizer.solver
-        )
+        # self.calliope_config.set_key(
+        #     key="run.solver", value=self.config.energy_hub_optimizer.solver
+        # )
         # constarin wood supply to 0.5kWh/m2 of the building area + 400m2 surroundings
-        self.calliope_config.set_key(
-            key=f"locations.{self.name}.techs.wood_supply.constraints.energy_cap_max",
-            value=(self.area + 400) * 0.5 * 0.001,
-        )
-
-        demands = Demand(self.config, self.locator, self.names)
-        PVs = PV(self.config, self.locator, self.names, {self.name: self.area})
-        PVTs = PVT(self.config, self.locator, self.names, {self.name: self.area})
-        SCETs = SC(self.config, self.locator, self.names, "ET", {self.name: self.area})
-        SCFPs = SC(self.config, self.locator, self.names, "FP", {self.name: self.area})
-        COPs = COP(self.config, self.locator, self.names)
+        # self.calliope_config.set_key(
+        #     key=f"locations.{self.name}.techs.wood_supply.constraints.energy_cap_max",
+        #     value=(self.area + 400) * 0.5 * 0.001,
+        # )
+        # fmt: off
+        demands = Demand(self.cea_config, self.locator, self.calliope_config)
+        PVs = PV(self.cea_config, self.locator, self.calliope_config)
+        PVTs = PVT(self.cea_config, self.locator, self.calliope_config)
+        SCETs = SC(self.cea_config, self.locator, "ET", self.calliope_config)
+        SCFPs = SC(self.cea_config, self.locator, "FP", self.calliope_config)
+        COPs = COP(self.cea_config, self.locator, self.calliope_config)
+        # fmt: on
         # divide the supplies with self.area
 
         self.dict_timeseries_df: dict[str, pd.DataFrame] = {
@@ -114,7 +127,7 @@ class EnergyHub:
             **SCFPs.result_dict,
             **COPs.cop_dict,
         }
-        if self.config.energy_hub_optimizer.flatten_spike:
+        if self.cea_config.energy_hub_optimizer.flatten_spike:
             for key in [
                 "demand_electricity",
                 "demand_space_heating",
@@ -123,21 +136,20 @@ class EnergyHub:
             ]:
                 self.dict_timeseries_df[key] = self.flattenSpikes(
                     df=self.dict_timeseries_df[key],
-                    percentile=self.config.energy_hub_optimizer.flatten_spike_percentile,
+                    percentile=self.cea_config.energy_hub_optimizer.flatten_spike_percentile,
                 )
 
-        if self.config.energy_hub_optimizer.temperature_sensitive_cop:
-            print(
-                "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
-            )
-            self.calliope_config.set_key(
-                key="techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
-                value="df=cop_dhw",
-            )
-            self.calliope_config.set_key(
-                key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
-                value="df=cop_sc",
-            )
+            # print(
+            #     "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
+            # )
+            # self.calliope_config.set_key(
+            #     key="techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
+            #     value="df=cop_dhw",
+            # )
+            # self.calliope_config.set_key(
+            #     key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
+            #     value="df=cop_sc",
+            # )
 
     def getBuildingModel(
         self, to_lp=False, to_yaml=False, obj="cost", emission_constraint=None
@@ -159,62 +171,44 @@ class EnergyHub:
         Model:                      calliope.Model, the optimized model
         """
 
-        # modify the self.calliope_config to match the building's status
-        self.calliope_config.set_key(
-            key=f"locations.{self.name}.available_area", value=self.area
-        )
-        print(
-            "the area of building "
-            + self.name
-            + " is "
-            + str(round(self.area, 1))
-            + " m2"
-        )
+        # # modify the self.calliope_config to match the building's status
+        # self.calliope_config.set_key(
+        #     key=f"locations.{self.name}.available_area", value=self.area
+        # )
+        # print(
+        #     "the area of building "
+        #     + self.name
+        #     + " is "
+        #     + str(round(self.area, 1))
+        #     + " m2"
+        # )
 
         # if emission constraint is not None, add it to the self.calliope_config
-        if emission_constraint is not None:
-            self.calliope_config.set_key(
-                key="group_constraints.systemwide_co2_cap.cost_max.co2",
-                value=emission_constraint,
-            )
+        if emission_constraint is None:
+            if bool(self.calliope_config.get_global_max_co2()):  # if exists, delete it
+                self.calliope_config.set_global_max_co2(None)
         else:
+            self.calliope_config.set_global_max_co2(emission_constraint)
             # check if the emission constraint is already in the config, if so, delete it
-            if bool(
-                self.calliope_config.get_key(
-                    "group_constraints.systemwide_co2_cap.cost_max.co2"
-                )
-            ):
-                self.calliope_config.set_key(
-                    key="group_constraints.systemwide_co2_cap.cost_max.co2", value=None
-                )
 
-        # if obj is cost, set the objective to be cost; if obj is emission, set the objective to be emission
-        if obj == "cost":
-            self.calliope_config.set_key(
-                key="run.objective_options.cost_class.monetary", value=1
-            )
-            self.calliope_config.set_key(
-                key="run.objective_options.cost_class.co2", value=0
-            )
-        elif obj == "emission":
-            self.calliope_config.set_key(
-                key="run.objective_options.cost_class.monetary", value=0
-            )
-            self.calliope_config.set_key(
-                key="run.objective_options.cost_class.co2", value=1
-            )
-        else:
-            raise ValueError("obj must be either cost or emission")
+        self.calliope_config.set_objective(obj)
 
-        print(self.calliope_config.get_key("run.objective_options.cost_class"))
         model = calliope.Model(
             self.calliope_config, timeseries_dataframes=self.dict_timeseries_df
         )
         if to_lp:
-            model.to_lp(self.store_folder + "/" + self.name + ".lp")
+            model.to_lp(
+                self.store_folder
+                + "/"
+                + self.district.buildings[0].name
+                + ".lp"  # TODO: think of better naming convention
+            )
         if to_yaml:
             model.save_commented_model_yaml(
-                self.store_folder + "/" + self.name + ".yaml"
+                self.store_folder
+                + "/"
+                + self.district.buildings[0].name
+                + ".yaml"  # TODO: think of better naming convention
             )
         return model
 
@@ -261,6 +255,9 @@ class EnergyHub:
             df_tech_cap_pareto (pd.DataFrame): The technology capacities of each solution.
 
         """
+        calliope.set_log_verbosity(
+            verbosity="error", include_solver_output=False, capture_warnings=False
+        )
         if epsilon < 1:
             raise ValueError("There must be at least one epsilon cut!")
 
@@ -283,7 +280,7 @@ class EnergyHub:
             columns=["cost", "emission"], index=range(idx_cost + 1)
         )
         # read yaml file and get the list of technologies
-        tech_list = self.calliope_config.get_key(f"locations.{self.name}.techs").keys()  # type: ignore
+        tech_list = self.calliope_config.techs.keys()
         # calliope does not define the type of the return value, so it's ignored
         df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(idx_cost + 1))
         df_tech_cap_pareto.fillna(0, inplace=True)
@@ -294,13 +291,20 @@ class EnergyHub:
         model_emission.run()
         if to_nc:
             model_emission.to_netcdf(
-                path=self.store_folder + "/" + self.name + "_emission.nc"
+                path=self.store_folder
+                + "/"
+                + self.district.buildings[
+                    0
+                ].name  # TODO: think of better naming convention
+                + "_emission.nc"
             )
         print("optimization for emission is done")
         # store the cost and emission in df_pareto
         df_emission = (
             model_emission.get_formatted_array("cost")
-            .sel(locs=self.name)
+            .sel(
+                locs=self.district.buildings[0].name
+            )  # TODO: think of better naming convention
             .to_pandas()
             .transpose()
             .sum(axis=0)
@@ -317,13 +321,22 @@ class EnergyHub:
         # run model cost, and find both cost and emission of this result
         model_cost.run()
         if to_nc:
-            model_cost.to_netcdf(path=self.store_folder + "/" + self.name + "_cost.nc")
+            model_cost.to_netcdf(
+                path=self.store_folder
+                + "/"
+                + self.district.buildings[
+                    0
+                ].name  # TODO: think of better naming convention
+                + "_cost.nc"
+            )
         print("optimization for cost is done")
         # store the cost and emission in df_pareto
         # add epsilon name as row index, start with epsilon_0
         df_cost = (
             model_cost.get_formatted_array("cost")
-            .sel(locs=self.name)
+            .sel(
+                locs=self.district.buildings[0].name
+            )  # TODO: think of better naming convention
             .to_pandas()
             .transpose()
             .sum(axis=0)
@@ -338,7 +351,7 @@ class EnergyHub:
         # if cost and emission optimal have the same emission, then there's no pareto front
         if df_cost["co2"] <= df_emission["co2"]:
             print(
-                f"cost-optimal and emission-optimal of building {self.name} have the same emission, no pareto front"
+                f"cost-optimal and emission-optimal of building {self.district.buildings[0].name} have the same emission, no pareto front"  # TODO: think of better naming convention
             )
             self.df_pareto = df_pareto
             self.df_tech_cap_pareto = df_tech_cap_pareto
@@ -377,14 +390,18 @@ class EnergyHub:
                     model_epsilon.to_netcdf(
                         path=self.store_folder
                         + "/"
-                        + self.name
+                        + self.district.buildings[
+                            0
+                        ].name  # TODO: think of better naming convention
                         + f"_epsilon_{n_epsilon}.nc"
                     )
                 print(f"optimization at epsilon {n_epsilon} is done")
                 # store the cost and emission in df_pareto
                 df_epsilon = (
                     model_epsilon.get_formatted_array("cost")
-                    .sel(locs=self.name)
+                    .sel(
+                        locs=self.district.buildings[0].name
+                    )  # TODO: think of better naming convention
                     .to_pandas()
                     .transpose()
                     .sum(axis=0)
@@ -399,7 +416,9 @@ class EnergyHub:
             df_pareto = df_pareto.astype({"cost": float, "emission": float})
             print(
                 "Pareto front for building "
-                + self.name
+                + self.district.buildings[
+                    0
+                ].name  # TODO: think of better naming convention
                 + " is done. First row is emission-optimal, last row is cost-optimal."
             )
             # show the pareto front
@@ -466,7 +485,9 @@ class EnergyHub:
         for tech in unrealistic_tech_list:
             # first check if the tech exists in the building config
             if tech in self.df_tech_cap_pareto.columns:
-                self.calliope_config.del_key(f"locations.{self.name}.techs.{tech}")
+                self.calliope_config.del_key(
+                    f"locations.{self.district.buildings[0].name}.techs.{tech}"  # TODO: think of better naming convention
+                )
 
         model_current = self.getBuildingModel(
             flatten_spikes=False,
@@ -475,12 +496,18 @@ class EnergyHub:
             to_yaml=False,
             obj="cost",
         )
-        print(f"calculating current cost and emission for building {self.name}")
+        print(
+            f"calculating current cost and emission for building {self.district.buildings[0].name}"  # TODO: think of better naming convention
+        )
         model_current.run()
-        print(f"current cost and emission for building {self.name} is done")
+        print(
+            f"current cost and emission for building {self.district.buildings[0].name} is done"  # TODO: think of better naming convention
+        )
         sr_cost_current: pd.Series = (
             model_current.get_formatted_array("cost")
-            .sel(locs=self.name)
+            .sel(
+                locs=self.district.buildings[0].name
+            )  # TODO: think of better naming convention
             .to_pandas()
             .transpose()
             .sum(axis=0)
