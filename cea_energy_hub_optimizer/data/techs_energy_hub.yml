@@ -486,50 +486,50 @@ techs:
         constraints:
             resource: df=demand_hot_water
 
-    # # transmission technologies
-    # electrical_cable:
-    #     essentials:
-    #         name: 'Electrical cable'
-    #         color: '#000000'
-    #         parent: transmission
-    #         carrier: electricity
-    #     constraints:
-    #         energy_con: True
-    #         energy_prod: True
-    #         lifetime: 1
-    #     costs:
-    #         monetary:
-    #             purchase_per_distance: 10 # USD/m
-    #             interest_rate: 0
+    # transmission technologies
+    electrical_cable:
+        essentials:
+            name: 'Electrical cable'
+            color: '#000000'
+            parent: transmission
+            carrier: electricity
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0
                 
-    # hot_water_pipe:
-    #     essentials:
-    #         name: 'Hot water pipe'
-    #         color: '#000000'
-    #         parent: transmission
-    #         carrier: DHW
-    #     constraints:
-    #         energy_con: True
-    #         energy_prod: True
-    #         lifetime: 1
-    #         interest_rate: 0
-    #     costs:
-    #         monetary:
-    #             purchase_per_distance: 10 # USD/m
-    #             interest_rate: 0
+    hot_water_pipe:
+        essentials:
+            name: 'Hot water pipe'
+            color: '#000000'
+            parent: transmission
+            carrier: DHW
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+            interest_rate: 0
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0
 
-    # cold_water_pipe:
-    #     essentials:
-    #         name: 'Cold water pipe'
-    #         color: '#000000'
-    #         parent: transmission
-    #         carrier: cooling
-    #     constraints:
-    #         energy_con: True
-    #         energy_prod: True
-    #         lifetime: 1
-    #         interest_rate: 0
-    #     costs:
-    #         monetary:
-    #             purchase_per_distance: 10 # USD/m
-    #             interest_rate: 0
+    cold_water_pipe:
+        essentials:
+            name: 'Cold water pipe'
+            color: '#000000'
+            parent: transmission
+            carrier: cooling
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+            interest_rate: 0
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0

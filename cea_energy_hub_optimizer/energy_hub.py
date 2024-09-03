@@ -5,7 +5,7 @@ from typing import Union, List
 from cea.inputlocator import InputLocator
 from cea.config import Configuration
 from cea_energy_hub_optimizer.timeseries import Demand, PV, PVT, SC, COP
-from cea_energy_hub_optimizer.config_gen import District, CalliopeConfig
+from cea_energy_hub_optimizer.config_gen import District
 
 """ A class definition of a single-building energy hub optimization model.
 
@@ -13,11 +13,11 @@ set an energy hub, with the following attributes:
 - name:                 str                             name of the building
 - locator:              InputLocator                    locator object has multiple methods that helps with locating certain file paths
 - yaml_path:            str                             path to the yaml file that contains the energy hub configuration
-- config:               Configuration        configuration object that contains the user's input in plugin.config
+- config:               Configuration                   configuration object that contains the user's input in plugin.config
 - emission_type:        str                             type of emission system, either 'HVAC_HEATING_AS1' or 'HVAC_HEATING_AS4'
 - area:                 float                           area of the building
 - location:             dict                            location of the building, with keys 'lat' and 'lon'
-- calliope_config:      calliope.AttrDict               calliope configuration object from the yaml file
+- district.tech_dict:   TechAttrDict                    calliope configuration object from the yaml file
 - dict_timeseries_df:   dict: [str, pd.DataFrame]       dictionary of timeseries dataframes, with keys 'demand_electricity', 
                                                         'demand_space_heating', 'demand_hot_water', 'demand_space_cooling', 
                                                         'supply_PV', 'supply_PVT_e', 'supply_PVT_h', 'supply_SCFP', 'supply_SCET'
@@ -44,78 +44,25 @@ class EnergyHub:
         """
         self.cea_config = config
         self.locator = locator
-        self.district = District(config, locator, buildings)
-        self.calliope_config = CalliopeConfig(config, locator, calliope_yaml_path)
-        self.calliope_config.add_techs_from_district(self.district)
-        self.calliope_config.set_temporal_resolution(
+        self.district = District(config, locator, buildings, calliope_yaml_path)
+        self.district.tech_dict.add_locations_from_district(self.district)
+        self.district.tech_dict.set_temporal_resolution(
             self.cea_config.energy_hub_optimizer.temporal_resolution
         )
-        self.calliope_config.set_solver(self.cea_config.energy_hub_optimizer.solver)
-        self.calliope_config.set_wood_availaility(extra_area=400, energy_density=0.5)
-        # self.calliope_config.select_evaluated_demand()
-        # self.calliope_config.select_evaluated_solar_supply()
+        self.district.tech_dict.set_solver(self.cea_config.energy_hub_optimizer.solver)
+        self.district.tech_dict.set_wood_availaility(extra_area=400, energy_density=0.5)
+        self.district.tech_dict.select_evaluated_demand()
+        self.district.tech_dict.select_evaluated_solar_supply()
         if self.cea_config.energy_hub_optimizer.temperature_sensitive_cop:
-            self.calliope_config.set_cop_timeseries()
+            self.district.tech_dict.set_cop_timeseries()
 
-        # self.name: str = name
-        # self.names = [
-        #     name
-        # ]  # for compatibility between the single building model and the district model
-        # self.locator = locator
-        # # locator.scenario returns a str of the scenario path, which includes /inputs and /outputs
-        # self.calliope_config: calliope.AttrDict = calliope.AttrDict.from_yaml(
-        #     calliope_yaml_path
-        # )
-        # self.cea_config = config
-
-        # get type of emission system
-        # emission_dict = {'HVAC_HEATING_AS1': 80, # radiator, needs high supply temperature
-        #                  'HVAC_HEATING_AS4': 45  # floor heating, needs low supply temperature
-        #                  } # output temperature of the heating emission system
-        # air_conditioning_df: pd.DataFrame = gpd.read_file(
-        #     self.locator.get_building_air_conditioning(), ignore_geometry=True
-        # )
-        # air_conditioning_df.set_index(keys="Name", inplace=True)
-        # self.emission_type: str = str(air_conditioning_df.loc[self.name, "type_hs"])
-        # # self.emission_temp: int = emission_dict[self.emission_type]
-
-        # # get building area
-        # zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
-        # zone.index = zone["Name"]
-        # self.area: float = zone.loc[self.name, "geometry"].area
-        # self.location: dict[str, float] = {
-        #     "lat": float(zone.loc[self.name, "geometry"].centroid.y),
-        #     "lon": float(zone.loc[self.name, "geometry"].centroid.x),
-        # }
-
-        # # set temporal resolution
-        # self.calliope_config.set_key(
-        #     key="model.time.function_options.resolution",
-        #     value=self.config.energy_hub_optimizer.temporal_resolution,
-        # )
-
-        # building_sub_dict_temp: calliope.AttrDict = self.calliope_config[
-        #     "locations"
-        # ].pop("Building")
-        # self.calliope_config["locations"][self.name] = building_sub_dict_temp
-        # del building_sub_dict_temp
-
-        # set solver
-        # self.calliope_config.set_key(
-        #     key="run.solver", value=self.config.energy_hub_optimizer.solver
-        # )
-        # constarin wood supply to 0.5kWh/m2 of the building area + 400m2 surroundings
-        # self.calliope_config.set_key(
-        #     key=f"locations.{self.name}.techs.wood_supply.constraints.energy_cap_max",
-        #     value=(self.area + 400) * 0.5 * 0.001,
-        # )
         # fmt: off
-        demands = Demand(self.cea_config, self.locator, self.calliope_config)
-        PVs = PV(self.cea_config, self.locator, self.calliope_config)
-        PVTs = PVT(self.cea_config, self.locator, self.calliope_config)
-        SCETs = SC(self.cea_config, self.locator, "ET", self.calliope_config)
-        SCFPs = SC(self.cea_config, self.locator, "FP", self.calliope_config)
-        COPs = COP(self.cea_config, self.locator, self.calliope_config)
+        demands = Demand(self.cea_config, self.locator, self.district.tech_dict)
+        PVs = PV(self.cea_config, self.locator, self.district.tech_dict)
+        PVTs = PVT(self.cea_config, self.locator, self.district.tech_dict)
+        SCETs = SC(self.cea_config, self.locator, "ET", self.district.tech_dict)
+        SCFPs = SC(self.cea_config, self.locator, "FP", self.district.tech_dict)
+        COPs = COP(self.cea_config, self.locator, self.district.tech_dict)
         # fmt: on
         # divide the supplies with self.area
 
@@ -139,18 +86,6 @@ class EnergyHub:
                     percentile=self.cea_config.energy_hub_optimizer.flatten_spike_percentile,
                 )
 
-            # print(
-            #     "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
-            # )
-            # self.calliope_config.set_key(
-            #     key="techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
-            #     value="df=cop_dhw",
-            # )
-            # self.calliope_config.set_key(
-            #     key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
-            #     value="df=cop_sc",
-            # )
-
     def getBuildingModel(
         self, to_lp=False, to_yaml=False, obj="cost", emission_constraint=None
     ) -> calliope.Model:
@@ -170,31 +105,20 @@ class EnergyHub:
         Return:
         Model:                      calliope.Model, the optimized model
         """
-
-        # # modify the self.calliope_config to match the building's status
-        # self.calliope_config.set_key(
-        #     key=f"locations.{self.name}.available_area", value=self.area
-        # )
-        # print(
-        #     "the area of building "
-        #     + self.name
-        #     + " is "
-        #     + str(round(self.area, 1))
-        #     + " m2"
-        # )
-
-        # if emission constraint is not None, add it to the self.calliope_config
+        # if emission constraint is not None, add it to the self.district.tech_dict
         if emission_constraint is None:
-            if bool(self.calliope_config.get_global_max_co2()):  # if exists, delete it
-                self.calliope_config.set_global_max_co2(None)
+            if bool(
+                self.district.tech_dict.get_global_max_co2()
+            ):  # if exists, delete it
+                self.district.tech_dict.set_global_max_co2(None)
         else:
-            self.calliope_config.set_global_max_co2(emission_constraint)
+            self.district.tech_dict.set_global_max_co2(emission_constraint)
             # check if the emission constraint is already in the config, if so, delete it
 
-        self.calliope_config.set_objective(obj)
+        self.district.tech_dict.set_objective(obj)
 
         model = calliope.Model(
-            self.calliope_config, timeseries_dataframes=self.dict_timeseries_df
+            self.district.tech_dict, timeseries_dataframes=self.dict_timeseries_df
         )
         if to_lp:
             model.to_lp(
@@ -280,7 +204,7 @@ class EnergyHub:
             columns=["cost", "emission"], index=range(idx_cost + 1)
         )
         # read yaml file and get the list of technologies
-        tech_list = self.calliope_config.techs.keys()
+        tech_list = self.district.tech_dict.techs.keys()
         # calliope does not define the type of the return value, so it's ignored
         df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(idx_cost + 1))
         df_tech_cap_pareto.fillna(0, inplace=True)
@@ -485,7 +409,7 @@ class EnergyHub:
         for tech in unrealistic_tech_list:
             # first check if the tech exists in the building config
             if tech in self.df_tech_cap_pareto.columns:
-                self.calliope_config.del_key(
+                self.district.tech_dict.del_key(
                     f"locations.{self.district.buildings[0].name}.techs.{tech}"  # TODO: think of better naming convention
                 )
 

@@ -7,37 +7,6 @@ from cea.inputlocator import InputLocator
 from cea.config import Configuration
 
 
-class District:
-    def __init__(
-        self,
-        cea_config: Configuration,
-        locator: InputLocator,
-        buildings: Union[str, List[str]],
-    ):
-        if isinstance(buildings, str):
-            buildings = [buildings]
-        zone: gpd.GeoDataFrame = gpd.read_file(locator.get_zone_geometry())
-        zone.set_index("Name", inplace=True)
-        air_conditioning: pd.DataFrame = gpd.read_file(
-            locator.get_building_air_conditioning(), ignore_geometry=True
-        )
-        air_conditioning.set_index("Name", inplace=True)
-        self.zone: gpd.GeoDataFrame = zone.loc[buildings]
-        self.air_conditioning: pd.DataFrame = air_conditioning.loc[buildings]
-        self.cea_config = cea_config
-        self.locator = locator
-        self.get_buildings()
-
-    def get_buildings(self):
-        self.buildings: List[Building] = []
-        for index, row in self.zone.iterrows():
-            building = Building(name=row.name, locator=self.locator, zone=self.zone)
-            building.get_emission_system(
-                locator=self.locator, air_conditioning_df=self.air_conditioning
-            )
-            self.buildings.append(building)
-
-
 class Node:
     pass
 
@@ -57,9 +26,14 @@ class Building(Node):
         if zone is None:
             zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
             zone.set_index("Name", inplace=True)
-        self.area = float(zone.loc[self.name, "geometry"].area)
-        self.lon = zone.loc[self.name, "geometry"].centroid.x
-        self.lat = zone.loc[self.name, "geometry"].centroid.y
+        try:
+            self.area = float(zone.loc[self.name, "geometry"].area)
+            self.lon = zone.loc[self.name, "geometry"].centroid.x
+            self.lat = zone.loc[self.name, "geometry"].centroid.y
+        except KeyError:
+            print(
+                f"Building {self.name} not found in the zone geometry file, and probably not inside scenario."
+            )
 
     def get_emission_system(
         self, locator: InputLocator, air_conditioning_df: Optional[pd.DataFrame] = None
@@ -68,10 +42,72 @@ class Building(Node):
             air_conditioning_df: pd.DataFrame = gpd.read_file(
                 locator.get_building_air_conditioning(), ignore_geometry=True
             )
+            air_conditioning_df.set_index("Name", inplace=True)
+        else:
+            # check if the building is in the air_conditioning_df
+            if self.name not in air_conditioning_df.index:
+                raise ValueError(
+                    f"Building {self.name} not found in the provided air conditioning file."
+                )
         self.emission = str(air_conditioning_df.loc[self.name, "type_hs"])
 
 
-class CalliopeConfig(AttrDict):
+class District:
+    def __init__(
+        self,
+        cea_config: Configuration,
+        locator: InputLocator,
+        building_names: Union[str, List[str]],
+        yml_path: PathLike,
+    ):
+        if isinstance(building_names, str):
+            building_names = [building_names]
+
+        self.cea_config = cea_config
+        self.locator = locator
+        self._get_input_buildings(building_names)
+        self._get_cea_input_files()
+        self._get_techs_from_yaml(yml_path)
+
+    def _get_input_buildings(self, building_names: List[str]):
+        self.buildings: List[Building] = []
+        for building_name in building_names:
+            building = Building(name=building_name, locator=self.locator)
+            building.get_emission_system(locator=self.locator)
+            self.buildings.append(building)
+
+    def _get_cea_input_files(self):
+        zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
+        zone.set_index("Name", inplace=True)
+        air_conditioning: pd.DataFrame = gpd.read_file(
+            self.locator.get_building_air_conditioning(), ignore_geometry=True
+        )
+        air_conditioning.set_index("Name", inplace=True)
+        self.zone: gpd.GeoDataFrame = zone.loc[self.buildings_names]
+        self.air_conditioning: pd.DataFrame = air_conditioning.loc[self.buildings_names]
+
+    def _get_techs_from_yaml(self, yml_path: PathLike):
+        self.tech_dict = TechAttrDict(
+            cea_config=self.cea_config, locator=self.locator, yml_path=yml_path
+        )
+        self.tech_dict.add_locations_from_district(self)
+
+    def add_building_from_name(self, building_name: str):
+        building = Building(name=building_name, locator=self.locator)
+        building.get_emission_system(locator=self.locator)
+        self.buildings.append(building)
+        self.tech_dict._add_locations_from_building(building)
+
+    def add_building(self, building: Building):
+        self.buildings.append(building)
+        self.tech_dict._add_locations_from_building(building)
+
+    @property
+    def buildings_names(self):
+        return [building.name for building in self.buildings]
+
+
+class TechAttrDict(AttrDict):
     def __init__(
         self, cea_config: Configuration, locator: InputLocator, yml_path: PathLike
     ):
@@ -86,7 +122,7 @@ class CalliopeConfig(AttrDict):
         self.cea_config = cea_config
         self.locator = locator
 
-    def add_techs_from_building(self, buildings: Union[Building, List[Building]]):
+    def _add_locations_from_building(self, buildings: Union[Building, List[Building]]):
         tech_name_dict = {key: None for key in self.techs.keys()}
         if isinstance(buildings, Building):
             buildings = [buildings]
@@ -94,9 +130,9 @@ class CalliopeConfig(AttrDict):
             location_dict = {"techs": tech_name_dict, "available_area": building.area}
             self.set_key(key=f"locations.{building.name}", value=location_dict)
 
-    def add_techs_from_district(self, district: District):
+    def add_locations_from_district(self, district: District):
         for building in district.buildings:
-            self.add_techs_from_building(building)
+            self._add_locations_from_building(building)
         self.district = district
 
     def set_temporal_resolution(self, temporal_resolution: str):
@@ -120,6 +156,9 @@ class CalliopeConfig(AttrDict):
         self.set_key(
             key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
             value="df=cop_sc",
+        )
+        print(
+            "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
         )
 
     def select_evaluated_demand(self):
