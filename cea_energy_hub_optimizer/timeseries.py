@@ -7,6 +7,29 @@ from cea.inputlocator import InputLocator
 from cea_energy_hub_optimizer.district import District, Building
 
 
+class TimeSeries:
+    def __init__(
+        self, cea_config: Configuration, locator: InputLocator, district: District
+    ):
+        self.demand = Demand(cea_config, locator, district)
+        self.pv = PV(cea_config, locator, district)
+        self.pvt = PVT(cea_config, locator, district)
+        self.sc_et = SC(cea_config, locator, "ET", district)
+        self.sc_fp = SC(cea_config, locator, "FP", district)
+        self.cop = COP(cea_config, locator, district)
+
+    @property
+    def timeseries_dict(self):
+        return {
+            **self.demand.result_dict,
+            **self.pv.result_dict,
+            **self.pvt.result_dict,
+            **self.sc_et.result_dict,
+            **self.sc_fp.result_dict,
+            **self.cop.cop_dict,
+        }
+
+
 class EnergyIO:
     def __init__(
         self,
@@ -243,29 +266,6 @@ class COP:
             columns=self.district.buildings_names, locator=self.locator
         )
         self.cop_dict[df_key].loc[:, :] = cop_arr[:, None]
-
-
-class TimeSeries:
-    def __init__(
-        self, cea_config: Configuration, locator: InputLocator, district: District
-    ):
-        self.demand = Demand(cea_config, locator, district)
-        self.pv = PV(cea_config, locator, district)
-        self.pvt = PVT(cea_config, locator, district)
-        self.sc_et = SC(cea_config, locator, "ET", district)
-        self.sc_fp = SC(cea_config, locator, "FP", district)
-        self.cop = COP(cea_config, locator, district)
-
-    @property
-    def timeseries_dict(self):
-        return {
-            **self.demand.result_dict,
-            **self.pv.result_dict,
-            **self.pvt.result_dict,
-            **self.sc_et.result_dict,
-            **self.sc_fp.result_dict,
-            **self.cop.cop_dict,
-        }
 
 
 # define a class which is a pd dataframe, having the index as epw's timestep and index's name as "t"
