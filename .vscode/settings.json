@@ -1,0 +1,11 @@
+{
+    "python.analysis.extraPaths": [
+        "C:/Users/wangy/Documents/GitHub/CityEnergyAnalyst"
+    ],
+    "autoDocstring.docstringFormat": "sphinx",
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "notebook.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "notebook.formatOnSave.enabled": true,
+    "python.analysis.autoImportCompletions": true
+}
