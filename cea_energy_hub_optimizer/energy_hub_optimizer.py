@@ -70,7 +70,7 @@ def main(config: cea.config.Configuration) -> None:
             config=config,
         )
 
-        energy_hub.getParetoFront(
+        energy_hub.get_pareto_front(
             epsilon=config.energy_hub_optimizer.number_of_epsilon_cut,
             store_folder=store_folder,
             approach_tip=config.energy_hub_optimizer.approach_but_not_land_on_tip,

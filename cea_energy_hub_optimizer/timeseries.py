@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from cea.utilities.epwreader import epw_reader
 from typing import Optional, Union, Iterable, Dict
@@ -185,25 +186,86 @@ class COP:
         district: District,
     ):
         self.cea_config = cea_config
-        self.cop_dict: Dict[str, TimeSeriesDf] = {
-            "cop_dhw": TimeSeriesDf(columns=district.buildings_names, locator=locator),
-            "cop_sc": TimeSeriesDf(columns=district.buildings_names, locator=locator),
-        }
+        self.locator = locator
+        self.district = district
+        self.cop_dict: Dict[str, TimeSeriesDf] = {}
 
-        epw_df = TimeSeriesDf._epw_data
+        self.T_out = TimeSeriesDf._epw_data["drybulb_C"].to_numpy()
         exergy_eff = cea_config.energy_hub_optimizer.nominal_cop / (
             (60 + 273.15) / (60 - 10)
         )
+        self.add_cop_timeseries_from_temp(
+            mode="heating",
+            T_H=60,
+            T_L=self.T_out,
+            exergy_eff=exergy_eff,
+            df_key="cop_dhw",
+        )
+        self.add_cop_timeseries_from_temp(
+            mode="cooling",
+            T_H=self.T_out,
+            T_L=10,
+            exergy_eff=exergy_eff,
+            df_key="cop_sc",
+        )
 
-        cop_dhw_arr = (
-            (60 + 273.15) / (60 - epw_df["drybulb_C"].to_numpy())
-        ) * exergy_eff
-        cop_sc_arr = (
-            (10 + 273.15) / (30 - epw_df["drybulb_C"].to_numpy())
-        ) * exergy_eff
+    def add_cop_timeseries_from_temp(
+        self, mode: str, T_H, T_L, exergy_eff: float, df_key: str
+    ):
+        # check: if mode==heating, then T_H should be one value and T_L should be an array;
+        # if mode==cooling, then T_L should be one value and T_H should be an array
+        if mode == "heating":
+            if isinstance(T_H, (int, float)) and isinstance(
+                T_L, (list, tuple, np.ndarray)
+            ):
+                pass
+            else:
+                raise ValueError(
+                    f"T_H must be a single value and T_L must be an array. Currently, T_H is a {type(T_H)} and T_L is a {type(T_L)}."
+                )
+            cop_arr = (T_H + 273.15) / (T_H - T_L) * exergy_eff
 
-        self.cop_dict["cop_dhw"].loc[:, :] = cop_dhw_arr[:, None]
-        self.cop_dict["cop_sc"].loc[:, :] = cop_sc_arr[:, None]
+        elif mode == "cooling":
+            if isinstance(T_L, (int, float)) and isinstance(
+                T_H, (list, tuple, np.ndarray)
+            ):
+                pass
+            else:
+                raise ValueError(
+                    f"T_L must be a single value and T_H must be an array. Currently, T_L is a {type(T_L)} and T_H is a {type(T_H)}."
+                )
+            cop_arr = (T_L + 273.15) / (T_H - T_L) * exergy_eff
+
+        # limit the COP to be between 0 and 10
+        cop_arr = np.clip(cop_arr, 0, 10)
+
+        self.cop_dict[df_key] = TimeSeriesDf(
+            columns=self.district.buildings_names, locator=self.locator
+        )
+        self.cop_dict[df_key].loc[:, :] = cop_arr[:, None]
+
+
+class TimeSeries:
+    def __init__(
+        self, cea_config: Configuration, locator: InputLocator, district: District
+    ):
+        self.demand = Demand(cea_config, locator, district)
+        self.pv = PV(cea_config, locator, district)
+        self.pvt = PVT(cea_config, locator, district)
+        self.sc_et = SC(cea_config, locator, "ET", district)
+        self.sc_fp = SC(cea_config, locator, "FP", district)
+        self.cop = COP(cea_config, locator, district)
+
+    @property
+    def timeseries_dict(self):
+        return {
+            **self.demand.result_dict,
+            **self.pv.result_dict,
+            **self.pvt.result_dict,
+            **self.sc_et.result_dict,
+            **self.sc_fp.result_dict,
+            **self.cop.cop_dict,
+        }
 
 
 # define a class which is a pd dataframe, having the index as epw's timestep and index's name as "t"

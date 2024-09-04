@@ -4,7 +4,7 @@ import calliope
 from typing import Union, List
 from cea.inputlocator import InputLocator
 from cea.config import Configuration
-from cea_energy_hub_optimizer.timeseries import Demand, PV, PVT, SC, COP
+from cea_energy_hub_optimizer.timeseries import TimeSeries
 from cea_energy_hub_optimizer.district import District
 
 """ A class definition of a single-building energy hub optimization model.
@@ -56,31 +56,32 @@ class EnergyHub:
         if self.cea_config.energy_hub_optimizer.temperature_sensitive_cop:
             self.district.tech_dict.set_cop_timeseries()
 
-        # fmt: off
-        demands = Demand(self.cea_config, self.locator, self.district)
-        PVs = PV(self.cea_config, self.locator, self.district)
-        PVTs = PVT(self.cea_config, self.locator, self.district)
-        SCETs = SC(self.cea_config, self.locator, "ET", self.district)
-        SCFPs = SC(self.cea_config, self.locator, "FP", self.district)
-        COPs = COP(self.cea_config, self.locator, self.district)
-        # fmt: on
+        # # fmt: off
+        # demands = Demand(self.cea_config, self.locator, self.district)
+        # PVs = PV(self.cea_config, self.locator, self.district)
+        # PVTs = PVT(self.cea_config, self.locator, self.district)
+        # SCETs = SC(self.cea_config, self.locator, "ET", self.district)
+        # SCFPs = SC(self.cea_config, self.locator, "FP", self.district)
+        # COPs = COP(self.cea_config, self.locator, self.district)
+        # # fmt: on
+        self.timeseries = TimeSeries(self.cea_config, self.locator, self.district)
 
         if self.cea_config.energy_hub_optimizer.flatten_spike:
-            demands.flatten_spikes(
+            self.timeseries.demand.flatten_spikes(
                 percentile=self.cea_config.energy_hub_optimizer.flatten_spike_percentile,
                 is_positive=False,
             )
 
-        self.dict_timeseries_df: dict[str, pd.DataFrame] = {
-            **demands.result_dict,
-            **PVs.result_dict,
-            **PVTs.result_dict,
-            **SCETs.result_dict,
-            **SCFPs.result_dict,
-            **COPs.cop_dict,
-        }
+        # self.dict_timeseries_df: dict[str, pd.DataFrame] = {
+        #     **demands.result_dict,
+        #     **PVs.result_dict,
+        #     **PVTs.result_dict,
+        #     **SCETs.result_dict,
+        #     **SCFPs.result_dict,
+        #     **COPs.cop_dict,
+        # }
 
-    def getBuildingModel(
+    def get_calliope_model(
         self, to_lp=False, to_yaml=False, obj="cost", emission_constraint=None
     ) -> calliope.Model:
         """
@@ -112,7 +113,8 @@ class EnergyHub:
         self.district.tech_dict.set_objective(obj)
 
         model = calliope.Model(
-            self.district.tech_dict, timeseries_dataframes=self.dict_timeseries_df
+            self.district.tech_dict,
+            timeseries_dataframes=self.timeseries.timeseries_dict,
         )
         if to_lp:
             model.to_lp(
@@ -124,7 +126,7 @@ class EnergyHub:
             )
         return model
 
-    def getParetoFront(
+    def get_pareto_front(
         self,
         epsilon: int,
         store_folder: str,
@@ -197,7 +199,7 @@ class EnergyHub:
         df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(idx_cost + 1))
         df_tech_cap_pareto.fillna(0, inplace=True)
         # first get the emission-optimal solution
-        model_emission = self.getBuildingModel(
+        model_emission = self.get_calliope_model(
             to_lp=to_lp, to_yaml=to_yaml, obj="emission"
         )
         model_emission.run()
@@ -224,7 +226,7 @@ class EnergyHub:
         )
 
         # then get the cost-optimal solution
-        model_cost = self.getBuildingModel(to_lp=to_lp, to_yaml=to_yaml, obj="cost")
+        model_cost = self.get_calliope_model(to_lp=to_lp, to_yaml=to_yaml, obj="cost")
         # run model cost, and find both cost and emission of this result
         model_cost.run()
         if to_nc:
@@ -281,7 +283,7 @@ class EnergyHub:
                 print(
                     f"starting epsilon {n_epsilon}, life-time emission smaller or equal to {emission_constraint} kgCO2"
                 )
-                model_epsilon = self.getBuildingModel(
+                model_epsilon = self.get_calliope_model(
                     to_lp=to_lp,
                     to_yaml=to_yaml,
                     obj="cost",
@@ -391,7 +393,7 @@ class EnergyHub:
                     f"locations.{self.district.buildings[0].name}.techs.{tech}"  # TODO: think of better naming convention
                 )
 
-        model_current = self.getBuildingModel(
+        model_current = self.get_calliope_model(
             flatten_spikes=False,
             flatten_percentile=0.98,
             to_lp=False,
