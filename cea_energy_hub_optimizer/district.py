@@ -1,9 +1,8 @@
 import pandas as pd
 import geopandas as gpd
-from typing import List, Union, Optional
+from typing import List, Union
 from calliope import AttrDict
-from cea.inputlocator import InputLocator
-from cea.config import Configuration
+from cea_energy_hub_optimizer.my_config import MyConfig
 
 
 class Node:
@@ -14,56 +13,41 @@ class Building(Node):
     def __init__(
         self,
         name: str,
-        locator: InputLocator,
-        zone: Optional[gpd.GeoDataFrame] = None,
     ):
         self.name = name
-        self.locator = locator
-        self.get_geometry(zone)
+        self.locator = MyConfig().locator
+        self.get_geometry()
 
-    def get_geometry(self, zone: Optional[gpd.GeoDataFrame]):
-        if zone is None:
-            zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
-            zone.set_index("Name", inplace=True)
+    def get_geometry(self):
+        zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
+        zone.set_index("Name", inplace=True)
         try:
-            self.area = float(zone.loc[self.name, "geometry"].area)
-            self.lon = zone.loc[self.name, "geometry"].centroid.x
-            self.lat = zone.loc[self.name, "geometry"].centroid.y
+            self.area = float(zone.loc[self.name, "geometry"].area)  # type: ignore
+            self.lon = float(zone.loc[self.name, "geometry"].centroid.x)  # type: ignore
+            self.lat = float(zone.loc[self.name, "geometry"].centroid.y)  # type: ignore
         except KeyError:
             print(
                 f"Building {self.name} not found in the zone geometry file, and probably not inside scenario."
             )
 
-    def get_emission_system(
-        self, locator: InputLocator, air_conditioning_df: Optional[pd.DataFrame] = None
-    ):
-        if air_conditioning_df is None:
-            air_conditioning_df: pd.DataFrame = gpd.read_file(
-                locator.get_building_air_conditioning(), ignore_geometry=True
-            )
-            air_conditioning_df.set_index("Name", inplace=True)
-        else:
-            # check if the building is in the air_conditioning_df
-            if self.name not in air_conditioning_df.index:
-                raise ValueError(
-                    f"Building {self.name} not found in the provided air conditioning file."
-                )
+    def get_emission_system(self):
+        air_conditioning_df: pd.DataFrame = gpd.read_file(
+            self.locator.get_building_air_conditioning(), ignore_geometry=True
+        )
+        air_conditioning_df.set_index("Name", inplace=True)
         self.emission = str(air_conditioning_df.loc[self.name, "type_hs"])
 
 
 class District:
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         building_names: Union[str, List[str]],
         yml_path: str,
     ):
         if isinstance(building_names, str):
             building_names = [building_names]
 
-        self.cea_config = cea_config
-        self.locator = locator
+        self.locator = MyConfig().locator
         self._get_input_buildings(building_names)
         self._get_cea_input_files()
         self._get_techs_from_yaml(yml_path)
@@ -71,8 +55,8 @@ class District:
     def _get_input_buildings(self, building_names: List[str]):
         self.buildings: List[Building] = []
         for building_name in building_names:
-            building = Building(name=building_name, locator=self.locator)
-            building.get_emission_system(locator=self.locator)
+            building = Building(name=building_name)
+            building.get_emission_system()
             self.buildings.append(building)
 
     def _get_cea_input_files(self):
@@ -86,14 +70,12 @@ class District:
         self.air_conditioning = air_conditioning.loc[self.buildings_names]
 
     def _get_techs_from_yaml(self, yml_path: str):
-        self.tech_dict = TechAttrDict(
-            cea_config=self.cea_config, locator=self.locator, yml_path=yml_path
-        )
+        self.tech_dict = TechAttrDict(yml_path=yml_path)
         self.tech_dict.add_locations_from_district(self)
 
     def add_building_from_name(self, building_name: str):
-        building = Building(name=building_name, locator=self.locator)
-        building.get_emission_system(locator=self.locator)
+        building = Building(name=building_name)
+        building.get_emission_system()
         self.buildings.append(building)
         self.tech_dict._add_locations_from_building(building)
 
@@ -107,17 +89,11 @@ class District:
 
 
 class TechAttrDict(AttrDict):
-    def __init__(self, cea_config: Configuration, locator: InputLocator, yml_path: str):
-        # Initialize the AttrDict part
+    def __init__(self, yml_path: str):
         super().__init__()
-
-        # Manually load the YAML data and update the AttrDict
         yaml_data = AttrDict.from_yaml(yml_path)
         self.update(yaml_data)
-
-        # Initialize the rest of the CalliopeConfig
-        self.cea_config = cea_config
-        self.locator = locator
+        self.my_config = MyConfig()
 
     def _add_locations_from_building(self, buildings: Union[Building, List[Building]]):
         tech_name_dict = {key: None for key in self.techs.keys()}
@@ -162,21 +138,21 @@ class TechAttrDict(AttrDict):
         # demand techs starts with demand_ and is key of self.techs
         demand_techs = [key for key in self.techs.keys() if key.startswith("demand_")]
         for tech in demand_techs:
-            if tech not in self.cea_config.energy_hub_optimizer.evaluated_demand:
+            if tech not in self.my_config.evaluated_demand:
                 for building in self.locations.keys():
                     self.del_key(f"locations.{building}.techs.{tech}")
 
     def select_evaluated_solar_supply(self):
         solar_supply_techs = ["PV", "PVT", "SCET", "SCFP"]
         for tech in solar_supply_techs:
-            if tech not in self.cea_config.energy_hub_optimizer.evaluated_solar_supply:
+            if tech not in self.my_config.evaluated_solar_supply:
                 for building in self.locations.keys():
                     self.del_key(f"locations.{building}.techs.{tech}")
 
-    def set_global_max_co2(self, max_c02: float):
+    def set_global_max_co2(self, max_co2: Union[float, None]):
         self.set_key(
             key="group_constraints.systemwide_co2_cap.cost_max.co2",
-            value=max_c02,
+            value=max_co2,
         )
 
     def get_global_max_co2(self):

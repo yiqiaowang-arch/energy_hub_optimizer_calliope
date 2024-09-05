@@ -2,8 +2,7 @@ import pandas as pd
 import numpy as np
 import calliope
 from typing import Union, List
-from cea.inputlocator import InputLocator
-from cea.config import Configuration
+from cea_energy_hub_optimizer.my_config import MyConfig
 from cea_energy_hub_optimizer.timeseries import TimeSeries
 from cea_energy_hub_optimizer.district import District
 
@@ -28,9 +27,7 @@ class EnergyHub:
     def __init__(
         self,
         buildings: Union[str, List[str]],
-        locator: InputLocator,
         calliope_yaml_path: str,
-        config: Configuration,
     ):
         """__init__ initializes the EnergyHub class with the given parameters.
 
@@ -42,18 +39,17 @@ class EnergyHub:
             calliope_yaml_path (str): the path to the yaml file that contains the calliope energy hub configuration
             config (Configuration): the configuration object that contains user inputs in plugin.config
         """
-        self.cea_config = config
-        self.locator = locator
-        self.district = District(config, locator, buildings, calliope_yaml_path)
+        self.my_config = MyConfig()
+        self.district = District(buildings, calliope_yaml_path)
         self.district.tech_dict.add_locations_from_district(self.district)
         self.district.tech_dict.set_temporal_resolution(
-            self.cea_config.energy_hub_optimizer.temporal_resolution
+            self.my_config.temporal_resolution
         )
-        self.district.tech_dict.set_solver(self.cea_config.energy_hub_optimizer.solver)
+        self.district.tech_dict.set_solver(self.my_config.solver)
         self.district.tech_dict.set_wood_availaility(extra_area=400, energy_density=0.5)
         self.district.tech_dict.select_evaluated_demand()
         self.district.tech_dict.select_evaluated_solar_supply()
-        if self.cea_config.energy_hub_optimizer.temperature_sensitive_cop:
+        if self.my_config.use_temperature_sensitive_cop:
             self.district.tech_dict.set_cop_timeseries()
 
         # # fmt: off
@@ -64,11 +60,11 @@ class EnergyHub:
         # SCFPs = SC(self.cea_config, self.locator, "FP", self.district)
         # COPs = COP(self.cea_config, self.locator, self.district)
         # # fmt: on
-        self.timeseries = TimeSeries(self.cea_config, self.locator, self.district)
+        self.timeseries = TimeSeries(self.district)
 
-        if self.cea_config.energy_hub_optimizer.flatten_spike:
+        if self.my_config.flatten_spike:
             self.timeseries.demand.flatten_spikes(
-                percentile=self.cea_config.energy_hub_optimizer.flatten_spike_percentile,
+                percentile=self.my_config.flatten_spike_percentile,
                 is_positive=False,
             )
 
@@ -82,7 +78,11 @@ class EnergyHub:
         # }
 
     def get_calliope_model(
-        self, to_lp=False, to_yaml=False, obj="cost", emission_constraint=None
+        self,
+        to_lp: bool = False,
+        to_yaml: bool = False,
+        obj: str = "cost",
+        emission_constraint: Union[None, float] = None,
     ) -> calliope.Model:
         """
         Description:
@@ -130,11 +130,11 @@ class EnergyHub:
         self,
         epsilon: int,
         store_folder: str,
-        approach_tip=False,
-        approach_percentile=0.01,
-        to_lp=False,
-        to_yaml=False,
-        to_nc=False,
+        approach_tip: bool = False,
+        approach_percentile: float = 0.01,
+        to_lp: bool = False,
+        to_yaml: bool = False,
+        to_nc: bool = False,
     ):
         """
         Finds the pareto front of one building regarding cost and emission.
@@ -194,7 +194,7 @@ class EnergyHub:
             columns=["cost", "emission"], index=range(idx_cost + 1)
         )
         # read yaml file and get the list of technologies
-        tech_list = self.district.tech_dict.techs.keys()
+        tech_list: List[str] = list(self.district.tech_dict.techs.keys())
         # calliope does not define the type of the return value, so it's ignored
         df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(idx_cost + 1))
         df_tech_cap_pareto.fillna(0, inplace=True)
@@ -329,97 +329,3 @@ class EnergyHub:
             print(df_pareto)
             self.df_pareto = df_pareto
             self.df_tech_cap_pareto = df_tech_cap_pareto
-
-    def getCurrentCostEmission(self):
-        """
-        Description:
-            This function reads the current technology setup of the building, delete all irrelevant technologies,
-            then "optimize" the building (with the only feasible choice) to get the current cost and emission.
-            Finally, it returns the cost and emission in a pd.Series, and add it to the self.df_pareto with index 999.
-
-            the current tech setup is stored in self.building_status. For example, it looks like:
-            DisHeat                       2025
-            Rebuild                        0.0
-            Renovation                     0.0
-            type_hs         SUPPLY_HEATING_AS7
-            is_disheat                    True
-            is_rebuilt                   False
-            is_renovated                 False
-            already_GSHP                 False
-            already_ASHP                 False
-            no_heat                      False
-
-        Meaning of type_hs (SUPPLY_HEATING_ASX):
-            0. no heating
-            1. oil boiler
-            2. coal boiler
-            3. gas boiler
-            4. electric boiler
-            5. wood boiler
-            6. GSHP (ground source heat pump)
-            7. ASHP (air source heat pump)
-        """
-
-        # first, delete DHDC_small_heat, DHDC_medium_heat, DHDC_large_heat,
-        # PV, SCFP, battery, DHW_storage, heaat_storage. These do not exist in the current setup
-        unrealistic_tech_list = [
-            "DHDC_small_heat",
-            "DHDC_medium_heat",
-            "DHDC_large_heat",
-            "PV",
-            "SCFP",
-            "battery",
-            "DHW_storage",
-            "heat_storage",
-        ]
-
-        if self.building_status["no_heat"]:
-            # in this case, should raise error because there's no heating system
-            raise ValueError("no heating system in the building")
-        elif self.building_status["already_GSHP"]:
-            # in this case, delete ASHP
-            unrealistic_tech_list += ["ASHP", "wood_boiler"]
-        elif self.building_status["already_ASHP"]:
-            # in this case, delete GSHP
-            unrealistic_tech_list += ["GSHP", "wood_boiler"]
-        else:
-            # if the building is originally using gas or oil boiler, by 2050 it should have changed to ASHP
-            unrealistic_tech_list += ["GSHP", "wood_boiler"]
-
-        for tech in unrealistic_tech_list:
-            # first check if the tech exists in the building config
-            if tech in self.df_tech_cap_pareto.columns:
-                self.district.tech_dict.del_key(
-                    f"locations.{self.district.buildings[0].name}.techs.{tech}"  # TODO: think of better naming convention
-                )
-
-        model_current = self.get_calliope_model(
-            flatten_spikes=False,
-            flatten_percentile=0.98,
-            to_lp=False,
-            to_yaml=False,
-            obj="cost",
-        )
-        print(
-            f"calculating current cost and emission for building {self.district.buildings[0].name}"  # TODO: think of better naming convention
-        )
-        model_current.run()
-        print(
-            f"current cost and emission for building {self.district.buildings[0].name} is done"  # TODO: think of better naming convention
-        )
-        sr_cost_current: pd.Series = (
-            model_current.get_formatted_array("cost")
-            .sel(
-                locs=self.district.buildings[0].name
-            )  # TODO: think of better naming convention
-            .to_pandas()
-            .transpose()
-            .sum(axis=0)
-        )
-        # add the cost and emission to df_pareto
-        self.df_pareto.loc[999] = [sr_cost_current["monetary"], sr_cost_current["co2"]]
-        # store the technology capacities in df_tech_cap_pareto
-        self.df_tech_cap_pareto.loc[999] = (
-            model_current.get_formatted_array("energy_cap").to_pandas().iloc[0]
-        )
-        self.df_tech_cap_pareto.fillna(0, inplace=True)

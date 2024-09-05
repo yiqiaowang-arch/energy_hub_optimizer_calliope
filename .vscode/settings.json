@@ -7,5 +7,39 @@
     "notebook.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
     "notebook.formatOnSave.enabled": true,
-    "python.analysis.autoImportCompletions": true
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.packageIndexDepths": [
+        {
+            "name": "sklearn",
+            "depth": 2
+        },
+        {
+            "name": "matplotlib",
+            "depth": 2
+        },
+        {
+            "name": "scipy",
+            "depth": 2
+        },
+        {
+            "name": "django",
+            "depth": 2
+        },
+        {
+            "name": "flask",
+            "depth": 2
+        },
+        {
+            "name": "fastapi",
+            "depth": 2
+        }
+        {
+            "name": "cea",
+            "depth": 4
+        }
+        {
+            "name": "pandas",
+            "depth": 4
+        }
+    ]
 }

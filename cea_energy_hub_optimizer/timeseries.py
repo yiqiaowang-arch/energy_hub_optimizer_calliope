@@ -1,22 +1,19 @@
 import numpy as np
 import pandas as pd
 from cea.utilities.epwreader import epw_reader
-from typing import Optional, Union, Iterable, Dict
-from cea.config import Configuration
-from cea.inputlocator import InputLocator
+from typing import Union, Iterable, Dict
 from cea_energy_hub_optimizer.district import District, Building
+from cea_energy_hub_optimizer.my_config import MyConfig
 
 
 class TimeSeries:
-    def __init__(
-        self, cea_config: Configuration, locator: InputLocator, district: District
-    ):
-        self.demand = Demand(cea_config, locator, district)
-        self.pv = PV(cea_config, locator, district)
-        self.pvt = PVT(cea_config, locator, district)
-        self.sc_et = SC(cea_config, locator, "ET", district)
-        self.sc_fp = SC(cea_config, locator, "FP", district)
-        self.cop = COP(cea_config, locator, district)
+    def __init__(self, district: District):
+        self.demand = Demand(district)
+        self.pv = PV(district)
+        self.pvt = PVT(district)
+        self.sc_et = SC("ET", district)
+        self.sc_fp = SC("FP", district)
+        self.cop = COP(district)
 
     @property
     def timeseries_dict(self):
@@ -33,26 +30,23 @@ class TimeSeries:
 class EnergyIO:
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         mapping_dict: Dict[str, str],
         district: District,
     ):
-        self.cea_config = cea_config
-        self.locator = locator
+        self.my_config = MyConfig()
+        self.locator = self.my_config.locator
         self.district = district
         self.mapping_dict = mapping_dict
         self.result_dict: dict[str, TimeSeriesDf] = {
             f"{key}": TimeSeriesDf(
                 columns=self.district.buildings_names,
-                locator=self.locator,
             )
             for key in self.mapping_dict.keys()
         }
 
         self.get_energy()
 
-    def get_node_energy(self, building: "Building"):
+    def get_node_energy(self, building: "Building") -> None:
         raise NotImplementedError(
             "This method should be implemented in the child class"
         )
@@ -72,26 +66,26 @@ class EnergyIO:
 class Demand(EnergyIO):
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         district: District,
     ):
+        self.my_config = MyConfig()
+        self.locator = self.my_config.locator
         self.mapping_dict = {
             "demand_electricity": "E_sys_kWh",
             "demand_space_heating": "Qhs_sys_kWh",
             "demand_space_cooling": "Qcs_sys_kWh",
             "demand_hot_water": "Qww_sys_kWh",
         }
-        super().__init__(cea_config, locator, self.mapping_dict, district)
+        super().__init__(self.mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         demand_path = self.locator.get_demand_results_file(building=building.name)
-        demand_df = pd.read_csv(demand_path, usecols=self.mapping_dict.values())
+        demand_df = pd.read_csv(demand_path, usecols=list(self.mapping_dict.values()))
         for key in self.mapping_dict.keys():
             if building.name not in self.result_dict[key].columns:
                 self.result_dict[key].add_columns(building.name)
 
-            if key in self.cea_config.energy_hub_optimizer.evaluated_demand:
+            if key in self.my_config.evaluated_demand:
                 self.result_dict[key][building.name] = -demand_df[
                     self.mapping_dict[key]
                 ].to_numpy()
@@ -100,36 +94,33 @@ class Demand(EnergyIO):
 class SolarEnergy(EnergyIO):
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         mapping_dict: Dict[str, str],
         district: District,
     ):
-        super().__init__(cea_config, locator, mapping_dict, district)
+        self.my_config = MyConfig()
+        self.locator = self.my_config.locator
+        super().__init__(mapping_dict, district)
 
     def divide_by_area(self, result_key: str):
         for building in self.district.buildings:
             self.result_dict[result_key][building.name] /= building.area
 
-    def get_node_energy(self, node: str):
-        raise NotImplementedError("Subclasses should implement this method.")
-
 
 class PV(SolarEnergy):
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         district: District,
     ):
+        self.my_config = MyConfig()
+        self.locator = self.my_config.locator
         mapping_dict = {"supply_PV": "E_PV_gen_kWh"}
-        super().__init__(cea_config, locator, mapping_dict, district)
+        super().__init__(mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         if building.name not in self.result_dict["supply_PV"].columns:
             self.result_dict["supply_PV"].add_columns(building.name)
 
-        if "PV" in self.cea_config.energy_hub_optimizer.evaluated_solar_supply:
+        if "PV" in self.my_config.evaluated_solar_supply:
             pv_path = self.locator.PV_results(building=building.name)
             pv_df = pd.read_csv(pv_path, usecols=["E_PV_gen_kWh"])
             self.result_dict["supply_PV"][building.name] = pv_df[
@@ -142,23 +133,21 @@ class PV(SolarEnergy):
 class PVT(SolarEnergy):
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         district: District,
     ):
         mapping_dict = {
             "supply_PVT_e": "E_PVT_gen_kWh",
             "supply_PVT_h": "Q_PVT_gen_kWh",
         }
-        super().__init__(cea_config, locator, mapping_dict, district)
+        super().__init__(mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         if building.name not in self.result_dict["supply_PVT_e"].columns:
             self.result_dict["supply_PVT_e"].add_columns(building.name)
 
-        if "PVT" in self.cea_config.energy_hub_optimizer.evaluated_solar_supply:
+        if "PVT" in self.my_config.evaluated_solar_supply:
             pvt_path = self.locator.PVT_results(building=building.name)
-            pvt_df = pd.read_csv(pvt_path, usecols=self.mapping_dict.values())
+            pvt_df = pd.read_csv(pvt_path, usecols=list(self.mapping_dict.values()))
             self.result_dict["supply_PVT_e"][building.name] = pvt_df[
                 "E_PVT_gen_kWh"
             ].to_numpy()
@@ -172,24 +161,21 @@ class PVT(SolarEnergy):
 class SC(SolarEnergy):
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         panel_type: str,
         district: District,
     ):
+        self.my_config = MyConfig()
+        self.locator = self.my_config.locator
         mapping_dict = {f"supply_SC{panel_type}": "Q_SC_gen_kWh"}
         self.panel_type = panel_type
-        super().__init__(cea_config, locator, mapping_dict, district)
+        super().__init__(mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
         result_key = f"supply_SC{self.panel_type}"
         if building.name not in self.result_dict[result_key].columns:
             self.result_dict[result_key].add_columns(building.name)
 
-        if (
-            f"SC{self.panel_type}"
-            in self.cea_config.energy_hub_optimizer.evaluated_solar_supply
-        ):
+        if f"SC{self.panel_type}" in self.my_config.evaluated_solar_supply:
             sc_path = self.locator.SC_results(
                 building=building.name, panel_type=self.panel_type
             )
@@ -204,19 +190,15 @@ class SC(SolarEnergy):
 class COP:
     def __init__(
         self,
-        cea_config: Configuration,
-        locator: InputLocator,
         district: District,
     ):
-        self.cea_config = cea_config
-        self.locator = locator
+        self.my_config = MyConfig()
+        self.locator = self.my_config.locator
         self.district = district
         self.cop_dict: Dict[str, TimeSeriesDf] = {}
 
         self.T_out = TimeSeriesDf._epw_data["drybulb_C"].to_numpy()
-        exergy_eff = cea_config.energy_hub_optimizer.nominal_cop / (
-            (60 + 273.15) / (60 - 10)
-        )
+        exergy_eff = self.my_config.nominal_cop / ((60 + 273.15) / (60 - 10))
         self.add_cop_timeseries_from_temp(
             mode="heating",
             T_H=60,
@@ -235,36 +217,29 @@ class COP:
     def add_cop_timeseries_from_temp(
         self, mode: str, T_H, T_L, exergy_eff: float, df_key: str
     ):
+        cop_arr = np.zeros_like(self.T_out)
         # check: if mode==heating, then T_H should be one value and T_L should be an array;
         # if mode==cooling, then T_L should be one value and T_H should be an array
         if mode == "heating":
-            if isinstance(T_H, (int, float)) and isinstance(
-                T_L, (list, tuple, np.ndarray)
-            ):
-                pass
+            if isinstance(T_H, (int, float)) and isinstance(T_L, np.ndarray):
+                cop_arr = (T_H + 273.15) / (T_H - T_L) * exergy_eff
             else:
                 raise ValueError(
                     f"T_H must be a single value and T_L must be an array. Currently, T_H is a {type(T_H)} and T_L is a {type(T_L)}."
                 )
-            cop_arr = (T_H + 273.15) / (T_H - T_L) * exergy_eff
 
         elif mode == "cooling":
-            if isinstance(T_L, (int, float)) and isinstance(
-                T_H, (list, tuple, np.ndarray)
-            ):
-                pass
+            if isinstance(T_L, (int, float)) and isinstance(T_H, np.ndarray):
+                cop_arr = (T_L + 273.15) / (T_H - T_L) * exergy_eff
             else:
                 raise ValueError(
                     f"T_L must be a single value and T_H must be an array. Currently, T_L is a {type(T_L)} and T_H is a {type(T_H)}."
                 )
-            cop_arr = (T_L + 273.15) / (T_H - T_L) * exergy_eff
 
         # limit the COP to be between 0 and 10
         cop_arr = np.clip(cop_arr, 0, 10)
 
-        self.cop_dict[df_key] = TimeSeriesDf(
-            columns=self.district.buildings_names, locator=self.locator
-        )
+        self.cop_dict[df_key] = TimeSeriesDf(columns=self.district.buildings_names)
         self.cop_dict[df_key].loc[:, :] = cop_arr[:, None]
 
 
@@ -275,9 +250,9 @@ class TimeSeriesDf(pd.DataFrame):
     the index is the epw's timestep (normally hourly) and the index's name is "t".
     """
 
-    _epw_data: Optional[pd.DataFrame] = None
+    _epw_data = pd.DataFrame()
 
-    def __init__(self, columns: Union[str, Iterable[str]], locator: InputLocator):
+    def __init__(self, columns: Union[str, Iterable[str]]):
         """
         Initialize the TimeSeriesDf object using the epw data as the index and input column names as the columns.
         All values are initialized to 0.0.
@@ -308,15 +283,15 @@ class TimeSeriesDf(pd.DataFrame):
             ```
         """
 
-        if TimeSeriesDf._epw_data is None:
-            epw_path: str = locator.get_weather_file()
+        if TimeSeriesDf._epw_data.empty:
+            epw_path: str = MyConfig().locator.get_weather_file()
             TimeSeriesDf._epw_data = epw_reader(epw_path)
 
         if isinstance(columns, str):
             columns = [columns]
 
         super().__init__(
-            data=0.0, index=TimeSeriesDf._epw_data["date"], columns=columns
+            data=0.0, index=TimeSeriesDf._epw_data["date"], columns=columns  # type: ignore
         )
         self.index.set_names("t", inplace=True)
 
@@ -338,8 +313,8 @@ class TimeSeriesDf(pd.DataFrame):
             The new index is the pd.DatetimeIndex from the epw data, starting hourly from the beginning of the year until the end.
         :rtype: TimeSeriesDf
         """
-        if cls._epw_data is None:
-            epw_path: str = InputLocator().get_weather_file()
+        if cls._epw_data.empty:
+            epw_path: str = MyConfig().locator.get_weather_file()
             cls._epw_data = epw_reader(epw_path)
 
         if len(df) != len(cls._epw_data):
@@ -373,7 +348,7 @@ class TimeSeriesDf(pd.DataFrame):
         self,
         percentile: float = 0.98,
         is_positive: bool = False,
-    ) -> pd.DataFrame:
+    ):
         """
         This function removes extreme values in the DataFrame by setting them to a lower percentile value.
 
@@ -394,17 +369,18 @@ class TimeSeriesDf(pd.DataFrame):
             df (pd.DataFrame): the DataFrame with the extreme values flattened
         """
         # Check if all values in the DataFrame are numbers
-        if not self.applymap(lambda x: isinstance(x, (int, float))).all().all():
+        assert isinstance(self, pd.DataFrame)
+        if not self.applymap(lambda x: isinstance(x, (int, float))).all().all():  # type: ignore
             raise ValueError("All values in the DataFrame must be numbers")
 
         # check if columns don't have both positive and negative values
         if is_positive:
-            if not self.applymap(lambda x: x >= 0).all().all():
+            if not self.applymap(lambda x: x >= 0).all().all():  # type: ignore
                 raise ValueError(
                     "All columns in the DataFrame must have only non-negative values"
                 )
         else:
-            if not self.applymap(lambda x: x <= 0).all().all():
+            if not self.applymap(lambda x: x <= 0).all().all():  # type: ignore
                 raise ValueError(
                     "All columns in the DataFrame must have only non-positivve values"
                 )
