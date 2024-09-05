@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
 import calliope
-from typing import Union, List
+from typing import Union, List, cast
+
+from pandas.core.tools.datetimes import Scalar
 from cea_energy_hub_optimizer.my_config import MyConfig
 from cea_energy_hub_optimizer.timeseries import TimeSeries
 from cea_energy_hub_optimizer.district import District
@@ -52,14 +54,6 @@ class EnergyHub:
         if self.my_config.use_temperature_sensitive_cop:
             self.district.tech_dict.set_cop_timeseries()
 
-        # # fmt: off
-        # demands = Demand(self.cea_config, self.locator, self.district)
-        # PVs = PV(self.cea_config, self.locator, self.district)
-        # PVTs = PVT(self.cea_config, self.locator, self.district)
-        # SCETs = SC(self.cea_config, self.locator, "ET", self.district)
-        # SCFPs = SC(self.cea_config, self.locator, "FP", self.district)
-        # COPs = COP(self.cea_config, self.locator, self.district)
-        # # fmt: on
         self.timeseries = TimeSeries(self.district)
 
         if self.my_config.flatten_spike:
@@ -67,15 +61,6 @@ class EnergyHub:
                 percentile=self.my_config.flatten_spike_percentile,
                 is_positive=False,
             )
-
-        # self.dict_timeseries_df: dict[str, pd.DataFrame] = {
-        #     **demands.result_dict,
-        #     **PVs.result_dict,
-        #     **PVTs.result_dict,
-        #     **SCETs.result_dict,
-        #     **SCFPs.result_dict,
-        #     **COPs.cop_dict,
-        # }
 
     def get_calliope_model(
         self,
@@ -108,10 +93,8 @@ class EnergyHub:
                 self.district.tech_dict.set_global_max_co2(None)
         else:
             self.district.tech_dict.set_global_max_co2(emission_constraint)
-            # check if the emission constraint is already in the config, if so, delete it
 
         self.district.tech_dict.set_objective(obj)
-
         model = calliope.Model(
             self.district.tech_dict,
             timeseries_dataframes=self.timeseries.timeseries_dict,
@@ -178,27 +161,18 @@ class EnergyHub:
         if approach_tip:
             # if approach_tip is True, then there are in total epsilon+4 points in the pareto front:
             # emission-optimal, close-to-emission-optimal, epsilon points, close-to-cost-optimal, cost-optimal
-            # so we should locate cost-optimal at epsilon+3
-            idx_cost = epsilon + 3
+            n_solution = epsilon + 4
             print(
                 f"""
                   Approaching tip of Pareto Front. 
                   Adding two more epsilon cuts close to the ends. 
-                  Original: {epsilon} , now: {epsilon+2}"""
+                  Original solutions: {epsilon+2} , now: {epsilon+4}"""
             )
         else:
-            idx_cost = epsilon + 1
+            n_solution = epsilon + 2
 
+        self.initialize_pareto_df(n_solution)
         self.store_folder = store_folder
-        df_pareto = pd.DataFrame(
-            columns=["cost", "emission"], index=range(idx_cost + 1)
-        )
-        # read yaml file and get the list of technologies
-        tech_list: List[str] = list(self.district.tech_dict.techs.keys())
-        # calliope does not define the type of the return value, so it's ignored
-        df_tech_cap_pareto = pd.DataFrame(columns=tech_list, index=range(idx_cost + 1))
-        df_tech_cap_pareto.fillna(0, inplace=True)
-        # first get the emission-optimal solution
         model_emission = self.get_calliope_model(
             to_lp=to_lp, to_yaml=to_yaml, obj="emission"
         )
@@ -208,22 +182,7 @@ class EnergyHub:
                 f"{self.store_folder}/{self.district.buildings[0].name}_emission.nc"  # TODO: think of better naming convention
             )
         print("optimization for emission is done")
-        # store the cost and emission in df_pareto
-        df_emission = (
-            model_emission.get_formatted_array("cost")
-            .sel(
-                locs=self.district.buildings[0].name
-            )  # TODO: think of better naming convention
-            .to_pandas()
-            .transpose()
-            .sum(axis=0)
-        )
-        # add the cost and emission to df_pareto
-        df_pareto.loc[0] = [df_emission["monetary"], df_emission["co2"]]
-        # store the technology capacities in df_tech_cap_pareto
-        df_tech_cap_pareto.loc[0] = (
-            model_emission.get_formatted_array("energy_cap").to_pandas().iloc[0]
-        )
+        self.get_cap_from_model(model_emission, 0)
 
         # then get the cost-optimal solution
         model_cost = self.get_calliope_model(to_lp=to_lp, to_yaml=to_yaml, obj="cost")
@@ -234,50 +193,26 @@ class EnergyHub:
                 f"{self.store_folder}/{self.district.buildings[0].name}_cost.nc"  # TODO: think of better naming convention
             )
         print("optimization for cost is done")
-        # store the cost and emission in df_pareto
-        # add epsilon name as row index, start with epsilon_0
-        df_cost = (
-            model_cost.get_formatted_array("cost")
-            .sel(
-                locs=self.district.buildings[0].name
-            )  # TODO: think of better naming convention
-            .to_pandas()
-            .transpose()
-            .sum(axis=0)
-        )  # first column co2, second column monetary
 
-        df_pareto.loc[idx_cost] = [df_cost["monetary"], df_cost["co2"]]
-        df_tech_cap_pareto.loc[idx_cost] = (
-            model_cost.get_formatted_array("energy_cap").to_pandas().iloc[0]
+        self.get_cap_from_model(model_cost, n_solution - 1)
+        emission_max: float = (
+            self.df_pareto.loc[(slice(None), n_solution - 1), "emission"]
+            .sum()
+            .astype(float)
         )
-        # then get the epsilon-optimal solution
-        # first find out min and max emission, and epsilon emissions are evenly distributed between them
-        # if cost and emission optimal have the same emission, then there's no pareto front
-        if df_cost["co2"] <= df_emission["co2"]:
+        emission_min: float = (
+            self.df_pareto.loc[(slice(None), 0), "emission"].sum().astype(float)
+        )
+        if emission_max <= emission_min:
             print(
                 f"cost-optimal and emission-optimal of building {self.district.buildings[0].name} have the same emission, no pareto front"  # TODO: think of better naming convention
             )
-            self.df_pareto = df_pareto
-            self.df_tech_cap_pareto = df_tech_cap_pareto
-            print(df_pareto)
+            print(self.df_pareto.iloc[:, 0:2])
         else:
-            emission_max = df_cost["co2"]
-            emission_min = df_emission["co2"]
-            emission_array = np.linspace(emission_min, emission_max, epsilon + 2)
-            epsilon_list = list(emission_array[1:-1])
-            # calculate the interval between two emissions
-            # for each epsilon, get the cost-optimal solution under a maximal emission constraint
-            if approach_tip:
-                del_emission_begin = np.diff(emission_array)[0] * approach_percentile
-                del_emission_end = np.diff(emission_array)[-1] * approach_percentile
-                epsilon_list = (
-                    [emission_min + del_emission_begin]
-                    + epsilon_list
-                    + [emission_max - del_emission_end]
-                )
-            print(
-                f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts: {idx_cost-1}"
+            epsilon_list = self.get_co2_epsilon_cut(
+                emission_min, emission_max, epsilon, approach_tip, approach_percentile
             )
+
             for i, emission_constraint in enumerate(epsilon_list):
                 n_epsilon = i + 1
                 print(
@@ -300,24 +235,9 @@ class EnergyHub:
                         + f"_epsilon_{n_epsilon}.nc"
                     )
                 print(f"optimization at epsilon {n_epsilon} is done")
-                # store the cost and emission in df_pareto
-                df_epsilon = (
-                    model_epsilon.get_formatted_array("cost")
-                    .sel(
-                        locs=self.district.buildings[0].name
-                    )  # TODO: think of better naming convention
-                    .to_pandas()
-                    .transpose()
-                    .sum(axis=0)
-                )
-                # add the cost and emission to df_pareto
-                df_pareto.loc[n_epsilon] = [df_epsilon["monetary"], df_epsilon["co2"]]
-                # store the technology capacities in df_tech_cap_pareto
-                df_tech_cap_pareto.loc[n_epsilon] = (
-                    model_epsilon.get_formatted_array("energy_cap").to_pandas().iloc[0]
-                )
+                self.get_cap_from_model(model_epsilon, n_epsilon)
 
-            df_pareto = df_pareto.astype({"cost": float, "emission": float})
+            # df_pareto = df_pareto.astype({"cost": float, "emission": float})
             print(
                 "Pareto front for building "
                 + self.district.buildings[
@@ -325,7 +245,93 @@ class EnergyHub:
                 ].name  # TODO: think of better naming convention
                 + " is done. First row is emission-optimal, last row is cost-optimal."
             )
-            # show the pareto front
-            print(df_pareto)
-            self.df_pareto = df_pareto
-            self.df_tech_cap_pareto = df_tech_cap_pareto
+
+            print(self.df_pareto.iloc[:, 0:2])
+
+    def initialize_pareto_df(self, n_solution: int) -> None:
+        multi_index = pd.MultiIndex.from_product(
+            [self.district.buildings_names, range(n_solution)],
+            names=["building", "pareto_index"],
+        )
+        self.df_pareto = pd.DataFrame(
+            data=0.0,
+            index=multi_index,
+            columns=["cost", "emission"] + self.district.tech_list,
+        )
+        self.df_pareto.astype(float)
+
+    def get_cap_from_model(self, model: calliope.Model, i_solution: int) -> None:
+        """
+        From every model, two dfs are generated:
+        df_cost: [locs, costs] a df containing two columns: "monetary" (CHF) and "co2" (kg) costs, aggregated from all techs;
+        df_energy_cap: [(locs, techs), energy_cap] a double-indexed df containing energy_cap (kW) of all techs.
+        Then, they are stored in the df_pareto at the i_solution-th row.
+
+        Example:
+        df_cost:
+
+            ```
+            costs     co2  monetary
+            locs
+            B162298  3347      2012
+            B162299  5000      2000
+            ```
+        df_energy_cap:
+
+            ```
+            techs        ASHP  DHDC_large_heat  ...  hot_water_pipe  cold_water_pipe
+            locs                                ...
+            B162298  2.155492              0.0  ...             0.0              0.0
+            B162299  0.000000              1.0  ...             0.0              0.0
+            ```
+
+        :param model: calliope model after model.run(), which saves the model.results as a xarray dataset
+        :type model: calliope.Model
+        :param i_solution: indicates which row of the df_pareto to store the results
+        :type i_solution: int
+        """
+        # fmt: off
+        df_cost: pd.DataFrame = model.get_formatted_array("cost").sum("techs").to_pandas().transpose() # type: ignore
+        df_energy_cap: pd.DataFrame = model.get_formatted_array("energy_cap").to_pandas() # type: ignore
+        # fmt: on
+
+        missing_column = [
+            col for col in self.district.tech_list if col not in df_energy_cap.columns
+        ]
+        df_energy_cap[missing_column] = 0.0
+        # reindex two dfs to make sure building sequences align with the df_pareto
+        df_cost = df_cost.reindex(self.district.buildings_names, fill_value=0.0)
+        df_energy_cap = df_energy_cap.reindex(
+            self.district.buildings_names, fill_value=0.0
+        )
+        # add the cost and emission to df_pareto
+        self.df_pareto.loc[(slice(None), i_solution), ("cost", "emission")] = (
+            df_cost.loc[:, ["monetary", "co2"]].values
+        )
+        self.df_pareto.loc[
+            (slice(None), i_solution), tuple(self.district.tech_list)
+        ] = df_energy_cap.values
+
+    def get_co2_epsilon_cut(
+        self,
+        emission_min: float,
+        emission_max: float,
+        n_epsilon: int,
+        approach_tip: bool,
+        approach_percentile: float,
+    ):
+        emission_array = np.linspace(emission_min, emission_max, n_epsilon + 2)
+        epsilon_list = list(emission_array[1:-1])
+        if approach_tip:
+            del_emission_begin = np.diff(emission_array)[0] * approach_percentile
+            del_emission_end = np.diff(emission_array)[-1] * approach_percentile
+            epsilon_list = (
+                [emission_min + del_emission_begin]
+                + epsilon_list
+                + [emission_max - del_emission_end]
+            )
+            n_epsilon += 2  # add two more epsilon cuts close to the ends
+        print(
+            f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts in between: {n_epsilon + 2}"
+        )
+        return epsilon_list

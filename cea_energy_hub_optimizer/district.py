@@ -87,6 +87,10 @@ class District:
     def buildings_names(self) -> List[str]:
         return [building.name for building in self.buildings]
 
+    @property
+    def tech_list(self) -> List[str]:
+        return list(self.tech_dict.techs.keys())
+
 
 class TechAttrDict(AttrDict):
     def __init__(self, yml_path: str):

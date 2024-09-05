@@ -83,10 +83,7 @@ def main(config: cea.config.Configuration) -> None:
 
         # if my_config.get_current_solution:
         #     energy_hub.getCurrentCostEmission()
-        df_pareto_aug = energy_hub.df_pareto.merge(
-            energy_hub.df_tech_cap_pareto, left_index=True, right_index=True
-        )
-        df_pareto_aug.to_csv(
+        energy_hub.df_pareto.to_csv(
             store_folder + "/" + building_name + "_pareto.csv",
             index=True,
             index_label="index",
