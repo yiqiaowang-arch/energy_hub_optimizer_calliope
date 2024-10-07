@@ -178,23 +178,17 @@ class EnergyHub:
         )
         model_emission.run()
         if to_nc:
-            model_emission.to_netcdf(
-                f"{self.store_folder}/{self.district.buildings[0].name}_emission.nc"  # TODO: think of better naming convention
-            )
+            self.to_netcdf(model_emission, 0)
         print("optimization for emission is done")
         self.get_cap_from_model(model_emission, 0)
 
-        # then get the cost-optimal solution
         model_cost = self.get_calliope_model(to_lp=to_lp, to_yaml=to_yaml, obj="cost")
-        # run model cost, and find both cost and emission of this result
         model_cost.run()
         if to_nc:
-            model_cost.to_netcdf(
-                f"{self.store_folder}/{self.district.buildings[0].name}_cost.nc"  # TODO: think of better naming convention
-            )
+            self.to_netcdf(model_cost, n_solution - 1)
         print("optimization for cost is done")
-
         self.get_cap_from_model(model_cost, n_solution - 1)
+
         emission_max: float = (
             self.df_pareto.loc[(slice(None), n_solution - 1), "emission"]
             .sum()
@@ -335,3 +329,8 @@ class EnergyHub:
             f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts in between: {n_epsilon + 2}"
         )
         return epsilon_list
+
+    def to_netcdf(self, model: calliope.Model, i_epsilon: int):
+        model.to_netcdf(
+            f"{self.store_folder}/{self.district.buildings[0].name}_epsilon_{i_epsilon}.nc"
+        )
