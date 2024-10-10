@@ -115,6 +115,7 @@ class PV(SolarEnergy):
         self.locator = self.my_config.locator
         mapping_dict = {"supply_PV": "E_PV_gen_kWh"}
         super().__init__(mapping_dict, district)
+        self.divide_by_area("supply_PV")
 
     def get_node_energy(self, building: "Building"):
         if building.name not in self.result_dict["supply_PV"].columns:
@@ -127,8 +128,6 @@ class PV(SolarEnergy):
                 "E_PV_gen_kWh"
             ].to_numpy()
 
-        self.divide_by_area("supply_PV")
-
 
 class PVT(SolarEnergy):
     def __init__(
@@ -140,6 +139,7 @@ class PVT(SolarEnergy):
             "supply_PVT_h": "Q_PVT_gen_kWh",
         }
         super().__init__(mapping_dict, district)
+        self.divide_by_area("supply_PVT_e")
 
     def get_node_energy(self, building: "Building"):
         if building.name not in self.result_dict["supply_PVT_e"].columns:
@@ -155,8 +155,6 @@ class PVT(SolarEnergy):
                 pvt_df["Q_PVT_gen_kWh"].to_numpy() / pvt_df["E_PVT_gen_kWh"].to_numpy()
             )
 
-        self.divide_by_area("supply_PVT_e")
-
 
 class SC(SolarEnergy):
     def __init__(
@@ -169,6 +167,7 @@ class SC(SolarEnergy):
         mapping_dict = {f"supply_SC{panel_type}": "Q_SC_gen_kWh"}
         self.panel_type = panel_type
         super().__init__(mapping_dict, district)
+        self.divide_by_area(f"supply_SC{self.panel_type}")
 
     def get_node_energy(self, building: "Building"):
         result_key = f"supply_SC{self.panel_type}"
@@ -183,8 +182,6 @@ class SC(SolarEnergy):
             self.result_dict[result_key][building.name] = sc_df[
                 "Q_SC_gen_kWh"
             ].to_numpy()
-
-        self.divide_by_area(result_key)
 
 
 class COP:

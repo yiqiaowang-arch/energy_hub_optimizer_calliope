@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
 import calliope
-from typing import Union, List, cast
+from typing import Union, List
 
-from pandas.core.tools.datetimes import Scalar
 from cea_energy_hub_optimizer.my_config import MyConfig
 from cea_energy_hub_optimizer.timeseries import TimeSeries
 from cea_energy_hub_optimizer.district import District
@@ -31,15 +30,12 @@ class EnergyHub:
         buildings: Union[str, List[str]],
         calliope_yaml_path: str,
     ):
-        """__init__ initializes the EnergyHub class with the given parameters.
+        """This function initializes a single-building energy hub optimization model.
 
-        This function initializes a single-building energy hub optimization model.
-
-        Args:
-            name (str): name of the building that follows CEA convention
-            locator (InputLocator): the locator object that helps locate different files
-            calliope_yaml_path (str): the path to the yaml file that contains the calliope energy hub configuration
-            config (Configuration): the configuration object that contains user inputs in plugin.config
+        :param buildings: names of buildings
+        :type buildings: Union[str, List[str]]
+        :param calliope_yaml_path: path that stores the calliope yaml file
+        :type calliope_yaml_path: str
         """
         self.my_config = MyConfig()
         self.district = District(buildings, calliope_yaml_path)
@@ -100,28 +96,15 @@ class EnergyHub:
             timeseries_dataframes=self.timeseries.timeseries_dict,
         )
         if to_lp:
-            model.to_lp(
-                f"{self.store_folder}/{self.district.buildings[0].name}.lp"  # TODO: think of better naming convention
-            )
+            model.to_lp(f"{self.store_folder}/{self.district.name}.lp")
         if to_yaml:
             model.save_commented_model_yaml(
-                f"{self.store_folder}/{self.district.buildings[0].name}.yaml"  # TODO: think of better naming convention
+                f"{self.store_folder}/{self.district.name}.yaml"
             )
         return model
 
-    def get_pareto_front(
-        self,
-        epsilon: int,
-        store_folder: str,
-        approach_tip: bool = False,
-        approach_percentile: float = 0.01,
-        to_lp: bool = False,
-        to_yaml: bool = False,
-        to_nc: bool = False,
-    ):
+    def get_pareto_front(self, store_folder: str) -> None:
         """
-        Finds the pareto front of one building regarding cost and emission.
-
         This function finds the pareto front of one building regarding cost and emission. It follows the steps below:
 
         1. Prepare cost data (monetary: HSLU database; emission: KBOB, limitation: different database).
@@ -134,27 +117,21 @@ class EnergyHub:
         8. Return df_pareto, which contains two columns: cost and emission, along with the index of the number of epsilon cuts. The first row represents the emission-optimal solution, and the last row represents the cost-optimal solution.
         9. Return df_tech_cap_pareto, which contains the technology capacities of each solution.
 
-        Args:
-            epsilon (int): The number of epsilon cuts between the cost-optimal and emission-optimal solutions.
-            building_name (str): The name of the building.
-            building_scenario_folder (str): The folder that contains the building's scenario files.
-            yaml_path (str): The path to the yaml file that contains the energy hub configuration.
-            store_folder (str): The folder that stores the results.
-            building_status (pd.Series): The status of the building, including is_new, is_rebuilt, already_GSHP, already_ASHP, is_disheat.
-            flatten_spikes (bool): If True, flatten the demand spikes.
-            flatten_percentile (float): The percentile to flatten the spikes.
-            to_lp (bool): If True, store the model in lp format.
-            to_yaml (bool): If True, store the model in yaml format.
-
-        Returns:
-            df_pareto (pd.DataFrame): The pareto front of the building, with cost and emission as columns.
-
-            df_tech_cap_pareto (pd.DataFrame): The technology capacities of each solution.
+        :param store_folder: the folder to store the results
+        :type store_folder: str
 
         """
         calliope.set_log_verbosity(
             verbosity="error", include_solver_output=False, capture_warnings=False
         )
+        # initilize local variables
+        epsilon = self.my_config.number_of_epsilon_cut
+        approach_tip = self.my_config.approach_but_not_land_on_tip
+        approach_percentile = self.my_config.approach_percentile
+        to_lp = self.my_config.save_constraint_to_lp
+        to_yaml = self.my_config.save_energy_hub_to_yaml
+        to_nc = self.my_config.save_result_to_nc
+
         if epsilon < 1:
             raise ValueError("There must be at least one epsilon cut!")
 
@@ -199,7 +176,7 @@ class EnergyHub:
         )
         if emission_max <= emission_min:
             print(
-                f"cost-optimal and emission-optimal of building {self.district.buildings[0].name} have the same emission, no pareto front"  # TODO: think of better naming convention
+                f"cost-optimal and emission-optimal of building {self.district.name} have the same emission, no pareto front"
             )
             print(self.df_pareto.iloc[:, 0:2])
         else:
@@ -220,24 +197,13 @@ class EnergyHub:
                 )
                 model_epsilon.run()
                 if to_nc:
-                    model_epsilon.to_netcdf(
-                        path=self.store_folder
-                        + "/"
-                        + self.district.buildings[
-                            0
-                        ].name  # TODO: think of better naming convention
-                        + f"_epsilon_{n_epsilon}.nc"
-                    )
+                    self.to_netcdf(model_epsilon, n_epsilon)
                 print(f"optimization at epsilon {n_epsilon} is done")
                 self.get_cap_from_model(model_epsilon, n_epsilon)
 
             # df_pareto = df_pareto.astype({"cost": float, "emission": float})
             print(
-                "Pareto front for building "
-                + self.district.buildings[
-                    0
-                ].name  # TODO: think of better naming convention
-                + " is done. First row is emission-optimal, last row is cost-optimal."
+                f"Pareto front for {self.district.name} is done. First row is emission-optimal, last row is cost-optimal."
             )
 
             print(self.df_pareto.iloc[:, 0:2])
@@ -302,9 +268,24 @@ class EnergyHub:
         self.df_pareto.loc[(slice(None), i_solution), ("cost", "emission")] = (
             df_cost.loc[:, ["monetary", "co2"]].values
         )
-        self.df_pareto.loc[
-            (slice(None), i_solution), tuple(self.district.tech_list)
-        ] = df_energy_cap.values
+        # # first assert that the 2: columns of df_parato are the same as all the columns of df_energy_cap
+        # # note that we should only check if the content of the columns are the same, not the order, so we should use set
+        # assert set(self.df_pareto.columns[2:]) == set(df_energy_cap.columns)
+
+        # Align df_energy_cap to the columns of self.df_pareto
+        df_energy_cap_aligned = df_energy_cap.reindex(
+            columns=self.df_pareto.columns[2:]
+        )
+
+        # Assign the aligned DataFrame to self.df_pareto
+        self.df_pareto.loc[(slice(None), i_solution), df_energy_cap_aligned.columns] = (
+            df_energy_cap_aligned.values
+        )
+        # print(df_energy_cap.to_string())
+        # print(df_cost.to_string())
+        # print(df_energy_cap_aligned.to_string())
+        # print(self.df_pareto.to_string())
+        # print(self.df_pareto.loc[(slice(None), i_solution), 16:18])
 
     def get_co2_epsilon_cut(
         self,
@@ -332,5 +313,6 @@ class EnergyHub:
 
     def to_netcdf(self, model: calliope.Model, i_epsilon: int):
         model.to_netcdf(
-            f"{self.store_folder}/{self.district.buildings[0].name}_epsilon_{i_epsilon}.nc"
+            f"{self.store_folder}/{self.district.name}_epsilon_{i_epsilon}.nc"
         )
+        print(f"model at epsilon {i_epsilon} is saved in netcdf format.")

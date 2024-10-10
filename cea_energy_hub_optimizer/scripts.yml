@@ -8,6 +8,7 @@ Energy Hub Optimizer:
     module: cea_energy_hub_optimizer.energy_hub_optimizer
     parameters: [ "general:scenario", 
                   "energy-hub-optimizer:buildings",
+                  "energy-hub-optimizer:enable-co-optimization",
                   "energy-hub-optimizer:solver", 
                   "energy-hub-optimizer:evaluated-demand",
                   "energy-hub-optimizer:evaluated-solar-supply",

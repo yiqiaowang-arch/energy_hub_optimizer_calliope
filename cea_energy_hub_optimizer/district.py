@@ -91,6 +91,15 @@ class District:
     def tech_list(self) -> List[str]:
         return list(self.tech_dict.techs.keys())
 
+    @property
+    def name(self) -> str:
+        # if only one building, take the building's name;
+        # if multiple buildings, call it district
+        if len(self.buildings) == 1:
+            return self.buildings[0].name
+        else:
+            return "district"
+
 
 class TechAttrDict(AttrDict):
     def __init__(self, yml_path: str):

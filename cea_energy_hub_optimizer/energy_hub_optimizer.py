@@ -56,40 +56,33 @@ def main(config: cea.config.Configuration) -> None:
     calliope.set_log_verbosity(
         verbosity="error", include_solver_output=False, capture_warnings=False
     )
-
-    for building in buildings:
-        building_name = str(building)
-        if (building_name + "_pareto.csv" in os.listdir(store_folder)) and (
-            my_config.skip_optimized_building is True
-        ):
-            # in case the user has done some buildings and don't want to redo them all over again
-            print(building_name + " is already done, skipping...")
-            continue
-
-        energy_hub = EnergyHub(
-            buildings=building_name,
-            calliope_yaml_path=yaml_path,
+    if my_config.enable_co_optimization:
+        print(
+            "Co-optimization is enabled, all buildings will be optimized in one shot."
         )
+        energy_hub = EnergyHub(buildings, yaml_path)
+        energy_hub.get_pareto_front(store_folder=store_folder)
+        energy_hub.df_pareto.to_csv(store_folder + "/global_pareto.csv", index=True)
+    else:
+        print("Co-optimization is disabled, buildings will be optimized one by one.")
+        for building in buildings:
+            building_name = str(building)
+            if (building_name + "_pareto.csv" in os.listdir(store_folder)) and (
+                my_config.skip_optimized_building is True
+            ):
+                # in case the user has done some buildings and don't want to redo them all over again
+                print(building_name + " is already done, skipping...")
+                continue
 
-        energy_hub.get_pareto_front(
-            epsilon=my_config.number_of_epsilon_cut,
-            store_folder=store_folder,
-            approach_tip=my_config.approach_but_not_land_on_tip,
-            approach_percentile=my_config.approach_percentile,
-            to_lp=my_config.save_constraint_to_lp,
-            to_yaml=my_config.save_energy_hub_to_yaml,
-            to_nc=my_config.save_result_to_nc,
-        )
-
-        # if my_config.get_current_solution:
-        #     energy_hub.getCurrentCostEmission()
-        energy_hub.df_pareto.to_csv(
-            store_folder + "/" + building_name + "_pareto.csv",
-            index=True,
-            index_label="index",
-        )
-        print(building_name + " is optimized! Results saved in " + store_folder)
-        del energy_hub
+            energy_hub = EnergyHub(building_name, yaml_path)
+            energy_hub.get_pareto_front(store_folder=store_folder)
+            # print(energy_hub.df_pareto.to_string())
+            energy_hub.df_pareto.to_csv(
+                store_folder + "/" + building_name + "_pareto.csv",
+                index=True,
+            )
+            print(building_name + " is optimized! Results saved in " + store_folder)
+            del energy_hub
 
 
 def check_solar_technology() -> None:
