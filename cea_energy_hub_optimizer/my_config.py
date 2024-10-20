@@ -26,7 +26,7 @@ class MyConfig:
         # fmt: off
         # energy_hub_optimizer.py/main
         self.buildings:                     List[str]   = self.cea_config.energy_hub_optimizer.buildings                        # type: ignore
-        self.enable_co_optimization:        bool        = self.cea_config.energy_hub_optimizer.enable_co_optimization           # type: ignore
+        self.enable_co_optimization:        bool        = self.cea_config.energy_hub_optimizer.optimize_as_district             # type: ignore
         self.skip_optimized_building:       bool        = self.cea_config.energy_hub_optimizer.skip_optimized_building          # type: ignore
         self.number_of_epsilon_cut:         int         = self.cea_config.energy_hub_optimizer.number_of_epsilon_cut            # type: ignore
         self.approach_but_not_land_on_tip:  bool        = self.cea_config.energy_hub_optimizer.approach_but_not_land_on_tip     # type: ignore

@@ -56,7 +56,7 @@ def main(config: cea.config.Configuration) -> None:
     calliope.set_log_verbosity(
         verbosity="error", include_solver_output=False, capture_warnings=False
     )
-    if my_config.enable_co_optimization:
+    if my_config.optimize_as_district:
         print(
             "Co-optimization is enabled, all buildings will be optimized in one shot."
         )
