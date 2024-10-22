@@ -8,11 +8,12 @@ Energy Hub Optimizer:
     module: cea_energy_hub_optimizer.energy_hub_optimizer
     parameters: [ "general:scenario", 
                   "energy-hub-optimizer:buildings",
+                  "energy-hub-optimizer:optimize-as-district",
                   "energy-hub-optimizer:solver", 
                   "energy-hub-optimizer:evaluated-demand",
                   "energy-hub-optimizer:evaluated-solar-supply",
                   "energy-hub-optimizer:number-of-epsilon-cut",
-                  "energy-hub-optimizer:temperature-sensitive-cop",
+                  "energy-hub-optimizer:use-temperature-sensitive-cop",
                   "energy-hub-optimizer:nominal-cop",
                   "energy-hub-optimizer:temporal-resolution",
                   "energy-hub-optimizer:approach-but-not-land-on-tip", 

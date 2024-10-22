@@ -19,7 +19,7 @@ run:
     backend: pyomo
     bigM: 1e9 # change this when model is not converging
     cyclic_storage: True # If True, storage in the last timestep of the timeseries is considered to be the ‘previous timestep’ in the first timestep of the timeseries
-    ensure_feasibility: False # If true, unmet_demand will be a decision variable, to account for an ability to meet demand with the available supply. If False and a mismatch occurs, the optimisation will fail due to infeasibility
+    ensure_feasibility: True # If true, unmet_demand will be a decision variable, to account for an ability to meet demand with the available supply. If False and a mismatch occurs, the optimisation will fail due to infeasibility
     mode: plan # plan (plan+operate), operate (operate only), spores (sensitivity analysis)
     objective_options:
         cost_class:
@@ -37,43 +37,11 @@ run:
 #        demand_share_per_timestep_decision_main_constraint: 0.01
 
 
-# set locations
-locations:
-    Building: # in the script, this key name will be changed to the actual building name. e.g. Building -> B10001
-        techs: # list of the technologies available for this particular building
-            grid:
-            wood_supply:
-            DHDC_small_heat:
-            # DHDC_small_cooling:
-            DHDC_medium_heat:
-            # DHDC_medium_cooling:
-            DHDC_large_heat:
-            # DHDC_large_cooling:
-            wood_boiler:
-            PV:
-            SCFP:
-            SCET:
-            DHW_to_heat:
-            ASHP:
-            GSHP:
-            battery:
-            DHW_storage:
-            heat_storage:
-            demand_electricity:
-                constraints:
-                    resource: df=demand_el # df= tells calliope to read the data from the dataframes, instead of csv files
-            demand_space_heating:
-                constraints:
-                    resource: df=demand_sh # the name of dataframe is passed inside calliope.Model as a dictionary
-            demand_space_cooling:
-                constraints:
-                    resource: df=demand_sc # keys of dictionary is the name after df=, values are the dataframes
-            demand_hot_water:
-                constraints:
-                    resource: df=demand_dhw
-        available_area: # m2, leave blank because this will be overwritten later in the script
 
-techs:
+# locations: leave blank because location will be assigned later in the script.
+# tech definition here will overwrite the default tech definition below
+
+techs: # only general tech definition. 
     # supply technologies
     # grid supply
     grid:
@@ -133,26 +101,26 @@ techs:
             co2:
                 om_prod: 0.046 # CO2 emission, kg/kWh
                 om_annual: 0.001 # have this just to avoid too big sizing
-    DHDC_small_cooling: #
-        essentials:
-            name: 'DC small'
-            color: '#E37A72'
-            parent: supply
-            carrier_out: cooling
-        constraints:
-            energy_eff: 1
-            energy_cap_min: 50 # kW
-            energy_cap_max: 100 # kW
-            lifetime: 30
-        costs:
-            monetary:
-                interest_rate: 0.05
-                om_prod: 0.037 # cooling price, CHF/kWh
-                om_annual: 131 # yearly maintenance cost based on energy (power) capacity
-                # no additional CAPEX because DH can also provide DC.
-            co2:
-                om_prod: 0.046 # CO2 emission, kg/kWh
-                om_annual: 0.001 # have this just to avoid too big sizing
+    # DHDC_small_cooling: #
+    #     essentials:
+    #         name: 'DC small'
+    #         color: '#E37A72'
+    #         parent: supply
+    #         carrier_out: cooling
+    #     constraints:
+    #         energy_eff: 1
+    #         energy_cap_min: 50 # kW
+    #         energy_cap_max: 100 # kW
+    #         lifetime: 30
+    #     costs:
+    #         monetary:
+    #             interest_rate: 0.05
+    #             om_prod: 0.037 # cooling price, CHF/kWh
+    #             om_annual: 131 # yearly maintenance cost based on energy (power) capacity
+    #             # no additional CAPEX because DH can also provide DC.
+    #         co2:
+    #             om_prod: 0.046 # CO2 emission, kg/kWh
+    #             om_annual: 0.001 # have this just to avoid too big sizing
     DHDC_medium_heat:
         essentials:
             name: 'DH medium'
@@ -174,27 +142,27 @@ techs:
             co2:
                 om_prod: 0.046 # CO2 emission, kg/kWh
                 om_annual: 0.0011 # have this just to avoid too big sizing
-    DHDC_medium_cooling:
-        essentials:
-            name: 'DC medium'
-            color: '#E37A72'
-            parent: supply
-            carrier_out: cooling
-        constraints:
-            energy_eff: 1
-            energy_cap_min: 100 # kW
-            energy_cap_max: 700 # kW
-            lifetime: 30
-        costs:
-            monetary:
-                interest_rate: 0.05
-                # energy_cap: 115 # CHF/kW
-                om_prod: 0.037 # heat/cooling price, CHF/kWh
-                # purchase: 29589 # CHF/device
-                om_annual: 131
-            co2:
-                om_prod: 0.046 # CO2 emission, kg/kWh
-                om_annual: 0.0011 # have this just to avoid too big sizing
+    # DHDC_medium_cooling:
+    #     essentials:
+    #         name: 'DC medium'
+    #         color: '#E37A72'
+    #         parent: supply
+    #         carrier_out: cooling
+    #     constraints:
+    #         energy_eff: 1
+    #         energy_cap_min: 100 # kW
+    #         energy_cap_max: 700 # kW
+    #         lifetime: 30
+    #     costs:
+    #         monetary:
+    #             interest_rate: 0.05
+    #             # energy_cap: 115 # CHF/kW
+    #             om_prod: 0.037 # heat/cooling price, CHF/kWh
+    #             # purchase: 29589 # CHF/device
+    #             om_annual: 131
+    #         co2:
+    #             om_prod: 0.046 # CO2 emission, kg/kWh
+    #             om_annual: 0.0011 # have this just to avoid too big sizing
     DHDC_large_heat: #
         essentials:
             name: 'DH large'
@@ -216,27 +184,27 @@ techs:
             co2:
                 om_prod: 0.046 # CO2 emission, kg/kWh
                 om_annual: 0.0012 # have this just to avoid too big sizing
-    DHDC_large_cooling: #
-        essentials:
-            name: 'DC large'
-            color: '#E37A72'
-            parent: supply
-            carrier_out: cooling
-        constraints:
-            energy_eff: 1
-            energy_cap_min: 700 # kW
-            energy_cap_max: 2000 # kW
-            lifetime: 30
-        costs:
-            monetary:
-                interest_rate: 0.05
-                # energy_cap: 65 # CHF/kW
-                om_prod: 0.037 # heat/cooling price, CHF/kWh
-                # purchase: 66851 # CHF/device
-                om_annual: 131
-            co2:
-                om_prod: 0.046 # CO2 emission, kg/kWh
-                om_annual: 0.0012 # have this just to avoid too big sizing
+    # DHDC_large_cooling: #
+    #     essentials:
+    #         name: 'DC large'
+    #         color: '#E37A72'
+    #         parent: supply
+    #         carrier_out: cooling
+    #     constraints:
+    #         energy_eff: 1
+    #         energy_cap_min: 700 # kW
+    #         energy_cap_max: 2000 # kW
+    #         lifetime: 30
+    #     costs:
+    #         monetary:
+    #             interest_rate: 0.05
+    #             # energy_cap: 65 # CHF/kW
+    #             om_prod: 0.037 # heat/cooling price, CHF/kWh
+    #             # purchase: 66851 # CHF/device
+    #             om_annual: 131
+    #         co2:
+    #             om_prod: 0.046 # CO2 emission, kg/kWh
+    #             om_annual: 0.0012 # have this just to avoid too big sizing
     wood_boiler:
         essentials:
             name: 'Wood boiler DHW'
@@ -260,7 +228,7 @@ techs:
     PV:
         essentials:
             name: 'PV'
-            color: '#8fd14f'
+            color: '#006400'
             parent: supply
             carrier: electricity
         constraints:
@@ -285,7 +253,7 @@ techs:
             name: 'Solar collector flat plate'
             color: '#ff6728'
             parent: supply
-            carrier_out: heat
+            carrier_out: DHW
         constraints:
             resource: df=supply_SCFP
             resource_unit: energy_per_area
@@ -460,6 +428,8 @@ techs:
             color: '#aeff60'
             parent: demand
             carrier: electricity
+        constraints:
+            resource: df=demand_electricity
 
     # then comes SH, SC, DHW demand
     # SH demand
@@ -469,6 +439,8 @@ techs:
             color: '#fac710'
             parent: demand
             carrier: heat
+        constraints:
+            resource: df=demand_space_heating
 
     # SC demand
     demand_space_cooling:
@@ -477,6 +449,8 @@ techs:
             color: '#12cdd4'
             parent: demand
             carrier: cooling
+        constraints:
+            resource: df=demand_space_cooling
 
     # DHW demand
     demand_hot_water:
@@ -485,11 +459,53 @@ techs:
             color: '#ff6728'
             parent: demand
             carrier: DHW
+        constraints:
+            resource: df=demand_hot_water
 
+    # transmission technologies
+    electrical_cable:
+        essentials:
+            name: 'Electrical cable'
+            color: '#000000'
+            parent: transmission
+            carrier: electricity
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0
+                
+    hot_water_pipe:
+        essentials:
+            name: 'Hot water pipe'
+            color: '#000000'
+            parent: transmission
+            carrier: DHW
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+            interest_rate: 0
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0
 
-
-
-
-
-
-
+    cold_water_pipe:
+        essentials:
+            name: 'Cold water pipe'
+            color: '#000000'
+            parent: transmission
+            carrier: cooling
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+            interest_rate: 0
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0

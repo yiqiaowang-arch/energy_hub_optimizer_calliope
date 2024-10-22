@@ -5,6 +5,7 @@ Creates an optimization plugin for building energy hub using Calliope for the Ci
 from __future__ import division
 from __future__ import print_function
 from cea_energy_hub_optimizer.energy_hub import EnergyHub
+from cea_energy_hub_optimizer.my_config import MyConfig
 import warnings
 import cea.config
 import cea.inputlocator
@@ -42,10 +43,12 @@ def main(config: cea.config.Configuration) -> None:
         config (cea.config.Configuration): this is the configuration object that is passed by the CEA scripts.
             User can modify their config using the CEA GUI.
     """
-    check_solar_technology(config)
+    # initialize the singleton class which contains all the config attributes that are needed in the script
+    my_config = MyConfig(config)
+    check_solar_technology()
     warnings.filterwarnings("ignore")
     locator = cea.inputlocator.InputLocator(config.scenario)
-    buildings: list[str] = config.energy_hub_optimizer.buildings
+    buildings: list[str] = my_config.buildings
     yaml_path = os.path.join(os.path.dirname(__file__), "data", "techs_energy_hub.yml")
     store_folder: str = locator._ensure_folder(
         locator.get_optimization_results_folder(), "calliope_energy_hub"
@@ -53,48 +56,36 @@ def main(config: cea.config.Configuration) -> None:
     calliope.set_log_verbosity(
         verbosity="error", include_solver_output=False, capture_warnings=False
     )
-    EnergyHub.getCopTimeseries(
-        locator, config
-    )  # read epw and get COP from the weather file, in case the user wants to use temperature-dependent COP
-
-    for building in buildings:
-        building_name = str(building)
-        if (building_name + "_pareto.csv" in os.listdir(store_folder)) and (
-            config.energy_hub_optimizer.skip_optimized_building is True
-        ):
-            # in case the user has done some buildings and don't want to redo them all over again
-            print(building_name + " is already done, skipping...")
-            continue
-
-        energy_hub = EnergyHub(
-            name=building, locator=locator, calliope_yaml_path=yaml_path, config=config
+    if my_config.optimize_as_district:
+        print(
+            "Co-optimization is enabled, all buildings will be optimized in one shot."
         )
+        energy_hub = EnergyHub(buildings, yaml_path)
+        energy_hub.get_pareto_front(store_folder=store_folder)
+        energy_hub.df_pareto.to_csv(store_folder + "/global_pareto.csv", index=True)
+    else:
+        print("Co-optimization is disabled, buildings will be optimized one by one.")
+        for building in buildings:
+            building_name = str(building)
+            if (building_name + "_pareto.csv" in os.listdir(store_folder)) and (
+                my_config.skip_optimized_building is True
+            ):
+                # in case the user has done some buildings and don't want to redo them all over again
+                print(building_name + " is already done, skipping...")
+                continue
 
-        energy_hub.getParetoFront(
-            epsilon=config.energy_hub_optimizer.number_of_epsilon_cut,
-            store_folder=store_folder,
-            approach_tip=config.energy_hub_optimizer.approach_but_not_land_on_tip,
-            approach_percentile=config.energy_hub_optimizer.approach_percentile,
-            to_lp=config.energy_hub_optimizer.save_constraint_to_lp,
-            to_yaml=config.energy_hub_optimizer.save_energy_hub_to_yaml,
-            to_nc=config.energy_hub_optimizer.save_result_to_nc,
-        )
-
-        if config.energy_hub_optimizer.get_current_solution:
-            energy_hub.getCurrentCostEmission()
-        df_pareto_aug = energy_hub.df_pareto.merge(
-            energy_hub.df_tech_cap_pareto, left_index=True, right_index=True
-        )
-        df_pareto_aug.to_csv(
-            store_folder + "/" + building_name + "_pareto.csv",
-            index=True,
-            index_label="index",
-        )
-        print(building_name + " is optimized! Results saved in " + store_folder)
-        del energy_hub
+            energy_hub = EnergyHub(building_name, yaml_path)
+            energy_hub.get_pareto_front(store_folder=store_folder)
+            # print(energy_hub.df_pareto.to_string())
+            energy_hub.df_pareto.to_csv(
+                store_folder + "/" + building_name + "_pareto.csv",
+                index=True,
+            )
+            print(building_name + " is optimized! Results saved in " + store_folder)
+            del energy_hub
 
 
-def check_solar_technology(config: cea.config.Configuration) -> None:
+def check_solar_technology() -> None:
     """check_solar_technology ensures that all building that are to be optimized have the necessary solar technology results.
 
     This function replaced the input check in the script.yml file, because there one needs to specify the technologies
@@ -108,18 +99,18 @@ def check_solar_technology(config: cea.config.Configuration) -> None:
         config (cea.config.Configuration): this is the configuration object that is passed by the CEA scripts.
             User can modify their config using the CEA GUI.
     """
-    tech_list = config.energy_hub_optimizer.evaluated_solar_supply
+    config = MyConfig()
+    tech_list = config.evaluated_solar_supply
     print(
         f"""
           Checking if solar technology already has been pre-evaluated by CEA...
           Evaluated solar supply: {tech_list}
           """
     )
-    locator = cea.inputlocator.InputLocator(config.scenario)
-    buildings: list[str] = config.energy_hub_optimizer.buildings
+    locator = config.locator
     errors = []
 
-    for building in buildings:
+    for building in config.buildings:
         if "PV" in tech_list:
             if not os.path.exists(locator.PV_results(building)):
                 errors.append(
