@@ -49,7 +49,15 @@ def main(config: cea.config.Configuration) -> None:
     warnings.filterwarnings("ignore")
     locator = cea.inputlocator.InputLocator(config.scenario)
     buildings: list[str] = my_config.buildings
-    yaml_path = os.path.join(os.path.dirname(__file__), "data", "techs_energy_hub.yml")
+    yaml_path = my_config.technology_definition_file
+    if yaml_path == "":
+        yaml_path = os.path.join(
+            os.path.dirname(__file__), "data", "energy_hub_config.yml"
+        )
+    if not os.path.exists(yaml_path):
+        raise FileNotFoundError(
+            "Technology definition file not found. Please define technology data and build your .yml file using Calliope Config Constructor first."
+        )
     store_folder: str = locator._ensure_folder(
         locator.get_optimization_results_folder(), "calliope_energy_hub"
     )

@@ -127,9 +127,10 @@ def read_tech_definition(
     return tech_dict
 
 
-filepath = (
-    r"C:\Users\wangy\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\techDefinition.xlsx"
-)
-tech_dict = read_tech_definition(
-    filepath, to_yaml=True, yaml_path="tech_definition.yaml"
-)
+if __name__ == "__main__":
+    filepath = (
+        r"C:\Users\wangy\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\techDefinition.xlsx"
+    )
+    tech_dict = read_tech_definition(
+        filepath, to_yaml=True, yaml_path="tech_definition.yaml"
+    )

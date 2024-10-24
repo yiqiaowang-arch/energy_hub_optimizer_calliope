@@ -1,0 +1,134 @@
+## definition for plot 8
+# set the model, run and group constraints
+model:
+    calliope_version: 0.6.10
+    name: 'building_energy_hub'
+    timeseries_data: {} # large brackets stands for dictionary. This needs to be kept empty to accept timeseries_dataframes=dict in calliope.Model
+    time:
+        function: 'resample'
+        function_options:
+            resolution: '1D' # other options: '1H', '1D', '1W', '1M'
+
+group_constraints:
+   # A constraint group to apply a systemwide CO2 cap
+   systemwide_co2_cap:
+       cost_max:
+           co2: # NOTE: leave this empty to apply co2 constarints from the config
+
+run:
+    backend: pyomo
+    bigM: 1e9 # change this when model is not converging
+    cyclic_storage: True # If True, storage in the last timestep of the timeseries is considered to be the ‘previous timestep’ in the first timestep of the timeseries
+    ensure_feasibility: True # If true, unmet_demand will be a decision variable, to account for an ability to meet demand with the available supply. If False and a mismatch occurs, the optimisation will fail due to infeasibility
+    mode: plan # plan (plan+operate), operate (operate only), spores (sensitivity analysis)
+    objective_options:
+        cost_class:
+            co2: 0
+            monetary: 1
+        sense: minimize
+    # operation: {}
+    # spores_ioptions: {}
+    # save_logs: './logs'
+    solver: # solver to use. This will be overwritten by the script so keep it empty
+#    solver_options: # advanced settings, see calliope documentation for more details
+#        presolve: 0
+#     ensure_feasibility: true
+#    relax_constraint: # Enable relaxing some equality constraints to be min/max constraints. The extent of relaxation is given as a fraction.
+#        demand_share_per_timestep_decision_main_constraint: 0.01
+
+
+
+# locations: leave blank because location will be assigned later in the script.
+# tech definition here will overwrite the default tech definition below
+
+techs: # only general tech definition. 
+    # supply, conversion, storage techs will be read from the excel
+    # demand technologies
+    # appliances, electricity demand
+    demand_electricity:
+        essentials:
+            name: 'Appliance electricity demand'
+            color: '#aeff60'
+            parent: demand
+            carrier: electricity
+        constraints:
+            resource: df=demand_electricity
+
+    # then comes SH, SC, DHW demand
+    # SH demand
+    demand_space_heating:
+        essentials:
+            name: 'Space heating demand'
+            color: '#fac710'
+            parent: demand
+            carrier: heat
+        constraints:
+            resource: df=demand_space_heating
+
+    # SC demand
+    demand_space_cooling:
+        essentials:
+            name: 'Space cooling demand'
+            color: '#12cdd4'
+            parent: demand
+            carrier: cooling
+        constraints:
+            resource: df=demand_space_cooling
+
+    # DHW demand
+    demand_hot_water:
+        essentials:
+            name: 'DHW demand'
+            color: '#ff6728'
+            parent: demand
+            carrier: DHW
+        constraints:
+            resource: df=demand_hot_water
+
+    # transmission technologies
+    electrical_cable:
+        essentials:
+            name: 'Electrical cable'
+            color: '#000000'
+            parent: transmission
+            carrier: electricity
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0
+                
+    hot_water_pipe:
+        essentials:
+            name: 'Hot water pipe'
+            color: '#000000'
+            parent: transmission
+            carrier: DHW
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+            interest_rate: 0
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0
+
+    cold_water_pipe:
+        essentials:
+            name: 'Cold water pipe'
+            color: '#000000'
+            parent: transmission
+            carrier: cooling
+        constraints:
+            energy_con: True
+            energy_prod: True
+            lifetime: 1
+            interest_rate: 0
+        costs:
+            monetary:
+                purchase_per_distance: 10 # USD/m
+                interest_rate: 0

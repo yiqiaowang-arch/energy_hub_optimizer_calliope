@@ -1,13 +1,26 @@
 # this file defines what would be shown on the dashboard and in the CLI.
-Energy Hub Optimizer:
+Energy Hub Optimizer: # the displayed name of the plugin, which contain multiple modules (first-level name, showed in pop-out menu under Tools section)
+
+  - name: calliope-config-constructor
+    label: Calliope Config Constructor
+    description: read the technology definition from an excel file and generate .yaml file 
+      for later use in Calliope optimization.
+    interfaces: [cli, dashboard]
+    module: cea_energy_hub_optimizer.calliope_config_constructor
+    parameters: [ "general:scenario", 
+                  "calliope-config-constructor:technology-excel-file",
+                  "calliope-config-constructor:yaml-storage-path",
+                  "calliope-config-constructor:yaml-file-name",]
+    input-files:
 
   - name: energy-hub-optimizer # need to be in kebab-case because it is used in the CLI
-    label: Energy Hub Optimizer
+    label: Energy Hub Optimizer # the displayed name of the module (second-level name, showed in pop-out menu from first-level name)
     description: An optimization plugin for building energy hub using Calliope for the City Energy Analyst.
     interfaces: [cli, dashboard]
     module: cea_energy_hub_optimizer.energy_hub_optimizer
     parameters: [ "general:scenario", 
                   "energy-hub-optimizer:buildings",
+                  "energy-hub-optimizer:technology-definition-file",
                   "energy-hub-optimizer:optimize-as-district",
                   "energy-hub-optimizer:solver", 
                   "energy-hub-optimizer:evaluated-demand",
@@ -27,4 +40,3 @@ Energy Hub Optimizer:
                   "energy-hub-optimizer:save-result-to-nc",]
     input-files:
       - [get_demand_results_file, building_name]
-

@@ -26,6 +26,7 @@ class MyConfig:
         # fmt: off
         # energy_hub_optimizer.py/main
         self.buildings:                     List[str]   = self.cea_config.energy_hub_optimizer.buildings                        # type: ignore
+        self.technology_definition_file:    str         = self.cea_config.energy_hub_optimizer.technology_definition_file       # type: ignore
         self.enable_co_optimization:        bool        = self.cea_config.energy_hub_optimizer.optimize_as_district             # type: ignore
         self.skip_optimized_building:       bool        = self.cea_config.energy_hub_optimizer.skip_optimized_building          # type: ignore
         self.number_of_epsilon_cut:         int         = self.cea_config.energy_hub_optimizer.number_of_epsilon_cut            # type: ignore
@@ -45,4 +46,8 @@ class MyConfig:
         self.evaluated_demand:              List[str]   = self.cea_config.energy_hub_optimizer.evaluated_demand                 # type: ignore
         self.evaluated_solar_supply:        List[str]   = self.cea_config.energy_hub_optimizer.evaluated_solar_supply           # type: ignore
         self.nominal_cop:                   float       = self.cea_config.energy_hub_optimizer.nominal_cop                      # type: ignore
+        # calliope config constructor
+        self.technology_excel_file:         str         = self.cea_config.calliope_config_constructor.technology_excel_file     # type: ignore
+        self.yaml_storage_path:             str         = self.cea_config.calliope_config_constructor.yaml_storage_path         # type: ignore
+        self.yaml_file_name:                str         = self.cea_config.calliope_config_constructor.yaml_file_name            # type: ignore
         # fmt: on
