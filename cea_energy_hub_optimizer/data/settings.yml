@@ -13,7 +13,7 @@ group_constraints:
    # A constraint group to apply a systemwide CO2 cap
    systemwide_co2_cap:
        cost_max:
-           co2: # NOTE: leave this empty to apply co2 constarints from the config
+           co2: 1000000000 # NOTE: leave this empty to apply co2 constarints from the config
 
 run:
     backend: pyomo
@@ -29,7 +29,7 @@ run:
     # operation: {}
     # spores_ioptions: {}
     # save_logs: './logs'
-    solver: # solver to use. This will be overwritten by the script so keep it empty
+    solver: glpk # solver to use. This will be overwritten by the script so keep it empty
 #    solver_options: # advanced settings, see calliope documentation for more details
 #        presolve: 0
 #     ensure_feasibility: true

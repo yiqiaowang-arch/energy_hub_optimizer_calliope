@@ -12,6 +12,7 @@ Energy Hub Optimizer: # the displayed name of the plugin, which contain multiple
                   "calliope-config-constructor:yaml-storage-path",
                   "calliope-config-constructor:yaml-file-name",]
     input-files:
+      - [get_demand_results_file, building_name]
 
   - name: energy-hub-optimizer # need to be in kebab-case because it is used in the CLI
     label: Energy Hub Optimizer # the displayed name of the module (second-level name, showed in pop-out menu from first-level name)
