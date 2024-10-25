@@ -1,10 +1,9 @@
 """
-Creates an optimization plugin for building energy hub using Calliope for the City Energy Analyst.
+construct the calliope config yaml file from the settings.yml file and the technology definition excel file.
 """
 
 from __future__ import division
 from __future__ import print_function
-from cea_energy_hub_optimizer.my_config import MyConfig
 import cea.config
 import cea.inputlocator
 import cea.plugin

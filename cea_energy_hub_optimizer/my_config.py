@@ -1,6 +1,6 @@
 from cea.config import Configuration
 from cea.inputlocator import InputLocator
-from typing import Optional, List, Union
+from typing import Optional, List
 
 
 class MyConfig:

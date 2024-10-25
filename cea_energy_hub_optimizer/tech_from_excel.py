@@ -1,4 +1,3 @@
-from os import remove
 import pandas as pd
 import yaml
 from typing import List, Union
