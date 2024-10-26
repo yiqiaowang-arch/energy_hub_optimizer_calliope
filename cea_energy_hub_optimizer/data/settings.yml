@@ -61,7 +61,7 @@ techs: # only general tech definition.
             name: 'Space heating demand'
             color: '#fac710'
             parent: demand
-            carrier: heat
+            carrier: heat_35
         constraints:
             resource: df=demand_space_heating
 
@@ -81,7 +81,7 @@ techs: # only general tech definition.
             name: 'DHW demand'
             color: '#ff6728'
             parent: demand
-            carrier: DHW
+            carrier: heat_60
         constraints:
             resource: df=demand_hot_water
 

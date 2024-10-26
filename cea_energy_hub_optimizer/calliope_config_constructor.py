@@ -65,6 +65,8 @@ def main(config: cea.config.Configuration) -> None:
         with open(yaml_file_path, "w") as file:
             yaml.dump(calliope_config, file)
 
+        print(f"Yaml file is saved at {yaml_file_path}.")
+
 
 if __name__ == "__main__":
     main(cea.config.Configuration())

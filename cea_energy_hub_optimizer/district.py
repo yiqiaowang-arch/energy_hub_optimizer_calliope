@@ -119,20 +119,12 @@ class TechAttrDict(AttrDict):
     def add_locations_from_district(self, district: District):
         for building in district.buildings:
             self._add_locations_from_building(building)
-        self.district = district
 
     def set_temporal_resolution(self, temporal_resolution: str):
         self.set_key("model.time.function_options.resolution", temporal_resolution)
 
     def set_solver(self, solver: str):
         self.set_key("run.solver", solver)
-
-    def set_wood_availaility(self, extra_area: float, energy_density: float):
-        for building in self.district.buildings:
-            self.set_key(
-                key=f"locations.{building.name}.techs.wood_supply.constraints.energy_cap_max",
-                value=(building.area + extra_area) * energy_density * 0.001,
-            )
 
     def set_cop_timeseries(self):
         self.set_key(

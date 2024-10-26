@@ -224,7 +224,8 @@ class COP:
                 raise ValueError(
                     f"T_H must be a single value and T_L must be an array. Currently, T_H is a {type(T_H)} and T_L is a {type(T_L)}."
                 )
-
+            # limit the COP to be between 1 and 8
+            cop_arr = np.clip(cop_arr, 1, 8)
         elif mode == "cooling":
             if isinstance(T_L, (int, float)) and isinstance(T_H, np.ndarray):
                 cop_arr = (T_L + 273.15) / (T_H - T_L) * exergy_eff
@@ -232,9 +233,8 @@ class COP:
                 raise ValueError(
                     f"T_L must be a single value and T_H must be an array. Currently, T_L is a {type(T_L)} and T_H is a {type(T_H)}."
                 )
-
-        # limit the COP to be between 0 and 10
-        cop_arr = np.clip(cop_arr, 0, 10)
+            # limit the COP to be between 0 and 7
+            cop_arr = np.clip(cop_arr, 0, 7)
 
         self.cop_dict[df_key] = TimeSeriesDf(columns=self.district.buildings_names)
         self.cop_dict[df_key].loc[:, :] = cop_arr[:, None]

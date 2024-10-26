@@ -44,7 +44,6 @@ class EnergyHub:
             self.my_config.temporal_resolution
         )
         self.district.tech_dict.set_solver(self.my_config.solver)
-        self.district.tech_dict.set_wood_availaility(extra_area=400, energy_density=0.5)
         self.district.tech_dict.select_evaluated_demand()
         self.district.tech_dict.select_evaluated_solar_supply()
         if self.my_config.use_temperature_sensitive_cop:

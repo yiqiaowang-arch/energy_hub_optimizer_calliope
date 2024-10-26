@@ -58,7 +58,8 @@ def main(config: cea.config.Configuration) -> None:
         raise FileNotFoundError(
             "Technology definition file not found. Please define technology data and build your .yml file using Calliope Config Constructor first."
         )
-    if yaml_path[-5:] not in [".yaml", ".yml"]:
+
+    if yaml_path.split(".")[-1] not in ["yaml", "yml"]:
         raise ValueError(
             "The technology definition file must be a .yaml or .yml file. Please provide a valid .yaml or .yml file."
         )
