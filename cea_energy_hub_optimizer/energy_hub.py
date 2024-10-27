@@ -46,10 +46,12 @@ class EnergyHub:
         self.district.tech_dict.set_solver(self.my_config.solver)
         self.district.tech_dict.select_evaluated_demand()
         self.district.tech_dict.select_evaluated_solar_supply()
+        self.district.tech_dict.set_electricity_tariff()
         if self.my_config.use_temperature_sensitive_cop:
             self.district.tech_dict.set_cop_timeseries()
 
         self.timeseries = TimeSeries(self.district)
+        self.district.tech_dict.set_electricity_tariff()  # this line must be placed after the timeseries object is created
 
         if self.my_config.flatten_spike:
             self.timeseries.demand.flatten_spikes(

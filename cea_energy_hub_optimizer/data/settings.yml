@@ -111,7 +111,6 @@ techs: # only general tech definition.
             energy_con: True
             energy_prod: True
             lifetime: 1
-            interest_rate: 0
         costs:
             monetary:
                 purchase_per_distance: 10 # USD/m
@@ -127,7 +126,6 @@ techs: # only general tech definition.
             energy_con: True
             energy_prod: True
             lifetime: 1
-            interest_rate: 0
         costs:
             monetary:
                 purchase_per_distance: 10 # USD/m

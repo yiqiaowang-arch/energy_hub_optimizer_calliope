@@ -14,6 +14,7 @@ class TimeSeries:
         self.sc_et = SC("ET", district)
         self.sc_fp = SC("FP", district)
         self.cop = COP(district)
+        self.tariff = Tariff(district)
 
     @property
     def timeseries_dict(self):
@@ -24,6 +25,7 @@ class TimeSeries:
             **self.sc_et.result_dict,
             **self.sc_fp.result_dict,
             **self.cop.cop_dict,
+            **self.tariff.tariff_dict,
         }
 
 
@@ -193,23 +195,20 @@ class COP:
         self.locator = self.my_config.locator
         self.district = district
         self.cop_dict: Dict[str, TimeSeriesDf] = {}
-
         self.T_out = TimeSeriesDf._epw_data["drybulb_C"].to_numpy()
-        exergy_eff = self.my_config.nominal_cop / ((60 + 273.15) / (60 - 10))
+        exergy_eff = self.my_config.exergy_efficiency
+
         self.add_cop_timeseries_from_temp(
-            mode="heating",
-            T_H=60,
-            T_L=self.T_out,
-            exergy_eff=exergy_eff,
-            df_key="cop_dhw",
+            "heating", 60, self.T_out, exergy_eff, df_key="cop_heating_60"
         )
         self.add_cop_timeseries_from_temp(
-            mode="cooling",
-            T_H=self.T_out,
-            T_L=10,
-            exergy_eff=exergy_eff,
-            df_key="cop_sc",
+            "heating", 35, self.T_out, exergy_eff, df_key="cop_heating_35"
         )
+        self.add_cop_timeseries_from_temp(
+            "heating", 85, self.T_out, exergy_eff, df_key="cop_heating_85"
+        )
+        if "demand_space_cooling" in self.my_config.evaluated_demand:
+            raise NotImplementedError("currently, cooling COP is not implemented.")
 
     def add_cop_timeseries_from_temp(
         self, mode: str, T_H, T_L, exergy_eff: float, df_key: str
@@ -238,6 +237,44 @@ class COP:
 
         self.cop_dict[df_key] = TimeSeriesDf(columns=self.district.buildings_names)
         self.cop_dict[df_key].loc[:, :] = cop_arr[:, None]
+
+
+class Tariff:
+    def __init__(self, district: District):
+        self.my_config = MyConfig()
+        self.locator = self.my_config.locator
+        self.district = district
+        self.tariff_dict: Dict[str, TimeSeriesDf] = {}
+        ls_var_elec = [
+            "electricity_pronatur",
+            "electricity_natur",
+            "electricity_econatur",
+        ]
+        for var_elec in ls_var_elec:
+            if var_elec in self.district.tech_list:
+                self.generate_electricity_tariff(var_elec)
+
+    def generate_electricity_tariff(self, var_elec: str):
+        # var_elec is the name of the electricty technology.
+        # in techs.{var_elec}.costs.monetary.om_con. the stored value is in the format of "high_tariff/low_tariff"
+        # we need to split the string and convert them to float, then generate the tariff timeseries
+        high_tariff, low_tariff = map(
+            float,
+            self.district.tech_dict.techs[var_elec].costs.monetary.om_con.split("/"),
+        )
+        self.generate_tariff(high_tariff, low_tariff, f"{var_elec}_tariff")
+
+    def generate_tariff(self, high_tariff: float, low_tariff: float, df_key: str):
+        # create a sereis of daily high-low tariff.
+        # high tariff time: Monday to Saturday, from 6:00 to 22:00, the rest is low tariff
+        self.tariff_dict[df_key] = TimeSeriesDf(columns=self.district.buildings_names)
+        self.tariff_dict[df_key].loc[:, :] = low_tariff
+        self.tariff_dict[df_key].loc[
+            (self.tariff_dict[df_key].index.dayofweek <= 5)
+            & (self.tariff_dict[df_key].index.hour >= 6)
+            & (self.tariff_dict[df_key].index.hour < 22),
+            :,
+        ] = high_tariff
 
 
 # define a class which is a pd dataframe, having the index as epw's timestep and index's name as "t"

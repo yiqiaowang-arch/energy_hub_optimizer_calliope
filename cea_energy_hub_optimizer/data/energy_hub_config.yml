@@ -32,6 +32,7 @@ techs:
     costs:
       co2:
         energy_cap: 45.9
+        interest_rate: 0
       monetary:
         energy_cap: 1814.5
         interest_rate: 0.05
@@ -52,6 +53,7 @@ techs:
     costs:
       co2:
         energy_cap: 45.9
+        interest_rate: 0
       monetary:
         energy_cap: 1814.5
         interest_rate: 0.05
@@ -72,6 +74,7 @@ techs:
     costs:
       co2:
         energy_cap: 45.9
+        interest_rate: 0
       monetary:
         energy_cap: 1814.5
         interest_rate: 0.05
@@ -92,6 +95,7 @@ techs:
     costs:
       co2:
         energy_cap: 4.771
+        interest_rate: 0
       monetary:
         energy_cap: 371.8000000000001
         interest_rate: 0.05
@@ -112,6 +116,7 @@ techs:
     costs:
       co2:
         energy_cap: 4.771
+        interest_rate: 0
       monetary:
         energy_cap: 117.36666666666666
         interest_rate: 0.05
@@ -132,6 +137,7 @@ techs:
     costs:
       co2:
         energy_cap: 4.771
+        interest_rate: 0
       monetary:
         energy_cap: 72.01
         interest_rate: 0.05
@@ -152,6 +158,7 @@ techs:
     costs:
       co2:
         energy_cap: 4.771
+        interest_rate: 0
       monetary:
         energy_cap: 180.88
         interest_rate: 0.05
@@ -172,6 +179,7 @@ techs:
     costs:
       co2:
         energy_cap: 36.3
+        interest_rate: 0
       monetary:
         energy_cap: 2544.9
         interest_rate: 0.05
@@ -192,6 +200,7 @@ techs:
     costs:
       co2:
         energy_cap: 36.3
+        interest_rate: 0
       monetary:
         energy_cap: 2544.9
         interest_rate: 0.05
@@ -212,6 +221,7 @@ techs:
     costs:
       co2:
         energy_cap: 36.3
+        interest_rate: 0
       monetary:
         energy_cap: 2544.9
         interest_rate: 0.05
@@ -228,6 +238,8 @@ techs:
       energy_eff: 1
       lifetime: 1
     costs:
+      co2:
+        interest_rate: 0
       monetary:
         interest_rate: 0.05
     essentials:
@@ -240,6 +252,8 @@ techs:
       energy_eff: 1
       lifetime: 1
     costs:
+      co2:
+        interest_rate: 0
       monetary:
         interest_rate: 0.05
     essentials:
@@ -252,6 +266,8 @@ techs:
       energy_eff: 1
       lifetime: 1
     costs:
+      co2:
+        interest_rate: 0
       monetary:
         interest_rate: 0.05
     essentials:
@@ -266,11 +282,11 @@ techs:
       monetary:
         interest_rate: 0.05
     essentials:
+      carrier_out: placeholder
       name: PVT
       parent: supply
   PV_extra_large:
     constraints:
-      energy_cap_max: 1000
       energy_cap_min: 200
       export_carrier: electricity
       lifetime: 27
@@ -279,10 +295,10 @@ techs:
     costs:
       co2:
         energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 1300
         interest_rate: 0.05
-        purchase: 0
     essentials:
       carrier_out: electricity
       color: '#c69874'
@@ -299,6 +315,7 @@ techs:
     costs:
       co2:
         energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 1000
         interest_rate: 0.05
@@ -319,6 +336,7 @@ techs:
     costs:
       co2:
         energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 1444
         interest_rate: 0.05
@@ -331,7 +349,6 @@ techs:
   PV_small:
     constraints:
       energy_cap_max: 10
-      energy_cap_min: 0
       export_carrier: electricity
       lifetime: 27
       resource_area_per_energy_cap: 5.56
@@ -339,10 +356,10 @@ techs:
     costs:
       co2:
         energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 3000
         interest_rate: 0.05
-        purchase: 0
     essentials:
       carrier_out: electricity
       color: '#c69871'
@@ -356,10 +373,10 @@ techs:
     costs:
       co2:
         energy_cap: 296
+        interest_rate: 0
       monetary:
         energy_cap: 2047
         interest_rate: 0.05
-        purchase: 0
     essentials:
       carrier_out: heat_85
       color: '#e6b8b7'
@@ -373,10 +390,10 @@ techs:
     costs:
       co2:
         energy_cap: 290
+        interest_rate: 0
       monetary:
         energy_cap: 1576
         interest_rate: 0.05
-        purchase: 0
     essentials:
       carrier_out: heat_60
       color: '#c4d79b'
@@ -392,9 +409,13 @@ techs:
       energy_eff: 8
       lifetime: 20
     costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
       monetary:
         energy_cap: 1113.6
         interest_rate: 0.05
+        om_annual: 11.57
         purchase: 55600
     essentials:
       carrier_in: electricity
@@ -413,9 +434,13 @@ techs:
       energy_eff: 4.44
       lifetime: 20
     costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
       monetary:
         energy_cap: 1113.6
         interest_rate: 0.05
+        om_annual: 11.57
         purchase: 55600
     essentials:
       carrier_in: electricity
@@ -434,9 +459,13 @@ techs:
       energy_eff: 8
       lifetime: 20
     costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
       monetary:
         energy_cap: 1113.6
         interest_rate: 0.05
+        om_annual: 11.57
         purchase: 55600
     essentials:
       carrier_in: electricity
@@ -449,7 +478,6 @@ techs:
     constraints:
       energy_con: true
       energy_prod: true
-      interest_rate: 0
       lifetime: 1
     costs:
       monetary:
@@ -571,6 +599,7 @@ techs:
     costs:
       co2:
         energy_cap: 18.1
+        interest_rate: 0
       monetary:
         energy_cap: 155.3333333333334
         interest_rate: 0.05
@@ -591,6 +620,7 @@ techs:
     costs:
       co2:
         energy_cap: 18.1
+        interest_rate: 0
       monetary:
         energy_cap: 176.66666666666666
         interest_rate: 0.05
@@ -611,6 +641,7 @@ techs:
     costs:
       co2:
         energy_cap: 37.685
+        interest_rate: 0
       monetary:
         energy_cap: 300
         interest_rate: 0.05
@@ -661,7 +692,8 @@ techs:
       lifetime: 15
     costs:
       co2:
-        purchase: 86.82
+        energy_cap: 86.82
+        interest_rate: 0
       monetary:
         energy_cap: 1108.2
         interest_rate: 0.05
@@ -692,7 +724,6 @@ techs:
     constraints:
       energy_con: true
       energy_prod: true
-      interest_rate: 0
       lifetime: 1
     costs:
       monetary:
@@ -706,15 +737,16 @@ techs:
   li_ion_battery:
     constraints:
       energy_cap_max: 1000
+      energy_cap_per_storage_cap_max: 0.25
       energy_eff: 0.91
       lifetime: 13
       storage_initial: 0.5
       storage_loss: 0.001
     costs:
       co2:
+        interest_rate: 0
         storage_cap: 241.5
       monetary:
-        energy_cap_per_storage_cap_max: 0.25
         interest_rate: 0.05
         om_annual_investment_fraction: 0.025
         storage_cap: 367
@@ -746,6 +778,7 @@ techs:
     costs:
       co2:
         energy_cap: 19.51
+        interest_rate: 0
       monetary:
         energy_cap: 211.66666666666666
         interest_rate: 0.05
@@ -766,6 +799,7 @@ techs:
     costs:
       co2:
         energy_cap: 25.07
+        interest_rate: 0
       monetary:
         energy_cap: 189.44444444444443
         interest_rate: 0.05
@@ -786,6 +820,7 @@ techs:
     costs:
       co2:
         energy_cap: 44.555
+        interest_rate: 0
       monetary:
         energy_cap: 486.6666666666667
         interest_rate: 0.05
@@ -820,6 +855,7 @@ techs:
     costs:
       co2:
         energy_cap: 19.4
+        interest_rate: 0
       monetary:
         energy_cap: 278.00000000000006
         interest_rate: 0.05
@@ -840,6 +876,7 @@ techs:
     costs:
       co2:
         energy_cap: 19.4
+        interest_rate: 0
       monetary:
         energy_cap: 414.9999999999999
         interest_rate: 0.05
@@ -860,6 +897,7 @@ techs:
     costs:
       co2:
         energy_cap: 77.9
+        interest_rate: 0
       monetary:
         energy_cap: 880
         interest_rate: 0.05
@@ -880,6 +918,7 @@ techs:
       storage_loss: 0.01
     costs:
       co2:
+        interest_rate: 0
         storage_cap: 7
       monetary:
         interest_rate: 0.05
@@ -899,6 +938,7 @@ techs:
       storage_loss: 0.015
     costs:
       co2:
+        interest_rate: 0
         storage_cap: 7
       monetary:
         interest_rate: 0.05
@@ -918,6 +958,7 @@ techs:
       storage_loss: 0.02
     costs:
       co2:
+        interest_rate: 0
         storage_cap: 7
       monetary:
         interest_rate: 0.05

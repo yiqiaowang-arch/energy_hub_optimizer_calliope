@@ -45,9 +45,5 @@ class MyConfig:
         # timeseries.py
         self.evaluated_demand:              List[str]   = self.cea_config.energy_hub_optimizer.evaluated_demand                 # type: ignore
         self.evaluated_solar_supply:        List[str]   = self.cea_config.energy_hub_optimizer.evaluated_solar_supply           # type: ignore
-        self.nominal_cop:                   float       = self.cea_config.energy_hub_optimizer.nominal_cop                      # type: ignore
-        # calliope config constructor
-        # self.technology_excel_file:         str         = self.cea_config.calliope_config_constructor.technology_excel_file     # type: ignore
-        # self.yaml_storage_path:             str         = self.cea_config.calliope_config_constructor.yaml_storage_path         # type: ignore
-        # self.yaml_file_name:                str         = self.cea_config.calliope_config_constructor.yaml_file_name            # type: ignore
+        self.exergy_efficiency:             float       = self.cea_config.energy_hub_optimizer.exergy_efficiency                # type: ignore
         # fmt: on

@@ -28,7 +28,7 @@ Energy Hub Optimizer: # the displayed name of the plugin, which contain multiple
                   "energy-hub-optimizer:evaluated-solar-supply",
                   "energy-hub-optimizer:number-of-epsilon-cut",
                   "energy-hub-optimizer:use-temperature-sensitive-cop",
-                  "energy-hub-optimizer:nominal-cop",
+                  "energy-hub-optimizer:exergy-efficiency",
                   "energy-hub-optimizer:temporal-resolution",
                   "energy-hub-optimizer:approach-but-not-land-on-tip", 
                   "energy-hub-optimizer:approach-percentile",

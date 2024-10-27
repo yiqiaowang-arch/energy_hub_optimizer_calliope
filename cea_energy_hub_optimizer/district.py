@@ -17,6 +17,10 @@ class Building(Node):
         self.name = name
         self.locator = MyConfig().locator
         self.get_geometry()
+        self.get_emission_system()
+
+    def __str__(self):
+        return self.name
 
     def get_geometry(self):
         zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
@@ -56,7 +60,6 @@ class District:
         self.buildings: List[Building] = []
         for building_name in building_names:
             building = Building(name=building_name)
-            building.get_emission_system()
             self.buildings.append(building)
 
     def _get_cea_input_files(self):
@@ -75,7 +78,6 @@ class District:
 
     def add_building_from_name(self, building_name: str):
         building = Building(name=building_name)
-        building.get_emission_system()
         self.buildings.append(building)
         self.tech_dict._add_locations_from_building(building)
 
@@ -128,12 +130,16 @@ class TechAttrDict(AttrDict):
 
     def set_cop_timeseries(self):
         self.set_key(
-            key="techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
-            value="df=cop_dhw",
+            key="techs.ASHP_35.constraints.energy_eff",
+            value="df=cop_heating_35",
         )
         self.set_key(
-            key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
-            value="df=cop_sc",
+            key="techs.ASHP_60.constraints.energy_eff",
+            value="df=cop_heating_60",
+        )
+        self.set_key(
+            key="techs.ASHP_85.constraints.energy_eff",
+            value="df=cop_heating_85",
         )
         print(
             "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
@@ -148,11 +154,31 @@ class TechAttrDict(AttrDict):
                     self.del_key(f"locations.{building}.techs.{tech}")
 
     def select_evaluated_solar_supply(self):
-        solar_supply_techs = ["PV", "PVT", "SCET", "SCFP"]
+        solar_supply_techs = [
+            "PV_small",
+            "PV_middle",
+            "PV_large",
+            "PV_extra_large",
+            "PVT",
+            "SCET",
+            "SCFP",
+        ]
         for tech in solar_supply_techs:
             if tech not in self.my_config.evaluated_solar_supply:
                 for building in self.locations.keys():
                     self.del_key(f"locations.{building}.techs.{tech}")
+
+    def set_electricity_tariff(self):
+        ls_var_elec = [
+            "electricity_pronatur",
+            "electricity_natur",
+            "electricity_econatur",
+        ]
+        for tech in ls_var_elec:
+            self.set_key(
+                key=f"techs.{tech}.costs.monetary.om_con",
+                value=f"df={tech}_tariff",
+            )
 
     def set_global_max_co2(self, max_co2: Union[float, None]):
         self.set_key(
