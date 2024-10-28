@@ -46,7 +46,6 @@ class EnergyHub:
         self.district.tech_dict.set_solver(self.my_config.solver)
         self.district.tech_dict.select_evaluated_demand()
         self.district.tech_dict.select_evaluated_solar_supply()
-        self.district.tech_dict.set_electricity_tariff()
         if self.my_config.use_temperature_sensitive_cop:
             self.district.tech_dict.set_cop_timeseries()
 
@@ -58,6 +57,7 @@ class EnergyHub:
                 percentile=self.my_config.flatten_spike_percentile,
                 is_positive=False,
             )
+        self.district.tech_dict.set_emission_temperature(self.district)
 
     def get_calliope_model(
         self,

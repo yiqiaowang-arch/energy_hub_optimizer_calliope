@@ -199,3 +199,33 @@ class TechAttrDict(AttrDict):
         else:
             raise ValueError("objective must be either cost or emission")
         print(f"Objective set to {objective} ...")
+
+    def set_emission_temperature(self, district: District):
+        """
+        check the emission system of the district, set the carrier of demand_space_heating accordingly.
+        the following emission systems are available from inputs/technology/assemblies/HVAC.xlsx:
+        ```
+        Emission system 	            Carrier
+        None	                    HVAC_HEATING_AS0
+        Radiator (90/70) 	            HVAC_HEATING_AS1
+        Radiator (70/55) 	            HVAC_HEATING_AS2
+        central AC (40/20) 	            HVAC_HEATING_AS3
+        Floor heating (40/35) 	    HVAC_HEATING_AS4
+        ```
+        """
+        carrier_dict = {
+            "HVAC_HEATING_AS0": None,
+            "HVAC_HEATING_AS1": "heat_85",
+            "HVAC_HEATING_AS2": "heat_60",
+            "HVAC_HEATING_AS3": "heat_35",
+            "HVAC_HEATING_AS4": "heat_35",
+        }
+        for building in district.buildings:
+            carrier = carrier_dict[building.emission]
+            self.set_key(
+                key=f"locations.{building.name}.techs.demand_space_heating.essentials.carrier",
+                value=carrier,
+            )
+            print(
+                f"Building {building} has emission system {building.emission}, set space heating carrier to {carrier} ..."
+            )
