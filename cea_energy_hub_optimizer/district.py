@@ -46,7 +46,7 @@ class District:
     def __init__(
         self,
         building_names: Union[str, List[str]],
-        yml_path: str,
+        # yml_path: str,
     ):
         if isinstance(building_names, str):
             building_names = [building_names]
@@ -54,7 +54,7 @@ class District:
         self.locator = MyConfig().locator
         self._get_input_buildings(building_names)
         self._get_cea_input_files()
-        self._get_techs_from_yaml(yml_path)
+        # self._get_techs_from_yaml(yml_path)
 
     def _get_input_buildings(self, building_names: List[str]):
         self.buildings: List[Building] = []
@@ -72,9 +72,9 @@ class District:
         self.zone = zone.loc[self.buildings_names]
         self.air_conditioning = air_conditioning.loc[self.buildings_names]
 
-    def _get_techs_from_yaml(self, yml_path: str):
-        self.tech_dict = TechAttrDict(yml_path=yml_path)
-        self.tech_dict.add_locations_from_district(self)
+    # def _get_techs_from_yaml(self, yml_path: str):
+    #     self.tech_dict = TechAttrDict(yml_path=yml_path)
+    #     self.tech_dict.add_locations_from_district(self)
 
     def add_building_from_name(self, building_name: str):
         building = Building(name=building_name)
@@ -89,9 +89,9 @@ class District:
     def buildings_names(self) -> List[str]:
         return [building.name for building in self.buildings]
 
-    @property
-    def tech_list(self) -> List[str]:
-        return list(self.tech_dict.techs.keys())
+    # @property
+    # def tech_list(self) -> List[str]:
+    #     return list(self.tech_dict.techs.keys())
 
     @property
     def name(self) -> str:
@@ -109,6 +109,10 @@ class TechAttrDict(AttrDict):
         yaml_data = AttrDict.from_yaml(yml_path)
         self.update(yaml_data)
         self.my_config = MyConfig()
+
+    @property
+    def tech_list(self) -> List[str]:
+        return list(self.techs.keys())
 
     def _add_locations_from_building(self, buildings: Union[Building, List[Building]]):
         tech_name_dict = {key: None for key in self.techs.keys()}

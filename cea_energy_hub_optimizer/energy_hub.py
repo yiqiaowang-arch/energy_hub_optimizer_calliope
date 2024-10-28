@@ -5,7 +5,7 @@ from typing import Union, List
 
 from cea_energy_hub_optimizer.my_config import MyConfig
 from cea_energy_hub_optimizer.timeseries import TimeSeries
-from cea_energy_hub_optimizer.district import District
+from cea_energy_hub_optimizer.district import District, TechAttrDict
 
 """ A class definition of a single-building energy hub optimization model.
 
@@ -17,7 +17,7 @@ set an energy hub, with the following attributes:
 - emission_type:        str                             type of emission system, either 'HVAC_HEATING_AS1' or 'HVAC_HEATING_AS4'
 - area:                 float                           area of the building
 - location:             dict                            location of the building, with keys 'lat' and 'lon'
-- district.tech_dict:   TechAttrDict                    calliope configuration object from the yaml file
+- tech_dict:            TechAttrDict                    calliope configuration object from the yaml file
 - dict_timeseries_df:   dict: [str, pd.DataFrame]       dictionary of timeseries dataframes, with keys 'demand_electricity', 
                                                         'demand_space_heating', 'demand_hot_water', 'demand_space_cooling', 
                                                         'supply_PV', 'supply_PVT_e', 'supply_PVT_h', 'supply_SCFP', 'supply_SCET'
@@ -38,26 +38,26 @@ class EnergyHub:
         :type calliope_yaml_path: str
         """
         self.my_config = MyConfig()
-        self.district = District(buildings, calliope_yaml_path)
-        self.district.tech_dict.add_locations_from_district(self.district)
-        self.district.tech_dict.set_temporal_resolution(
-            self.my_config.temporal_resolution
-        )
-        self.district.tech_dict.set_solver(self.my_config.solver)
-        self.district.tech_dict.select_evaluated_demand()
-        self.district.tech_dict.select_evaluated_solar_supply()
+        self.district = District(buildings)
+        self.tech_dict = TechAttrDict(calliope_yaml_path)
+        self.tech_dict.add_locations_from_district(self.district)
+        self.tech_dict.set_temporal_resolution(self.my_config.temporal_resolution)
+        self.tech_dict.set_solver(self.my_config.solver)
+        self.tech_dict.select_evaluated_demand()
+        self.tech_dict.select_evaluated_solar_supply()
         if self.my_config.use_temperature_sensitive_cop:
-            self.district.tech_dict.set_cop_timeseries()
+            self.tech_dict.set_cop_timeseries()
 
-        self.timeseries = TimeSeries(self.district)
-        self.district.tech_dict.set_electricity_tariff()  # this line must be placed after the timeseries object is created
+        # high/low tariff info is also stored in the tech_dict
+        self.timeseries = TimeSeries(self.district, self.tech_dict)
+        self.tech_dict.set_electricity_tariff()  # this line must be placed after the timeseries object is created
 
         if self.my_config.flatten_spike:
             self.timeseries.demand.flatten_spikes(
                 percentile=self.my_config.flatten_spike_percentile,
                 is_positive=False,
             )
-        self.district.tech_dict.set_emission_temperature(self.district)
+        self.tech_dict.set_emission_temperature(self.district)
 
     def get_calliope_model(
         self,
@@ -82,18 +82,16 @@ class EnergyHub:
         Return:
         Model:                      calliope.Model, the optimized model
         """
-        # if emission constraint is not None, add it to the self.district.tech_dict
+        # if emission constraint is not None, add it to the self.tech_dict
         if emission_constraint is None:
-            if bool(
-                self.district.tech_dict.get_global_max_co2()
-            ):  # if exists, delete it
-                self.district.tech_dict.set_global_max_co2(None)
+            if bool(self.tech_dict.get_global_max_co2()):  # if exists, delete it
+                self.tech_dict.set_global_max_co2(None)
         else:
-            self.district.tech_dict.set_global_max_co2(emission_constraint)
+            self.tech_dict.set_global_max_co2(emission_constraint)
 
-        self.district.tech_dict.set_objective(obj)
+        self.tech_dict.set_objective(obj)
         model = calliope.Model(
-            self.district.tech_dict,
+            self.tech_dict,
             timeseries_dataframes=self.timeseries.timeseries_dict,
         )
         if to_lp:
@@ -159,6 +157,7 @@ class EnergyHub:
             self.to_netcdf(model_emission, 0)
         print("optimization for emission is done")
         self.get_cap_from_model(model_emission, 0)
+        del model_emission
 
         model_cost = self.get_calliope_model(to_lp=to_lp, to_yaml=to_yaml, obj="cost")
         model_cost.run()
@@ -166,6 +165,7 @@ class EnergyHub:
             self.to_netcdf(model_cost, n_solution - 1)
         print("optimization for cost is done")
         self.get_cap_from_model(model_cost, n_solution - 1)
+        del model_cost
 
         emission_max: float = (
             self.df_pareto.loc[(slice(None), n_solution - 1), "emission"]
@@ -201,6 +201,7 @@ class EnergyHub:
                     self.to_netcdf(model_epsilon, n_epsilon)
                 print(f"optimization at epsilon {n_epsilon} is done")
                 self.get_cap_from_model(model_epsilon, n_epsilon)
+                del model_epsilon
 
             # df_pareto = df_pareto.astype({"cost": float, "emission": float})
             print(
@@ -208,6 +209,7 @@ class EnergyHub:
             )
 
             print(self.df_pareto.iloc[:, 0:2])
+            # delete the model to free memory
 
     def initialize_pareto_df(self, n_solution: int) -> None:
         multi_index = pd.MultiIndex.from_product(
@@ -217,7 +219,7 @@ class EnergyHub:
         self.df_pareto = pd.DataFrame(
             data=0.0,
             index=multi_index,
-            columns=["cost", "emission"] + self.district.tech_list,
+            columns=["cost", "emission"] + self.tech_dict.tech_list,
         )
         self.df_pareto.astype(float)
 
@@ -257,7 +259,7 @@ class EnergyHub:
         # fmt: on
 
         missing_column = [
-            col for col in self.district.tech_list if col not in df_energy_cap.columns
+            col for col in self.tech_dict.tech_list if col not in df_energy_cap.columns
         ]
         df_energy_cap[missing_column] = 0.0
         # reindex two dfs to make sure building sequences align with the df_pareto

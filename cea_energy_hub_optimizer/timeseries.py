@@ -2,19 +2,19 @@ import numpy as np
 import pandas as pd
 from cea.utilities.epwreader import epw_reader
 from typing import Union, Iterable, Dict
-from cea_energy_hub_optimizer.district import District, Building
+from cea_energy_hub_optimizer.district import District, Building, TechAttrDict
 from cea_energy_hub_optimizer.my_config import MyConfig
 
 
 class TimeSeries:
-    def __init__(self, district: District):
+    def __init__(self, district: District, tech_dict: TechAttrDict):
         self.demand = Demand(district)
         self.pv = PV(district)
         self.pvt = PVT(district)
         self.sc_et = SC("ET", district)
         self.sc_fp = SC("FP", district)
         self.cop = COP(district)
-        self.tariff = Tariff(district)
+        self.tariff = Tariff(district, tech_dict)
 
     @property
     def timeseries_dict(self):
@@ -36,7 +36,7 @@ class EnergyIO:
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         self.district = district
         self.mapping_dict = mapping_dict
         self.result_dict: dict[str, TimeSeriesDf] = {
@@ -71,7 +71,7 @@ class Demand(EnergyIO):
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         self.mapping_dict = {
             "demand_electricity": "E_sys_kWh",
             "demand_space_heating": "Qhs_sys_kWh",
@@ -81,7 +81,9 @@ class Demand(EnergyIO):
         super().__init__(self.mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
-        demand_path = self.locator.get_demand_results_file(building=building.name)
+        demand_path = self.my_config.locator.get_demand_results_file(
+            building=building.name
+        )
         demand_df = pd.read_csv(demand_path, usecols=list(self.mapping_dict.values()))
         for key in self.mapping_dict.keys():
             if building.name not in self.result_dict[key].columns:
@@ -114,7 +116,7 @@ class PV(SolarEnergy):
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         mapping_dict = {"supply_PV": "E_PV_gen_kWh"}
         super().__init__(mapping_dict, district)
         self.divide_by_area("supply_PV")
@@ -124,7 +126,7 @@ class PV(SolarEnergy):
             self.result_dict["supply_PV"].add_columns(building.name)
 
         if "PV" in self.my_config.evaluated_solar_supply:
-            pv_path = self.locator.PV_results(building=building.name)
+            pv_path = self.my_config.locator.PV_results(building=building.name)
             pv_df = pd.read_csv(pv_path, usecols=["E_PV_gen_kWh"])
             self.result_dict["supply_PV"][building.name] = pv_df[
                 "E_PV_gen_kWh"
@@ -148,7 +150,7 @@ class PVT(SolarEnergy):
             self.result_dict["supply_PVT_e"].add_columns(building.name)
 
         if "PVT" in self.my_config.evaluated_solar_supply:
-            pvt_path = self.locator.PVT_results(building=building.name)
+            pvt_path = self.my_config.locator.PVT_results(building=building.name)
             pvt_df = pd.read_csv(pvt_path, usecols=list(self.mapping_dict.values()))
             self.result_dict["supply_PVT_e"][building.name] = pvt_df[
                 "E_PVT_gen_kWh"
@@ -165,7 +167,7 @@ class SC(SolarEnergy):
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         mapping_dict = {f"supply_SC{panel_type}": "Q_SC_gen_kWh"}
         self.panel_type = panel_type
         super().__init__(mapping_dict, district)
@@ -177,7 +179,7 @@ class SC(SolarEnergy):
             self.result_dict[result_key].add_columns(building.name)
 
         if f"SC{self.panel_type}" in self.my_config.evaluated_solar_supply:
-            sc_path = self.locator.SC_results(
+            sc_path = self.my_config.locator.SC_results(
                 building=building.name, panel_type=self.panel_type
             )
             sc_df = pd.read_csv(sc_path, usecols=["Q_SC_gen_kWh"])
@@ -192,7 +194,7 @@ class COP:
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         self.district = district
         self.cop_dict: Dict[str, TimeSeriesDf] = {}
         self.T_out = TimeSeriesDf._epw_data["drybulb_C"].to_numpy()
@@ -240,10 +242,11 @@ class COP:
 
 
 class Tariff:
-    def __init__(self, district: District):
+    def __init__(self, district: District, tech_dict: TechAttrDict):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         self.district = district
+        self.tech_dict = tech_dict
         self.tariff_dict: Dict[str, TimeSeriesDf] = {}
         ls_var_elec = [
             "electricity_pronatur",
@@ -251,7 +254,7 @@ class Tariff:
             "electricity_econatur",
         ]
         for var_elec in ls_var_elec:
-            if var_elec in self.district.tech_list:
+            if var_elec in self.tech_dict.techs.keys():
                 self.generate_electricity_tariff(var_elec)
 
     def generate_electricity_tariff(self, var_elec: str):
@@ -260,7 +263,7 @@ class Tariff:
         # we need to split the string and convert them to float, then generate the tariff timeseries
         high_tariff, low_tariff = map(
             float,
-            self.district.tech_dict.techs[var_elec].costs.monetary.om_con.split("/"),
+            self.tech_dict.techs[var_elec].costs.monetary.om_con.split("/"),
         )
         self.generate_tariff(high_tariff, low_tariff, f"{var_elec}_tariff")
 
