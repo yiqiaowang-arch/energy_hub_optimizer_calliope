@@ -17,7 +17,6 @@ group_constraints:
 
 run:
     backend: pyomo
-    bigM: 1e9 # change this when model is not converging
     cyclic_storage: True # If True, storage in the last timestep of the timeseries is considered to be the ‘previous timestep’ in the first timestep of the timeseries
     ensure_feasibility: True # If true, unmet_demand will be a decision variable, to account for an ability to meet demand with the available supply. If False and a mismatch occurs, the optimisation will fail due to infeasibility
     mode: plan # plan (plan+operate), operate (operate only), spores (sensitivity analysis)
@@ -41,92 +40,5 @@ run:
 # locations: leave blank because location will be assigned later in the script.
 # tech definition here will overwrite the default tech definition below
 
-techs: # only general tech definition. 
-    # supply, conversion, storage techs will be read from the excel
-    # demand technologies
-    # appliances, electricity demand
-    demand_electricity:
-        essentials:
-            name: 'Appliance electricity demand'
-            color: '#aeff60'
-            parent: demand
-            carrier: electricity
-        constraints:
-            resource: df=demand_electricity
-
-    # then comes SH, SC, DHW demand
-    # SH demand
-    demand_space_heating:
-        essentials:
-            name: 'Space heating demand'
-            color: '#fac710'
-            parent: demand
-            carrier: heat_35
-        constraints:
-            resource: df=demand_space_heating
-
-    # SC demand
-    demand_space_cooling:
-        essentials:
-            name: 'Space cooling demand'
-            color: '#12cdd4'
-            parent: demand
-            carrier: cooling
-        constraints:
-            resource: df=demand_space_cooling
-
-    # DHW demand
-    demand_hot_water:
-        essentials:
-            name: 'DHW demand'
-            color: '#ff6728'
-            parent: demand
-            carrier: heat_60
-        constraints:
-            resource: df=demand_hot_water
-
-    # transmission technologies
-    electrical_cable:
-        essentials:
-            name: 'Electrical cable'
-            color: '#000000'
-            parent: transmission
-            carrier: electricity
-        constraints:
-            energy_con: True
-            energy_prod: True
-            lifetime: 1
-        costs:
-            monetary:
-                purchase_per_distance: 10 # USD/m
-                interest_rate: 0
-                
-    hot_water_pipe:
-        essentials:
-            name: 'Hot water pipe'
-            color: '#000000'
-            parent: transmission
-            carrier: DHW
-        constraints:
-            energy_con: True
-            energy_prod: True
-            lifetime: 1
-        costs:
-            monetary:
-                purchase_per_distance: 10 # USD/m
-                interest_rate: 0
-
-    cold_water_pipe:
-        essentials:
-            name: 'Cold water pipe'
-            color: '#000000'
-            parent: transmission
-            carrier: cooling
-        constraints:
-            energy_con: True
-            energy_prod: True
-            lifetime: 1
-        costs:
-            monetary:
-                purchase_per_distance: 10 # USD/m
-                interest_rate: 0
+techs: {} # only general tech definition. 
+    # # supply, conversion, storage techs will be read from the excel

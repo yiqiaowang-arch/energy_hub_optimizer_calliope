@@ -12,7 +12,6 @@ model:
   timeseries_data: {}
 run:
   backend: pyomo
-  bigM: 1e9
   cyclic_storage: true
   ensure_feasibility: true
   mode: plan
@@ -174,7 +173,7 @@ techs:
     constraints:
       energy_cap_max: 1000
       energy_cap_min: 5
-      energy_eff: 5.45
+      energy_eff: 7.64
       lifetime: 20
     costs:
       co2:
@@ -195,7 +194,7 @@ techs:
     constraints:
       energy_cap_max: 1000
       energy_cap_min: 5
-      energy_eff: 3.44
+      energy_eff: 4.13
       lifetime: 20
     costs:
       co2:
@@ -216,7 +215,7 @@ techs:
     constraints:
       energy_cap_max: 1000
       energy_cap_min: 5
-      energy_eff: 2.6
+      energy_eff: 2.96
       lifetime: 20
     costs:
       co2:
@@ -247,20 +246,6 @@ techs:
       carrier_out: heat_35
       name: HEX_60_35
       parent: conversion
-  HEX_85_35:
-    constraints:
-      energy_eff: 1
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-      monetary:
-        interest_rate: 0.05
-    essentials:
-      carrier_in: heat_85
-      carrier_out: heat_35
-      name: HEX_85_35
-      parent: conversion
   HEX_85_60:
     constraints:
       energy_eff: 1
@@ -277,7 +262,9 @@ techs:
       parent: conversion
   PVT:
     constraints:
+      energy_eff: 1
       lifetime: 1
+      resource: df=
     costs:
       monetary:
         interest_rate: 0.05
@@ -287,9 +274,12 @@ techs:
       parent: supply
   PV_extra_large:
     constraints:
+      energy_cap_max: 2000
       energy_cap_min: 200
+      energy_eff: 1
       export_carrier: electricity
       lifetime: 27
+      resource: df=supply_PV
       resource_area_per_energy_cap: 5.56
       resource_unit: energy_per_area
     costs:
@@ -298,6 +288,7 @@ techs:
         interest_rate: 0
       monetary:
         energy_cap: 1300
+        export: -0.1460/-0.1022
         interest_rate: 0.05
     essentials:
       carrier_out: electricity
@@ -308,8 +299,10 @@ techs:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 100
+      energy_eff: 1
       export_carrier: electricity
       lifetime: 27
+      resource: df=supply_PV
       resource_area_per_energy_cap: 5.56
       resource_unit: energy_per_area
     costs:
@@ -318,6 +311,7 @@ techs:
         interest_rate: 0
       monetary:
         energy_cap: 1000
+        export: -0.1460/-0.1022
         interest_rate: 0.05
         purchase: 6000
     essentials:
@@ -329,8 +323,10 @@ techs:
     constraints:
       energy_cap_max: 100
       energy_cap_min: 10
+      energy_eff: 1
       export_carrier: electricity
       lifetime: 27
+      resource: df=supply_PV
       resource_area_per_energy_cap: 5.56
       resource_unit: energy_per_area
     costs:
@@ -339,6 +335,7 @@ techs:
         interest_rate: 0
       monetary:
         energy_cap: 1444
+        export: -0.1460/-0.1022
         interest_rate: 0.05
         purchase: 15555
     essentials:
@@ -349,8 +346,11 @@ techs:
   PV_small:
     constraints:
       energy_cap_max: 10
+      energy_cap_min: 0
+      energy_eff: 1
       export_carrier: electricity
       lifetime: 27
+      resource: df=supply_PV
       resource_area_per_energy_cap: 5.56
       resource_unit: energy_per_area
     costs:
@@ -359,6 +359,7 @@ techs:
         interest_rate: 0
       monetary:
         energy_cap: 3000
+        export: -0.1460/-0.1022
         interest_rate: 0.05
     essentials:
       carrier_out: electricity
@@ -367,7 +368,9 @@ techs:
       parent: supply
   SCET:
     constraints:
+      energy_eff: 1
       lifetime: 23
+      resource: df=supply_SCET
       resource_area_per_energy_cap: 1.7
       resource_unit: energy_per_area
     costs:
@@ -384,7 +387,9 @@ techs:
       parent: supply
   SCFP:
     constraints:
+      energy_eff: 1
       lifetime: 23
+      resource: df=supply_SCFP
       resource_area_per_energy_cap: 2
       resource_unit: energy_per_area
     costs:
@@ -480,13 +485,15 @@ techs:
       energy_prod: true
       lifetime: 1
     costs:
+      co2:
+        interest_rate: 0
+        purchase_per_distance: 1
       monetary:
         interest_rate: 0
         purchase_per_distance: 10
     essentials:
-      carrier: cooling
-      color: '#000000'
-      name: Cold water pipe
+      carrier: heat_35
+      name: cold_water_pipe
       parent: transmission
   demand_electricity:
     constraints:
@@ -494,7 +501,7 @@ techs:
     essentials:
       carrier: electricity
       color: '#aeff60'
-      name: Appliance electricity demand
+      name: demand_electricity
       parent: demand
   demand_hot_water:
     constraints:
@@ -502,7 +509,7 @@ techs:
     essentials:
       carrier: heat_60
       color: '#ff6728'
-      name: DHW demand
+      name: demand_hot_water
       parent: demand
   demand_space_cooling:
     constraints:
@@ -510,21 +517,38 @@ techs:
     essentials:
       carrier: cooling
       color: '#12cdd4'
-      name: Space cooling demand
+      name: demand_space_cooling
       parent: demand
-  demand_space_heating:
+  demand_space_heating_35:
     constraints:
       resource: df=demand_space_heating
     essentials:
       carrier: heat_35
       color: '#fac710'
-      name: Space heating demand
+      name: demand_space_heating_35
+      parent: demand
+  demand_space_heating_60:
+    constraints:
+      resource: df=demand_space_heating
+    essentials:
+      carrier: heat_60
+      color: '#fcd510'
+      name: demand_space_heating_60
+      parent: demand
+  demand_space_heating_85:
+    constraints:
+      resource: df=demand_space_heating
+    essentials:
+      carrier: heat_85
+      color: '#ffa210'
+      name: demand_space_heating_85
       parent: demand
   district_heating:
     constraints:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.051
       monetary:
         interest_rate: 0.05
@@ -540,20 +564,23 @@ techs:
       energy_prod: true
       lifetime: 1
     costs:
+      co2:
+        interest_rate: 0
+        purchase_per_distance: 1
       monetary:
         interest_rate: 0
         purchase_per_distance: 10
     essentials:
       carrier: electricity
-      color: '#000000'
-      name: Electrical cable
+      name: electrical_cable
       parent: transmission
   electricity_econatur:
     constraints:
       lifetime: 1
     costs:
       co2:
-        om_con: 0.015
+        interest_rate: 0
+        om_con: 0.02
       monetary:
         interest_rate: 0.05
         om_con: 0.2994/0.1854
@@ -567,7 +594,8 @@ techs:
       lifetime: 1
     costs:
       co2:
-        om_con: 0.016
+        interest_rate: 0
+        om_con: 0.021
       monetary:
         interest_rate: 0.05
         om_con: 0.3016/0.1876
@@ -581,7 +609,8 @@ techs:
       lifetime: 1
     costs:
       co2:
-        om_con: 0.024
+        interest_rate: 0
+        om_con: 0.0291
       monetary:
         interest_rate: 0.05
         om_con: 0.3189/0.2048
@@ -601,7 +630,7 @@ techs:
         energy_cap: 18.1
         interest_rate: 0
       monetary:
-        energy_cap: 155.3333333333334
+        energy_cap: 155.333333333333
         interest_rate: 0.05
         om_annual: 6.3
         purchase: 23933.333333333307
@@ -658,6 +687,7 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.124
       monetary:
         interest_rate: 0.05
@@ -672,6 +702,7 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.177
       monetary:
         interest_rate: 0.05
@@ -689,6 +720,7 @@ techs:
       energy_cap_max: 500
       energy_cap_min: 10
       energy_eff: 0.55
+      export_carrier: electricity
       lifetime: 15
     costs:
       co2:
@@ -696,6 +728,7 @@ techs:
         interest_rate: 0
       monetary:
         energy_cap: 1108.2
+        export: -0.1460/-0.1022
         interest_rate: 0.05
         om_annual: 1.15
         purchase: 33195
@@ -711,6 +744,7 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.23
       monetary:
         interest_rate: 0.05
@@ -726,20 +760,22 @@ techs:
       energy_prod: true
       lifetime: 1
     costs:
+      co2:
+        interest_rate: 0
+        purchase_per_distance: 1
       monetary:
         interest_rate: 0
         purchase_per_distance: 10
     essentials:
-      carrier: DHW
-      color: '#000000'
-      name: Hot water pipe
+      carrier: heat_85
+      name: hot_water_pipe
       parent: transmission
   li_ion_battery:
     constraints:
-      energy_cap_max: 1000
       energy_cap_per_storage_cap_max: 0.25
       energy_eff: 0.91
       lifetime: 13
+      storage_cap_max: 1000
       storage_initial: 0.5
       storage_loss: 0.001
     costs:
@@ -760,6 +796,7 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.324
       monetary:
         interest_rate: 0.05
@@ -837,6 +874,7 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.028
       monetary:
         interest_rate: 0.05
@@ -911,9 +949,9 @@ techs:
       parent: conversion
   tank_35:
     constraints:
-      energy_cap_max: 1000
       energy_eff: 0.96
       lifetime: 23
+      storage_cap_max: 1000
       storage_initial: 0.5
       storage_loss: 0.01
     costs:
@@ -931,9 +969,9 @@ techs:
       parent: storage
   tank_60:
     constraints:
-      energy_cap_max: 1000
-      energy_eff: 0.96
+      energy_eff: 0.95
       lifetime: 23
+      storage_cap_max: 1000
       storage_initial: 0.5
       storage_loss: 0.015
     costs:
@@ -951,9 +989,9 @@ techs:
       parent: storage
   tank_85:
     constraints:
-      energy_cap_max: 1000
-      energy_eff: 0.96
+      energy_eff: 0.94
       lifetime: 23
+      storage_cap_max: 1000
       storage_initial: 0.5
       storage_loss: 0.02
     costs:

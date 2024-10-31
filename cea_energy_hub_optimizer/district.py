@@ -151,11 +151,14 @@ class TechAttrDict(AttrDict):
 
     def select_evaluated_demand(self):
         # demand techs starts with demand_ and is key of self.techs
-        demand_techs = [key for key in self.techs.keys() if key.startswith("demand_")]
-        for tech in demand_techs:
-            if tech not in self.my_config.evaluated_demand:
-                for building in self.locations.keys():
-                    self.del_key(f"locations.{building}.techs.{tech}")
+        # demand_techs = [key for key in self.techs.keys() if key.startswith("demand_")]
+        # for tech in demand_techs:
+        #     if tech not in self.my_config.evaluated_demand:
+        #         for building in self.locations.keys():
+        #             self.del_key(f"locations.{building}.techs.{tech}")
+        # TODO: correctly consider demand tech with different temperature
+        for building in self.locations.keys():
+            self.del_key(f"locations.{building}.techs.demand_space_cooling")
 
     def select_evaluated_solar_supply(self):
         solar_supply_techs = [
@@ -182,6 +185,20 @@ class TechAttrDict(AttrDict):
             self.set_key(
                 key=f"techs.{tech}.costs.monetary.om_con",
                 value=f"df={tech}_tariff",
+            )
+
+    def set_feedin_tariff(self):
+        ls_var_feed = [
+            "PV_small",
+            "PV_middle",
+            "PV_large",
+            "PV_extra_large",
+            "gas_micro_CHP",
+        ]
+        for tech in ls_var_feed:
+            self.set_key(
+                key=f"techs.{tech}.costs.monetary.export",
+                value=f"df={tech}_feedin_tariff",
             )
 
     def set_global_max_co2(self, max_co2: Union[float, None]):
@@ -219,17 +236,29 @@ class TechAttrDict(AttrDict):
         """
         carrier_dict = {
             "HVAC_HEATING_AS0": None,
-            "HVAC_HEATING_AS1": "heat_85",
-            "HVAC_HEATING_AS2": "heat_60",
-            "HVAC_HEATING_AS3": "heat_35",
-            "HVAC_HEATING_AS4": "heat_35",
+            "HVAC_HEATING_AS1": "demand_space_heating_85",
+            "HVAC_HEATING_AS2": "demand_space_heating_60",
+            "HVAC_HEATING_AS3": "demand_space_heating_35",
+            "HVAC_HEATING_AS4": "demand_space_heating_35",
         }
+        heating_demand_techs = [
+            "demand_space_heating_35",
+            "demand_space_heating_60",
+            "demand_space_heating_85",
+        ]
         for building in district.buildings:
             carrier = carrier_dict[building.emission]
-            self.set_key(
-                key=f"locations.{building.name}.techs.demand_space_heating.essentials.carrier",
-                value=carrier,
-            )
-            print(
-                f"Building {building} has emission system {building.emission}, set space heating carrier to {carrier} ..."
-            )
+            # in locations.{building_name}.techs, delete all heating demand techs except the one that is needed
+            for tech in heating_demand_techs:
+                if tech != carrier:
+                    self.del_key(key=f"locations.{building.name}.techs.{tech}")
+
+            # TODO: keep track on calliope's issue and restore back to the following code
+
+            # self.set_key(
+            #     key=f"locations.{building.name}.techs.demand_space_heating.essentials.carrier",
+            #     value=carrier,
+            # )
+            # print(
+            #     f"Building {building} has emission system {building.emission}, set space heating carrier to {carrier} ..."
+            # )
