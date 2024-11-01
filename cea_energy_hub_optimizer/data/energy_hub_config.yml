@@ -280,7 +280,7 @@ techs:
       export_carrier: electricity
       lifetime: 27
       resource: df=supply_PV
-      resource_area_per_energy_cap: 5.56
+      resource_area_per_energy_cap: 5
       resource_unit: energy_per_area
     costs:
       co2:
@@ -303,7 +303,7 @@ techs:
       export_carrier: electricity
       lifetime: 27
       resource: df=supply_PV
-      resource_area_per_energy_cap: 5.56
+      resource_area_per_energy_cap: 5
       resource_unit: energy_per_area
     costs:
       co2:
@@ -327,7 +327,7 @@ techs:
       export_carrier: electricity
       lifetime: 27
       resource: df=supply_PV
-      resource_area_per_energy_cap: 5.56
+      resource_area_per_energy_cap: 5
       resource_unit: energy_per_area
     costs:
       co2:
@@ -351,7 +351,7 @@ techs:
       export_carrier: electricity
       lifetime: 27
       resource: df=supply_PV
-      resource_area_per_energy_cap: 5.56
+      resource_area_per_energy_cap: 5
       resource_unit: energy_per_area
     costs:
       co2:
@@ -371,7 +371,7 @@ techs:
       energy_eff: 1
       lifetime: 23
       resource: df=supply_SCET
-      resource_area_per_energy_cap: 1.7
+      resource_area_per_energy_cap: 1.41
       resource_unit: energy_per_area
     costs:
       co2:
@@ -390,7 +390,7 @@ techs:
       energy_eff: 1
       lifetime: 23
       resource: df=supply_SCFP
-      resource_area_per_energy_cap: 2
+      resource_area_per_energy_cap: 1.297
       resource_unit: energy_per_area
     costs:
       co2:
