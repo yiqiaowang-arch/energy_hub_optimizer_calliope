@@ -80,7 +80,7 @@ def remove_consecutive_duplicates(lst):
 
 # Example usage
 if __name__ == "__main__":
-    excel_filepath = r"C:\Users\wangy\Documents\GitHub\energy_hub_optimizer_calliope\cea_energy_hub_optimizer\data\example_techDefinition.xlsx"
+    excel_filepath = r"C:\Users\wangy\Documents\GitHub\energy_hub_optimizer_calliope\cea_energy_hub_optimizer\data\example_techDefinition - Copy.xlsx"
     csv_filepath = r"C:\Users\wangy\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\sobol_parameters.csv"
 
     # Call the function to generate the Sobol CSV file

@@ -110,6 +110,9 @@ def read_tech_definition(
             # Iterate through the columns (which have a MultiIndex)
             for column_name_tuple in df.columns:
                 value = row.loc[column_name_tuple]
+                # if value is a series, get its item
+                if isinstance(value, pd.Series):
+                    value = value.item()
                 if pd.notna(value):
                     set_nested_dict_value(
                         current_dict, list(column_name_tuple), value=value
@@ -127,9 +130,7 @@ def read_tech_definition(
 
 
 if __name__ == "__main__":
-    filepath = (
-        r"C:\Users\wangy\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\techDefinition.xlsx"
-    )
+    filepath = r"C:\Users\wangy\Documents\GitHub\energy_hub_optimizer_calliope\cea_energy_hub_optimizer\data\example_techDefinition - Copy.xlsx"
     tech_dict = read_tech_definition(
         filepath, to_yaml=True, yaml_path="tech_definition.yaml"
     )
