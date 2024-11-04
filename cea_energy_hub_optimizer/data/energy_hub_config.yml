@@ -404,97 +404,97 @@ techs:
       color: '#c4d79b'
       name: SCFP
       parent: supply
-  booster_WSHP_35_60:
-    constraints:
-      carrier_ratios:
-        carrier_in_2:
-          heat_35: 7
-      energy_cap_max: 500
-      energy_cap_min: 5
-      energy_eff: 8
-      lifetime: 20
-    costs:
-      co2:
-        energy_cap: 36.3
-        interest_rate: 0
-      monetary:
-        energy_cap: 1113.6
-        interest_rate: 0.05
-        om_annual: 11.57
-        purchase: 55600
-    essentials:
-      carrier_in: electricity
-      carrier_in_2: heat_35
-      carrier_out: heat_60
-      name: booster_WSHP_35_60
-      parent: conversion_plus
-      primary_carrier_in: electricity
-  booster_WSHP_35_85:
-    constraints:
-      carrier_ratios:
-        carrier_in_2:
-          heat_35: 3.4400000000000004
-      energy_cap_max: 500
-      energy_cap_min: 5
-      energy_eff: 4.44
-      lifetime: 20
-    costs:
-      co2:
-        energy_cap: 36.3
-        interest_rate: 0
-      monetary:
-        energy_cap: 1113.6
-        interest_rate: 0.05
-        om_annual: 11.57
-        purchase: 55600
-    essentials:
-      carrier_in: electricity
-      carrier_in_2: heat_35
-      carrier_out: heat_85
-      name: booster_WSHP_35_85
-      parent: conversion_plus
-      primary_carrier_in: electricity
-  booster_WSHP_60_85:
-    constraints:
-      carrier_ratios:
-        carrier_in_2:
-          heat_60: 7
-      energy_cap_max: 500
-      energy_cap_min: 5
-      energy_eff: 8
-      lifetime: 20
-    costs:
-      co2:
-        energy_cap: 36.3
-        interest_rate: 0
-      monetary:
-        energy_cap: 1113.6
-        interest_rate: 0.05
-        om_annual: 11.57
-        purchase: 55600
-    essentials:
-      carrier_in: electricity
-      carrier_in_2: heat_60
-      carrier_out: heat_85
-      name: booster_WSHP_60_85
-      parent: conversion_plus
-      primary_carrier_in: electricity
-  cold_water_pipe:
-    constraints:
-      energy_con: true
-      energy_prod: true
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        purchase_per_distance: 1
-      monetary:
-        interest_rate: 0
-        purchase_per_distance: 10
-    essentials:
-      carrier: heat_35
-      name: cold_water_pipe
-      parent: transmission
+  # booster_WSHP_35_60:
+  #   constraints:
+  #     carrier_ratios:
+  #       carrier_in_2:
+  #         heat_35: 7
+  #     energy_cap_max: 500
+  #     energy_cap_min: 5
+  #     energy_eff: 8
+  #     lifetime: 20
+  #   costs:
+  #     co2:
+  #       energy_cap: 36.3
+  #       interest_rate: 0
+  #     monetary:
+  #       energy_cap: 1113.6
+  #       interest_rate: 0.05
+  #       om_annual: 11.57
+  #       purchase: 55600
+  #   essentials:
+  #     carrier_in: electricity
+  #     carrier_in_2: heat_35
+  #     carrier_out: heat_60
+  #     name: booster_WSHP_35_60
+  #     parent: conversion_plus
+  #     primary_carrier_in: electricity
+  # booster_WSHP_35_85:
+  #   constraints:
+  #     carrier_ratios:
+  #       carrier_in_2:
+  #         heat_35: 3.4400000000000004
+  #     energy_cap_max: 500
+  #     energy_cap_min: 5
+  #     energy_eff: 4.44
+  #     lifetime: 20
+  #   costs:
+  #     co2:
+  #       energy_cap: 36.3
+  #       interest_rate: 0
+  #     monetary:
+  #       energy_cap: 1113.6
+  #       interest_rate: 0.05
+  #       om_annual: 11.57
+  #       purchase: 55600
+  #   essentials:
+  #     carrier_in: electricity
+  #     carrier_in_2: heat_35
+  #     carrier_out: heat_85
+  #     name: booster_WSHP_35_85
+  #     parent: conversion_plus
+  #     primary_carrier_in: electricity
+  # booster_WSHP_60_85:
+  #   constraints:
+  #     carrier_ratios:
+  #       carrier_in_2:
+  #         heat_60: 7
+  #     energy_cap_max: 500
+  #     energy_cap_min: 5
+  #     energy_eff: 8
+  #     lifetime: 20
+  #   costs:
+  #     co2:
+  #       energy_cap: 36.3
+  #       interest_rate: 0
+  #     monetary:
+  #       energy_cap: 1113.6
+  #       interest_rate: 0.05
+  #       om_annual: 11.57
+  #       purchase: 55600
+  #   essentials:
+  #     carrier_in: electricity
+  #     carrier_in_2: heat_60
+  #     carrier_out: heat_85
+  #     name: booster_WSHP_60_85
+  #     parent: conversion_plus
+  #     primary_carrier_in: electricity
+  # cold_water_pipe:
+  #   constraints:
+  #     energy_con: true
+  #     energy_prod: true
+  #     lifetime: 1
+  #   costs:
+  #     co2:
+  #       interest_rate: 0
+  #       purchase_per_distance: 1
+  #     monetary:
+  #       interest_rate: 0
+  #       purchase_per_distance: 10
+  #   essentials:
+  #     carrier: heat_35
+  #     name: cold_water_pipe
+  #     parent: transmission
   demand_electricity:
     constraints:
       resource: df=demand_electricity
@@ -558,22 +558,22 @@ techs:
       color: '#219ce1'
       name: district_heating
       parent: supply
-  electrical_cable:
-    constraints:
-      energy_con: true
-      energy_prod: true
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        purchase_per_distance: 1
-      monetary:
-        interest_rate: 0
-        purchase_per_distance: 10
-    essentials:
-      carrier: electricity
-      name: electrical_cable
-      parent: transmission
+  # electrical_cable:
+  #   constraints:
+  #     energy_con: true
+  #     energy_prod: true
+  #     lifetime: 1
+  #   costs:
+  #     co2:
+  #       interest_rate: 0
+  #       purchase_per_distance: 1
+  #     monetary:
+  #       interest_rate: 0
+  #       purchase_per_distance: 10
+  #   essentials:
+  #     carrier: electricity
+  #     name: electrical_cable
+  #     parent: transmission
   electricity_econatur:
     constraints:
       lifetime: 1
@@ -754,22 +754,22 @@ techs:
       color: '#ffd191'
       name: gas_standard
       parent: supply
-  hot_water_pipe:
-    constraints:
-      energy_con: true
-      energy_prod: true
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        purchase_per_distance: 1
-      monetary:
-        interest_rate: 0
-        purchase_per_distance: 10
-    essentials:
-      carrier: heat_85
-      name: hot_water_pipe
-      parent: transmission
+  # hot_water_pipe:
+  #   constraints:
+  #     energy_con: true
+  #     energy_prod: true
+  #     lifetime: 1
+  #   costs:
+  #     co2:
+  #       interest_rate: 0
+  #       purchase_per_distance: 1
+  #     monetary:
+  #       interest_rate: 0
+  #       purchase_per_distance: 10
+  #   essentials:
+  #     carrier: heat_85
+  #     name: hot_water_pipe
+  #     parent: transmission
   li_ion_battery:
     constraints:
       energy_cap_per_storage_cap_max: 0.25
