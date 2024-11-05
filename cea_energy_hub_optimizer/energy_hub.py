@@ -311,7 +311,7 @@ class EnergyHub:
             )
             n_epsilon += 2  # add two more epsilon cuts close to the ends
         print(
-            f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts in between: {n_epsilon + 2}"
+            f"Maximal emission: {emission_max}, minimal emission: {emission_min}, number of epsilon cuts in between: {n_epsilon}"
         )
         return epsilon_list
 
