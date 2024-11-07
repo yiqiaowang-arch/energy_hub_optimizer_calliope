@@ -76,6 +76,10 @@ def main(config: cea.config.Configuration) -> None:
         energy_hub = EnergyHub(buildings, yaml_path)
         energy_hub.get_pareto_front(store_folder=store_folder)
         energy_hub.df_pareto.to_csv(store_folder + "/global_pareto.csv", index=True)
+        energy_hub.df_cost_per_tech.to_csv(
+            store_folder + "/global_cost_per_tech.csv", index=True
+        )
+        print("All buildings are optimized! Results saved in " + store_folder)
     else:
         print("Co-optimization is disabled, buildings will be optimized one by one.")
         for building in buildings:
@@ -92,6 +96,10 @@ def main(config: cea.config.Configuration) -> None:
             # print(energy_hub.df_pareto.to_string())
             energy_hub.df_pareto.to_csv(
                 store_folder + "/" + building_name + "_pareto.csv",
+                index=True,
+            )
+            energy_hub.df_cost_per_tech.to_csv(
+                store_folder + "/" + building_name + "_cost_per_tech.csv",
                 index=True,
             )
             print(building_name + " is optimized! Results saved in " + store_folder)
