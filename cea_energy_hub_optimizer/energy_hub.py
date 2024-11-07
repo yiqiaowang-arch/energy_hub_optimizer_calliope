@@ -50,7 +50,7 @@ class EnergyHub:
 
         # high/low tariff info is also stored in the tech_dict
         self.timeseries = TimeSeries(self.district, self.tech_dict)
-        self.tech_dict.set_electricity_tariff()  # this line must be placed after the timeseries object is created
+        # self.tech_dict.set_electricity_tariff()  # this line must be placed after the timeseries object is created
         self.tech_dict.set_feedin_tariff()  # this line must be placed after the timeseries object is created
 
         if self.my_config.flatten_spike:

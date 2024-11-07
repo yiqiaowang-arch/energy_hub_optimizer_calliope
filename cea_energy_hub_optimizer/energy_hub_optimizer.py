@@ -48,7 +48,7 @@ def main(config: cea.config.Configuration) -> None:
     check_solar_technology()
     warnings.filterwarnings("ignore")
     locator = cea.inputlocator.InputLocator(config.scenario)
-    buildings: list[str] = my_config.buildings
+    buildings: list[str] = ["B162298"]
     yaml_path = my_config.technology_definition_file
     if yaml_path == "":
         yaml_path = os.path.join(

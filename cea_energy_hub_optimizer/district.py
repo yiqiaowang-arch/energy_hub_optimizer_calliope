@@ -175,17 +175,17 @@ class TechAttrDict(AttrDict):
                 for building in self.locations.keys():
                     self.del_key(f"locations.{building}.techs.{tech}")
 
-    def set_electricity_tariff(self):
-        ls_var_elec = [
-            "electricity_pronatur",
-            "electricity_natur",
-            "electricity_econatur",
-        ]
-        for tech in ls_var_elec:
-            self.set_key(
-                key=f"techs.{tech}.costs.monetary.om_con",
-                value=f"df={tech}_tariff",
-            )
+    # def set_electricity_tariff(self):
+    #     ls_var_elec = [
+    #         "electricity_pronatur",
+    #         "electricity_natur",
+    #         "electricity_econatur",
+    #     ]
+    #     for tech in ls_var_elec:
+    #         self.set_key(
+    #             key=f"techs.{tech}.costs.monetary.om_con",
+    #             value=f"df={tech}_tariff",
+    #         )
 
     def set_feedin_tariff(self):
         ls_var_feed = [
@@ -193,7 +193,7 @@ class TechAttrDict(AttrDict):
             "PV_middle",
             "PV_large",
             "PV_extra_large",
-            "gas_micro_CHP",
+            # "gas_micro_CHP",
         ]
         for tech in ls_var_feed:
             self.set_key(
