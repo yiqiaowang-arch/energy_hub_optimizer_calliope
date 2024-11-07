@@ -223,6 +223,16 @@ class EnergyHub:
             columns=["cost", "emission"] + self.tech_dict.tech_list,
         )
         self.df_pareto.astype(float)
+        # on basis of multi_index, add the third layer called cost_type, which includes monetary and co2
+        multi_index_cost_type = pd.MultiIndex.from_product(
+            [self.district.buildings_names, range(n_solution), ["monetary", "co2"]],
+            names=["building", "pareto_index", "cost_type"],
+        )
+        self.df_cost_per_tech = pd.DataFrame(
+            data=0.0,
+            index=multi_index_cost_type,
+            columns=self.tech_dict.tech_list,
+        )
 
     def get_cap_from_model(self, model: calliope.Model, i_solution: int) -> None:
         """
@@ -255,8 +265,14 @@ class EnergyHub:
         :type i_solution: int
         """
         # fmt: off
-        df_cost: pd.DataFrame = model.get_formatted_array("cost").sum("techs").to_pandas().transpose() # type: ignore
-        df_energy_cap: pd.DataFrame = model.get_formatted_array("energy_cap").to_pandas() # type: ignore
+        cost_xarray = model.get_formatted_array("cost")
+        cap_xarray = model.get_formatted_array("energy_cap")
+        df_cost: pd.DataFrame = cost_xarray.sum("techs").to_pandas().transpose() # type: ignore
+        for loc in cost_xarray.locs.values:
+            df_cost_per_loc = cost_xarray.sel(locs=loc).to_pandas().reindex(columns=self.tech_dict.tech_list, fill_value=0.0)
+            self.df_cost_per_tech.loc[(loc, i_solution, slice(None)), :] = df_cost_per_loc.values
+
+        df_energy_cap: pd.DataFrame = cap_xarray.to_pandas() # type: ignore
         # fmt: on
 
         missing_column = [
@@ -285,11 +301,6 @@ class EnergyHub:
         self.df_pareto.loc[(slice(None), i_solution), df_energy_cap_aligned.columns] = (
             df_energy_cap_aligned.values
         )
-        # print(df_energy_cap.to_string())
-        # print(df_cost.to_string())
-        # print(df_energy_cap_aligned.to_string())
-        # print(self.df_pareto.to_string())
-        # print(self.df_pareto.loc[(slice(None), i_solution), 16:18])
 
     def get_co2_epsilon_cut(
         self,
