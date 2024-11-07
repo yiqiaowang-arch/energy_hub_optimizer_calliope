@@ -310,10 +310,9 @@ techs:
         energy_cap: 1250
         interest_rate: 0
       monetary:
-        energy_cap: 1000
+        energy_cap: 1600
         export: -0.1460/-0.1022
         interest_rate: 0.05
-        purchase: 6000
     essentials:
       carrier_out: electricity
       color: '#c69873'
@@ -334,10 +333,9 @@ techs:
         energy_cap: 1250
         interest_rate: 0
       monetary:
-        energy_cap: 1444
+        energy_cap: 2200
         export: -0.1460/-0.1022
         interest_rate: 0.05
-        purchase: 15555
     essentials:
       carrier_out: electricity
       color: '#c69872'
