@@ -117,10 +117,10 @@ techs:
         energy_cap: 4.771
         interest_rate: 0
       monetary:
-        energy_cap: 117.36666666666666
+        energy_cap: 117.4
         interest_rate: 0.05
         om_annual: 150
-        purchase: 29571.66666666667
+        purchase: 29571.7
     essentials:
       carrier_in: DH
       carrier_out: heat_85
@@ -628,10 +628,10 @@ techs:
         energy_cap: 18.1
         interest_rate: 0
       monetary:
-        energy_cap: 155.333333333333
+        energy_cap: 155.3
         interest_rate: 0.05
         om_annual: 6.3
-        purchase: 23933.333333333307
+        purchase: 23933.3
     essentials:
       carrier_in: gas
       carrier_out: heat_85
@@ -649,10 +649,10 @@ techs:
         energy_cap: 18.1
         interest_rate: 0
       monetary:
-        energy_cap: 176.66666666666666
+        energy_cap: 176.7
         interest_rate: 0.05
         om_annual: 6.3
-        purchase: 19666.666666666668
+        purchase: 19666.7
     essentials:
       carrier_in: gas
       carrier_out: heat_85
@@ -815,10 +815,10 @@ techs:
         energy_cap: 19.51
         interest_rate: 0
       monetary:
-        energy_cap: 211.66666666666666
+        energy_cap: 211.7
         interest_rate: 0.05
         om_annual: 3.5
-        purchase: 21966.66666666667
+        purchase: 21966.7
     essentials:
       carrier_in: oil
       carrier_out: heat_85
@@ -836,10 +836,10 @@ techs:
         energy_cap: 25.07
         interest_rate: 0
       monetary:
-        energy_cap: 189.44444444444443
+        energy_cap: 189.4
         interest_rate: 0.05
         om_annual: 3.5
-        purchase: 26411.111111111113
+        purchase: 26411.1
     essentials:
       carrier_in: oil
       carrier_out: heat_85
@@ -857,31 +857,31 @@ techs:
         energy_cap: 44.555
         interest_rate: 0
       monetary:
-        energy_cap: 486.6666666666667
+        energy_cap: 486.7
         interest_rate: 0.05
         om_annual: 3.5
-        purchase: 20466.666666666664
+        purchase: 20466.7
     essentials:
       carrier_in: oil
       carrier_out: heat_85
       color: '#e6b8b7'
       name: oil_boiler_small
       parent: conversion
-  pallet:
-    constraints:
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        om_con: 0.028
-      monetary:
-        interest_rate: 0.05
-        om_con: 0.102
-    essentials:
-      carrier_out: pallet
-      color: '#c4d79b'
-      name: pallet
-      parent: supply
+  # pallet:
+  #   constraints:
+  #     lifetime: 1
+  #   costs:
+  #     co2:
+  #       interest_rate: 0
+  #       om_con: 0.028
+  #     monetary:
+  #       interest_rate: 0.05
+  #       om_con: 0.102
+  #   essentials:
+  #     carrier_out: pallet
+  #     color: '#c4d79b'
+  #     name: pallet
+  #     parent: supply
   pallet_boiler_large:
     constraints:
       energy_cap_max: 500

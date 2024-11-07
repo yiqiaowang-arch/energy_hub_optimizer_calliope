@@ -164,6 +164,7 @@ def extract_sensitivity_values(results_folder, problem, threshold=1e-3):
     :return: Sensitivity indices (Si) computed from the number of effective Pareto points.
     """
     counts = []
+    variation_indices = []
     for result_file in os.listdir(results_folder):
         if result_file.endswith("_pareto.csv"):
             df = pd.read_csv(os.path.join(results_folder, result_file))
@@ -186,10 +187,15 @@ def extract_sensitivity_values(results_folder, problem, threshold=1e-3):
 
             effective_points = pareto_points[list(keep_indices)]
             counts.append(len(effective_points))
+            variation_indices.append(result_file.split("_")[1])
 
     counts = np.array(counts)
-    Si = sobol.analyze(problem, counts)
-    return Si
+    # export the index of variation and the number of effective points to a csv file
+    df = pd.DataFrame({"variation": variation_indices, "effective_points": counts})
+    df.to_csv(os.path.join(results_folder, "effective_points.csv"), index=False)
+
+    # Si = sobol.analyze(problem, counts)
+    # return Si
 
 
 # Example usage
@@ -221,5 +227,6 @@ if __name__ == "__main__":
         "bounds": df[["min", "max"]].values.tolist(),
     }
 
-    Si = extract_sensitivity_values(results_folder, problem, threshold)
-    print(Si)
+    # Si = extract_sensitivity_values(results_folder, problem, threshold)
+    # print(Si)
+    extract_sensitivity_values(results_folder, problem, threshold)
