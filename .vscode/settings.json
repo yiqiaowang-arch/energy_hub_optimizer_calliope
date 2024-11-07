@@ -1,6 +1,7 @@
 {
     "python.analysis.extraPaths": [
-        "C:/Users/wangy/Documents/GitHub/CityEnergyAnalyst"
+        "C:/Users/wangy/Documents/GitHub/CityEnergyAnalyst", 
+        "C:/Users/yiqwang/Documents/GitHub/CityEnergyAnalyst"
     ],
     "autoDocstring.docstringFormat": "sphinx",
     "editor.defaultFormatter": "ms-python.black-formatter",
