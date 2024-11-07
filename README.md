@@ -40,7 +40,7 @@ You should include **ALL the plugins** in that command, otherwise you may lose a
 Now we need to install solvers. 
 - The default solver for calliope is glpk, which is already pre-installed along with calliope conda package.
 - For Gurobi, one need to refer to [Using Gurobi in Calliope](https://calliope.readthedocs.io/en/stable/user/installation.html#gurobi) to install Gurobi Optimizer on your local computer. Note that Admin right and restart is needed for this installation. After installed, one should be able to directly use Gurobi in calliope.
-- For CPLEX, one need to first download and install CPLEX, then install its python interface by running `conda install docplex` in CEA console.
+- For CPLEX, one need to first download and install CPLEX, then install its python interface by running `conda install docplex` in CEA console. Note that to download CPLEX, one need to first have Java installed; to install cplex, one need to have admin right.
 
 
 In the CEA console, enter the following command to enable the plugin in CEA:
