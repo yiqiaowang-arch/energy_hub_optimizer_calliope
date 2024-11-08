@@ -170,10 +170,13 @@ class TechAttrDict(AttrDict):
             "SCET",
             "SCFP",
         ]
+
         for tech in solar_supply_techs:
-            if tech not in self.my_config.evaluated_solar_supply:
+            tech_type = tech.split("_")[0]
+            if tech_type not in self.my_config.evaluated_solar_supply:
                 for building in self.locations.keys():
-                    self.del_key(f"locations.{building}.techs.{tech}")
+                    if tech in self.locations[building].techs:
+                        self.del_key(f"locations.{building}.techs.{tech}")
 
     # def set_electricity_tariff(self):
     #     ls_var_elec = [
