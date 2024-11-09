@@ -199,10 +199,11 @@ class TechAttrDict(AttrDict):
             # "gas_micro_CHP",
         ]
         for tech in ls_var_feed:
-            self.set_key(
-                key=f"techs.{tech}.costs.monetary.export",
-                value=f"df={tech}_feedin_tariff",
-            )
+            if tech in self.tech_list:
+                self.set_key(
+                    key=f"techs.{tech}.costs.monetary.export",
+                    value=f"df={tech}_feedin_tariff",
+                )
 
     def set_global_max_co2(self, max_co2: Union[float, None]):
         self.set_key(
