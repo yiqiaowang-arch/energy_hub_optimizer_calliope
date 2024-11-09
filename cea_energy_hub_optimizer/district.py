@@ -185,10 +185,11 @@ class TechAttrDict(AttrDict):
             "electricity_econatur",
         ]
         for tech in ls_var_elec:
-            self.set_key(
-                key=f"techs.{tech}.costs.monetary.om_con",
-                value=f"df={tech}_tariff",
-            )
+            if tech in self.tech_list:
+                self.set_key(
+                    key=f"techs.{tech}.costs.monetary.om_con",
+                    value=f"df={tech}_tariff",
+                )
 
     def set_feedin_tariff(self):
         ls_var_feed = [
