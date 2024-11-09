@@ -260,47 +260,12 @@ techs:
       carrier_out: heat_60
       name: HEX_85_60
       parent: conversion
-  PVT:
-    constraints:
-      energy_eff: 1
-      lifetime: 1
-      resource: df=
-    costs:
-      monetary:
-        interest_rate: 0.05
-    essentials:
-      carrier_out: placeholder
-      name: PVT
-      parent: supply
-  PV_extra_large:
-    constraints:
-      energy_cap_max: 2000
-      energy_cap_min: 200
-      energy_eff: 1
-      export_carrier: electricity
-      lifetime: 27
-      resource: df=supply_PV
-      resource_area_per_energy_cap: 5
-      resource_unit: energy_per_area
-    costs:
-      co2:
-        energy_cap: 1250
-        interest_rate: 0
-      monetary:
-        energy_cap: 1300
-        export: -0.1460/-0.1022
-        interest_rate: 0.05
-    essentials:
-      carrier_out: electricity
-      color: '#c69874'
-      name: PV_extra_large
-      parent: supply
   PV_large:
     constraints:
-      energy_cap_max: 200
+      energy_cap_max: 2000
       energy_cap_min: 100
-      energy_eff: 1
       export_carrier: electricity
+      force_resource: true
       lifetime: 27
       resource: df=supply_PV
       resource_area_per_energy_cap: 5
@@ -310,9 +275,10 @@ techs:
         energy_cap: 1250
         interest_rate: 0
       monetary:
-        energy_cap: 1600
+        energy_cap: 1284
         export: -0.1460/-0.1022
         interest_rate: 0.05
+        purchase: 31579
     essentials:
       carrier_out: electricity
       color: '#c69873'
@@ -322,8 +288,8 @@ techs:
     constraints:
       energy_cap_max: 100
       energy_cap_min: 10
-      energy_eff: 1
       export_carrier: electricity
+      force_resource: true
       lifetime: 27
       resource: df=supply_PV
       resource_area_per_energy_cap: 5
@@ -333,9 +299,10 @@ techs:
         energy_cap: 1250
         interest_rate: 0
       monetary:
-        energy_cap: 2200
+        energy_cap: 1444
         export: -0.1460/-0.1022
         interest_rate: 0.05
+        purchase: 15555.6
     essentials:
       carrier_out: electricity
       color: '#c69872'
@@ -344,9 +311,9 @@ techs:
   PV_small:
     constraints:
       energy_cap_max: 10
-      energy_cap_min: 0
-      energy_eff: 1
+      energy_cap_min: 1
       export_carrier: electricity
+      force_resource: true
       lifetime: 27
       resource: df=supply_PV
       resource_area_per_energy_cap: 5
@@ -359,6 +326,7 @@ techs:
         energy_cap: 3000
         export: -0.1460/-0.1022
         interest_rate: 0.05
+        purchase: 1
     essentials:
       carrier_out: electricity
       color: '#c69871'
@@ -366,7 +334,8 @@ techs:
       parent: supply
   SCET:
     constraints:
-      energy_eff: 1
+      energy_cap_min: 1
+      force_resource: true
       lifetime: 23
       resource: df=supply_SCET
       resource_area_per_energy_cap: 1.41
@@ -378,6 +347,7 @@ techs:
       monetary:
         energy_cap: 2047
         interest_rate: 0.05
+        purchase: 1
     essentials:
       carrier_out: heat_85
       color: '#e6b8b7'
@@ -385,7 +355,8 @@ techs:
       parent: supply
   SCFP:
     constraints:
-      energy_eff: 1
+      energy_cap_min: 1
+      force_resource: true
       lifetime: 23
       resource: df=supply_SCFP
       resource_area_per_energy_cap: 1.297
@@ -397,102 +368,12 @@ techs:
       monetary:
         energy_cap: 1576
         interest_rate: 0.05
+        purchase: 1
     essentials:
       carrier_out: heat_60
       color: '#c4d79b'
       name: SCFP
       parent: supply
-  # booster_WSHP_35_60:
-  #   constraints:
-  #     carrier_ratios:
-  #       carrier_in_2:
-  #         heat_35: 7
-  #     energy_cap_max: 500
-  #     energy_cap_min: 5
-  #     energy_eff: 8
-  #     lifetime: 20
-  #   costs:
-  #     co2:
-  #       energy_cap: 36.3
-  #       interest_rate: 0
-  #     monetary:
-  #       energy_cap: 1113.6
-  #       interest_rate: 0.05
-  #       om_annual: 11.57
-  #       purchase: 55600
-  #   essentials:
-  #     carrier_in: electricity
-  #     carrier_in_2: heat_35
-  #     carrier_out: heat_60
-  #     name: booster_WSHP_35_60
-  #     parent: conversion_plus
-  #     primary_carrier_in: electricity
-  # booster_WSHP_35_85:
-  #   constraints:
-  #     carrier_ratios:
-  #       carrier_in_2:
-  #         heat_35: 3.4400000000000004
-  #     energy_cap_max: 500
-  #     energy_cap_min: 5
-  #     energy_eff: 4.44
-  #     lifetime: 20
-  #   costs:
-  #     co2:
-  #       energy_cap: 36.3
-  #       interest_rate: 0
-  #     monetary:
-  #       energy_cap: 1113.6
-  #       interest_rate: 0.05
-  #       om_annual: 11.57
-  #       purchase: 55600
-  #   essentials:
-  #     carrier_in: electricity
-  #     carrier_in_2: heat_35
-  #     carrier_out: heat_85
-  #     name: booster_WSHP_35_85
-  #     parent: conversion_plus
-  #     primary_carrier_in: electricity
-  # booster_WSHP_60_85:
-  #   constraints:
-  #     carrier_ratios:
-  #       carrier_in_2:
-  #         heat_60: 7
-  #     energy_cap_max: 500
-  #     energy_cap_min: 5
-  #     energy_eff: 8
-  #     lifetime: 20
-  #   costs:
-  #     co2:
-  #       energy_cap: 36.3
-  #       interest_rate: 0
-  #     monetary:
-  #       energy_cap: 1113.6
-  #       interest_rate: 0.05
-  #       om_annual: 11.57
-  #       purchase: 55600
-  #   essentials:
-  #     carrier_in: electricity
-  #     carrier_in_2: heat_60
-  #     carrier_out: heat_85
-  #     name: booster_WSHP_60_85
-  #     parent: conversion_plus
-  #     primary_carrier_in: electricity
-  # cold_water_pipe:
-  #   constraints:
-  #     energy_con: true
-  #     energy_prod: true
-  #     lifetime: 1
-  #   costs:
-  #     co2:
-  #       interest_rate: 0
-  #       purchase_per_distance: 1
-  #     monetary:
-  #       interest_rate: 0
-  #       purchase_per_distance: 10
-  #   essentials:
-  #     carrier: heat_35
-  #     name: cold_water_pipe
-  #     parent: transmission
   demand_electricity:
     constraints:
       resource: df=demand_electricity
@@ -556,22 +437,6 @@ techs:
       color: '#219ce1'
       name: district_heating
       parent: supply
-  # electrical_cable:
-  #   constraints:
-  #     energy_con: true
-  #     energy_prod: true
-  #     lifetime: 1
-  #   costs:
-  #     co2:
-  #       interest_rate: 0
-  #       purchase_per_distance: 1
-  #     monetary:
-  #       interest_rate: 0
-  #       purchase_per_distance: 10
-  #   essentials:
-  #     carrier: electricity
-  #     name: electrical_cable
-  #     parent: transmission
   electricity_econatur:
     constraints:
       lifetime: 1
@@ -586,36 +451,6 @@ techs:
       carrier_out: electricity
       color: '#094926'
       name: electricity_econatur
-      parent: supply
-  electricity_natur:
-    constraints:
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        om_con: 0.021
-      monetary:
-        interest_rate: 0.05
-        om_con: 0.3016/0.1876
-    essentials:
-      carrier_out: electricity
-      color: '#107c41'
-      name: electricity_natur
-      parent: supply
-  electricity_pronatur:
-    constraints:
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        om_con: 0.0291
-      monetary:
-        interest_rate: 0.05
-        om_con: 0.3189/0.2048
-    essentials:
-      carrier_out: electricity
-      color: '#19c869'
-      name: electricity_pronatur
       parent: supply
   gas_boiler_large:
     constraints:
@@ -752,22 +587,6 @@ techs:
       color: '#ffd191'
       name: gas_standard
       parent: supply
-  # hot_water_pipe:
-  #   constraints:
-  #     energy_con: true
-  #     energy_prod: true
-  #     lifetime: 1
-  #   costs:
-  #     co2:
-  #       interest_rate: 0
-  #       purchase_per_distance: 1
-  #     monetary:
-  #       interest_rate: 0
-  #       purchase_per_distance: 10
-  #   essentials:
-  #     carrier: heat_85
-  #     name: hot_water_pipe
-  #     parent: transmission
   li_ion_battery:
     constraints:
       energy_cap_per_storage_cap_max: 0.25
@@ -867,21 +686,21 @@ techs:
       color: '#e6b8b7'
       name: oil_boiler_small
       parent: conversion
-  # pallet:
-  #   constraints:
-  #     lifetime: 1
-  #   costs:
-  #     co2:
-  #       interest_rate: 0
-  #       om_con: 0.028
-  #     monetary:
-  #       interest_rate: 0.05
-  #       om_con: 0.102
-  #   essentials:
-  #     carrier_out: pallet
-  #     color: '#c4d79b'
-  #     name: pallet
-  #     parent: supply
+  pallet:
+    constraints:
+      lifetime: 1
+    costs:
+      co2:
+        interest_rate: 0
+        om_con: 0.028
+      monetary:
+        interest_rate: 0.05
+        om_con: 0.102
+    essentials:
+      carrier_out: pallet
+      color: '#c4d79b'
+      name: pallet
+      parent: supply
   pallet_boiler_large:
     constraints:
       energy_cap_max: 500

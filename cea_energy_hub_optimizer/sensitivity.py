@@ -203,8 +203,8 @@ if __name__ == "__main__":
     config = MyConfig(Configuration())
     original_yaml_path = r"cea_energy_hub_optimizer\data\energy_hub_config.yml"
     sensitivity_setting_csv_path = r"cea_energy_hub_optimizer\data\sobol_parameters.csv"
-    variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation"
-    results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result"
+    variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_loca_after_PV_fix"
+    results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_local_after_PV_fix"
     num_samples = 100
     method = "screening"  # Set to "sobol" or "screening"
 
