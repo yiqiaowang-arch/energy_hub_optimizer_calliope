@@ -58,11 +58,7 @@ def generate_variations(
     base_values = df["base"].values.tolist()  # Assumed to have a 'base' column
 
     if method == "sobol":
-        calc_second_order = False  # Set to False to reduce the number of samples
-        N = num_samples  # Base sample size
-        samples = sobol.sample(
-            problem, N=num_samples, calc_second_order=calc_second_order
-        )
+        samples = sobol.sample(problem, N=num_samples)
     elif method == "screening":
         samples = []
         for i in range(problem["num_vars"]):
@@ -211,9 +207,9 @@ if __name__ == "__main__":
     sensitivity_setting_csv_path = (
         r"cea_energy_hub_optimizer\data\sobol_parameters copy.csv"
     )
-    variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_loca_test"
-    results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_local_test"
-    num_samples = 5  # better be power of 2
+    variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_supply"
+    results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_supply"
+    num_samples = 8  # better be power of 2
     method = "sobol"  # Set to "sobol" or "screening"
 
     if not os.path.exists(variations_folder):
