@@ -12,6 +12,7 @@ from cea.config import Configuration
 from SALib.sample import sobol_sequence
 from SALib.analyze import sobol
 from scipy.spatial.distance import pdist, squareform
+from SALib.sample import sobol  # Add this import
 
 
 def generate_variations(
@@ -57,15 +58,20 @@ def generate_variations(
     base_values = df["base"].values.tolist()  # Assumed to have a 'base' column
 
     if method == "sobol":
-        samples = sobol_sequence.sample(num_samples, problem["num_vars"])
+        calc_second_order = False  # Set to False to reduce the number of samples
+        N = num_samples  # Base sample size
+        samples = sobol.sample(
+            problem, N=num_samples, calc_second_order=calc_second_order
+        )
     elif method == "screening":
-        # Implement screening (local sensitivity) sampling
         samples = []
         for i in range(problem["num_vars"]):
-            sample = base_values.copy()
-            for bound in problem["bounds"][i]:
-                sample[i] = bound
-                samples.append(sample.copy())
+            min_val, max_val = problem["bounds"][i]
+            values = np.linspace(min_val, max_val, num_samples)
+            for val in values:
+                sample = base_values.copy()
+                sample[i] = val
+                samples.append(sample)
     else:
         raise ValueError(f"Unsupported sampling method: {method}")
 
@@ -202,19 +208,27 @@ def extract_sensitivity_values(results_folder, problem, threshold=1e-3):
 if __name__ == "__main__":
     config = MyConfig(Configuration())
     original_yaml_path = r"cea_energy_hub_optimizer\data\energy_hub_config.yml"
-    sensitivity_setting_csv_path = r"cea_energy_hub_optimizer\data\sobol_parameters.csv"
-    variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_loca_after_PV_fix"
-    results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_local_after_PV_fix"
-    num_samples = 100
-    method = "screening"  # Set to "sobol" or "screening"
+    sensitivity_setting_csv_path = (
+        r"cea_energy_hub_optimizer\data\sobol_parameters copy.csv"
+    )
+    variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_loca_test"
+    results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_local_test"
+    num_samples = 5  # better be power of 2
+    method = "sobol"  # Set to "sobol" or "screening"
 
-    # problem = generate_variations(
-    #     sensitivity_setting_csv_path,
-    #     original_yaml_path,
-    #     variations_folder,
-    #     num_samples,
-    #     method,
-    # )
+    if not os.path.exists(variations_folder):
+        os.makedirs(variations_folder)
+
+    if not os.path.exists(results_folder):
+        os.makedirs(results_folder)
+
+    problem = generate_variations(
+        sensitivity_setting_csv_path,
+        original_yaml_path,
+        variations_folder,
+        num_samples,
+        method,
+    )
     warnings.filterwarnings("ignore")
     execute_energy_hub_models(config, variations_folder, results_folder)
     threshold = 1e-3  # Set the L2 distance threshold

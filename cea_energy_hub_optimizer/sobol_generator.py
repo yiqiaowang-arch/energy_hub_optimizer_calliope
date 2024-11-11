@@ -1,7 +1,8 @@
 import pandas as pd
+import numpy as np
 
 
-def generate_sobol_csv(excel_filepath: str, csv_filepath: str) -> None:
+def generate_sa_csv(excel_filepath: str, csv_filepath: str) -> None:
     """
     Generate a CSV file for Sobol sensitivity analysis with min value 0 and max value as the current parameter value,
     for all parameters in the Excel file. The parameter names are constructed as 'tech.<tech_name>.<parameter_path>'.
@@ -46,13 +47,20 @@ def generate_sobol_csv(excel_filepath: str, csv_filepath: str) -> None:
             # Iterate through all columns (parameters)
             for col in df.columns:
                 value = row[col]
-                if pd.notna(value):
+                if pd.notna(value) and isinstance(value, (int, float, np.float64)):
                     # Construct the full parameter name
                     col_keys = ["tech", tech_name] + list(col)
                     col_keys = remove_consecutive_duplicates(col_keys)
                     param_name = ".".join(col_keys)
                     # Append parameter data
-                    data.append({"name": param_name, "min": 0, "max": value})
+                    data.append(
+                        {
+                            "name": param_name,
+                            "min": round(0.7 * value, 3),
+                            "base": value,
+                            "max": round(1.5 * value, 3),
+                        }
+                    )
 
     # Create a DataFrame from the collected data
     sobol_df = pd.DataFrame(data)
@@ -80,8 +88,8 @@ def remove_consecutive_duplicates(lst):
 
 # Example usage
 if __name__ == "__main__":
-    excel_filepath = r"C:\Users\wangy\Documents\GitHub\energy_hub_optimizer_calliope\cea_energy_hub_optimizer\data\example_techDefinition - Copy.xlsx"
-    csv_filepath = r"C:\Users\wangy\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\sobol_parameters.csv"
+    excel_filepath = r"C:\Users\wangy\Documents\GitHub\energy_hub_optimizer_calliope\cea_energy_hub_optimizer\data\example_techDefinition_sensitivity.xlsx"
+    csv_filepath = r"cea_energy_hub_optimizer\data\sobol_parameters.csv"
 
     # Call the function to generate the Sobol CSV file
-    generate_sobol_csv(excel_filepath, csv_filepath)
+    generate_sa_csv(excel_filepath, csv_filepath)
