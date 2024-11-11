@@ -85,6 +85,9 @@ def generate_variations(
         if method == "screening":
             # print what is being modified
             print(f"Variation {i}: {modifications}")
+        elif method == "sobol":
+            # print onlz the variation number
+            print(f"Variation {i} is generated.")
 
         new_yaml_path = os.path.join(output_folder, f"variation_{i}_{method}.yml")
         modify_yaml(original_yaml_path, modifications, new_yaml_path)
@@ -114,7 +117,7 @@ def modify_yaml(original_yaml_path, modifications, new_yaml_path):
 
     for key, value in modifications.items():
         #
-        yaml_content.set_key(key, value)
+        yaml_content.set_key(key, round(float(value), 3))
 
     with open(new_yaml_path, "w") as file:
         yaml.dump(yaml_content.as_dict(), file)
@@ -147,6 +150,10 @@ def execute_energy_hub_models(
             energy_hub.get_pareto_front(store_folder=results_folder)
             energy_hub.df_pareto.to_csv(
                 os.path.join(results_folder, f"{variation_filename}_pareto.csv"),
+                index=True,
+            )
+            energy_hub.df_cost_per_tech.to_csv(
+                os.path.join(results_folder, f"{variation_filename}_cost_per_tech.csv"),
                 index=True,
             )
             del energy_hub
@@ -205,10 +212,28 @@ if __name__ == "__main__":
     config = MyConfig(Configuration())
     original_yaml_path = r"cea_energy_hub_optimizer\data\energy_hub_config.yml"
     sensitivity_setting_csv_path = (
-        r"cea_energy_hub_optimizer\data\sobol_parameters copy.csv"
+        r"cea_energy_hub_optimizer\data\sobol_parameters_supply.csv"
     )
-    variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_supply"
-    results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_supply"
+    if os.getlogin() == "yiqwang":
+        # public computer, specify the first part of path
+        path_first_part = r"C:\Users\yiqwang"
+    elif os.getlogin() == "wangy":
+        # own computer, specify the first part of path
+        path_first_part = r"C:\Users\wangy"
+    else:
+        raise ValueError("Unknown user, please specify the first part of the path.")
+
+    # variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_supply"
+    # results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_supply"
+
+    variations_folder = os.path.join(
+        path_first_part,
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_supply",
+    )
+    results_folder = os.path.join(
+        path_first_part,
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_supply",
+    )
     num_samples = 8  # better be power of 2
     method = "sobol"  # Set to "sobol" or "screening"
 
@@ -218,13 +243,13 @@ if __name__ == "__main__":
     if not os.path.exists(results_folder):
         os.makedirs(results_folder)
 
-    problem = generate_variations(
-        sensitivity_setting_csv_path,
-        original_yaml_path,
-        variations_folder,
-        num_samples,
-        method,
-    )
+    # problem = generate_variations(
+    #     sensitivity_setting_csv_path,
+    #     original_yaml_path,
+    #     variations_folder,
+    #     num_samples,
+    #     method,
+    # )
     warnings.filterwarnings("ignore")
     execute_energy_hub_models(config, variations_folder, results_folder)
     threshold = 1e-3  # Set the L2 distance threshold

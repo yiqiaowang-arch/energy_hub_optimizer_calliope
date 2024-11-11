@@ -15,6 +15,27 @@ group_constraints:
        cost_max:
            co2: 1000000000 # NOTE: leave this empty to apply co2 constarints from the config
 
+tech_groups:
+    supply_for_pv:
+        essentials:
+            parent: supply
+            carrier_out: electricity
+        constraints:
+            resource: df=supply_PV
+            force_resource: True
+            resource_unit: energy_per_area
+            resource_area_per_energy_cap: 5
+            export_carrier: electricity
+            lifetime: 27
+        costs:
+            monetary:
+                purchase: 1
+                export: -0.1272
+                interest_rate: 0.05
+            co2:
+                energy_cap: 1250
+                interest_rate: 0
+
 run:
     backend: pyomo
     cyclic_storage: True # If True, storage in the last timestep of the timeseries is considered to be the ‘previous timestep’ in the first timestep of the timeseries

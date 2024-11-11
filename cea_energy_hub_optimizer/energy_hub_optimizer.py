@@ -46,7 +46,7 @@ def main(config: cea.config.Configuration) -> None:
     # initialize the singleton class which contains all the config attributes that are needed in the script
     my_config = MyConfig(config)
     check_solar_technology()
-    warnings.filterwarnings("ignore")
+    # warnings.filterwarnings("ignore")
     locator = cea.inputlocator.InputLocator(config.scenario)
     buildings: list[str] = my_config.buildings
     yaml_path = my_config.technology_definition_file

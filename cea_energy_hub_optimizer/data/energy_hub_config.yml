@@ -21,6 +21,26 @@ run:
       monetary: 1
     sense: minimize
   solver: glpk
+tech_groups:
+  supply_for_pv:
+    constraints:
+      export_carrier: electricity
+      force_resource: true
+      lifetime: 27
+      resource: df=supply_PV
+      resource_area_per_energy_cap: 5
+      resource_unit: energy_per_area
+    costs:
+      co2:
+        energy_cap: 1250
+        interest_rate: 0
+      monetary:
+        export: -0.1272
+        interest_rate: 0.05
+        purchase: 1
+    essentials:
+      carrier_out: electricity
+      parent: supply
 techs:
   ASHP_35:
     constraints:
@@ -260,78 +280,54 @@ techs:
       carrier_out: heat_60
       name: HEX_85_60
       parent: conversion
-  PV_large:
+  PV_extra_large:
     constraints:
       energy_cap_max: 2000
-      energy_cap_min: 100
-      export_carrier: electricity
-      force_resource: true
+      energy_cap_min: 200
       lifetime: 27
-      resource: df=supply_PV
-      resource_area_per_energy_cap: 5
-      resource_unit: energy_per_area
     costs:
-      co2:
-        energy_cap: 1250
-        interest_rate: 0
       monetary:
-        energy_cap: 1284
-        export: -0.1272
-        interest_rate: 0.05
-        purchase: 31579
+        energy_cap: 1000
     essentials:
-      carrier_out: electricity
+      color: '#c69874'
+      name: PV_extra_large
+      parent: supply_for_pv
+  PV_large:
+    constraints:
+      energy_cap_max: 200
+      energy_cap_min: 100
+      lifetime: 27
+    costs:
+      monetary:
+        energy_cap: 1300
+    essentials:
       color: '#c69873'
       name: PV_large
-      parent: supply
+      parent: supply_for_pv
   PV_middle:
     constraints:
       energy_cap_max: 100
       energy_cap_min: 10
-      export_carrier: electricity
-      force_resource: true
       lifetime: 27
-      resource: df=supply_PV
-      resource_area_per_energy_cap: 5
-      resource_unit: energy_per_area
     costs:
-      co2:
-        energy_cap: 1250
-        interest_rate: 0
       monetary:
-        energy_cap: 1444
-        export: -0.1272
-        interest_rate: 0.05
-        purchase: 15555.6
+        energy_cap: 1600
     essentials:
-      carrier_out: electricity
       color: '#c69872'
       name: PV_middle
-      parent: supply
+      parent: supply_for_pv
   PV_small:
     constraints:
       energy_cap_max: 10
       energy_cap_min: 1
-      export_carrier: electricity
-      force_resource: true
       lifetime: 27
-      resource: df=supply_PV
-      resource_area_per_energy_cap: 5
-      resource_unit: energy_per_area
     costs:
-      co2:
-        energy_cap: 1250
-        interest_rate: 0
       monetary:
         energy_cap: 3000
-        export: -0.1272
-        interest_rate: 0.05
-        purchase: 1
     essentials:
-      carrier_out: electricity
       color: '#c69871'
       name: PV_small
-      parent: supply
+      parent: supply_for_pv
   SCET:
     constraints:
       energy_cap_min: 1
