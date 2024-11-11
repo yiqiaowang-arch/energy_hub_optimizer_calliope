@@ -515,36 +515,6 @@ techs:
       color: '#c69871'
       name: gas_boiler_small
       parent: conversion
-  gas_erneuerbar:
-    constraints:
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        om_con: 0.124
-      monetary:
-        interest_rate: 0.05
-        om_con: 0.178
-    essentials:
-      carrier_out: gas
-      color: '#c69871'
-      name: gas_erneuerbar
-      parent: supply
-  gas_individuell:
-    constraints:
-      lifetime: 1
-    costs:
-      co2:
-        interest_rate: 0
-        om_con: 0.177
-      monetary:
-        interest_rate: 0.05
-        om_con: 0.143
-    essentials:
-      carrier_out: gas
-      color: '#fabf8f'
-      name: gas_individuell
-      parent: supply
   gas_micro_CHP:
     constraints:
       carrier_ratios:
