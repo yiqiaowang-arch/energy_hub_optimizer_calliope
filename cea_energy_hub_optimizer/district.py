@@ -178,33 +178,33 @@ class TechAttrDict(AttrDict):
                     if tech in self.locations[building].techs:
                         self.del_key(f"locations.{building}.techs.{tech}")
 
-    def set_electricity_tariff(self):
-        ls_var_elec = [
-            "electricity_pronatur",
-            "electricity_natur",
-            "electricity_econatur",
-        ]
-        for tech in ls_var_elec:
-            if tech in self.tech_list:
-                self.set_key(
-                    key=f"techs.{tech}.costs.monetary.om_con",
-                    value=f"df={tech}_tariff",
-                )
+    # def set_electricity_tariff(self):
+    #     ls_var_elec = [
+    #         "electricity_pronatur",
+    #         "electricity_natur",
+    #         "electricity_econatur",
+    #     ]
+    #     for tech in ls_var_elec:
+    #         if tech in self.tech_list:
+    #             self.set_key(
+    #                 key=f"techs.{tech}.costs.monetary.om_con",
+    #                 value=f"df={tech}_tariff",
+    #             )
 
-    def set_feedin_tariff(self):
-        ls_var_feed = [
-            "PV_small",
-            "PV_middle",
-            "PV_large",
-            "PV_extra_large",
-            "gas_micro_CHP",
-        ]
-        for tech in ls_var_feed:
-            if tech in self.tech_list:
-                self.set_key(
-                    key=f"techs.{tech}.costs.monetary.export",
-                    value=f"df={tech}_feedin_tariff",
-                )
+    # def set_feedin_tariff(self):
+    #     ls_var_feed = [
+    #         "PV_small",
+    #         "PV_middle",
+    #         "PV_large",
+    #         "PV_extra_large",
+    #         "gas_micro_CHP",
+    #     ]
+    #     for tech in ls_var_feed:
+    #         if tech in self.tech_list:
+    #             self.set_key(
+    #                 key=f"techs.{tech}.costs.monetary.export",
+    #                 value=f"df={tech}_feedin_tariff",
+    #             )
 
     def set_global_max_co2(self, max_co2: Union[float, None]):
         self.set_key(
