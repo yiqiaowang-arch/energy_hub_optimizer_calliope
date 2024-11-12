@@ -9,7 +9,7 @@ import yaml
 import os
 import pandas as pd
 import numpy as np
-from typing import Union
+from typing import Tuple
 from cea.config import Configuration
 from SALib.sample import sobol_sequence
 from SALib.analyze import sobol
@@ -181,7 +181,24 @@ class SensitivityAnalysis:
         effective_points = pareto_points[list(keep_indices)]
         return len(effective_points)
 
-    def analyze_results(self, threshold: float = 1e-3):
+    def count_active_technologies(
+        self, result_file: os.PathLike
+    ) -> Tuple[float, float]:
+        """
+        Count the number of activated technologies in each Pareto solution.
+
+        :param result_file: Path to the result file.
+        :return: A tuple (average, standard deviation) of activated technologies.
+        """
+        df = pd.read_csv(result_file)
+        # Assuming technology columns start from the fifth column
+        tech_columns = df.columns[4:]
+        counts = (df[tech_columns] > 0).sum(axis=1)
+        avg_count = counts.mean()
+        std_count = counts.std()
+        return avg_count, std_count
+
+    def analyze_results(self, threshold: float = 1e-3, to_file: bool = False):
         """
         Analyze results by reading the variations record and compiling a DataFrame with parameters
         for sensitivity analysis.
@@ -204,6 +221,9 @@ class SensitivityAnalysis:
                 effective_points_count = self.extract_sensitivity_values(
                     result_file_path, threshold
                 )
+                avg_activated_techs, std_activated_techs = (
+                    self.count_active_technologies(result_file_path)
+                )
                 print(
                     f"Effective points for variation {variation_id}: {effective_points_count}"
                 )
@@ -214,6 +234,8 @@ class SensitivityAnalysis:
                 record.update(
                     {
                         "effective_points": effective_points_count,
+                        "avg_activated_techs": avg_activated_techs,
+                        "std_activated_techs": std_activated_techs,
                         # Additional analysis can be added here
                     }
                 )
@@ -221,15 +243,15 @@ class SensitivityAnalysis:
             else:
                 print(f"Warning: Result file not found for variation {variation_id}")
 
-        # if data_records:
-        #     df = pd.DataFrame.from_dict(data_records, orient="index")
-        #     df.index.name = "variation_id"
-        #     df.to_csv(
-        #         os.path.join(self.results_folder, "sensitivity_analysis_data.csv"),
-        #         index=True,
-        #     )
-        # else:
-        #     print("No data records to save.")
+        if data_records and to_file:
+            df = pd.DataFrame.from_dict(data_records, orient="index")
+            df.index.name = "variation_id"
+            df.to_csv(
+                os.path.join(self.results_folder, "sensitivity_analysis_data.csv"),
+                index=True,
+            )
+        else:
+            print("No data records to save.")
 
     def get_variation_df(self) -> pd.DataFrame:
         """read the variations_record_{method}.csv and return a dataframe of that file
