@@ -210,29 +210,33 @@ def extract_sensitivity_values(results_folder, problem, threshold=1e-3):
 # Example usage
 if __name__ == "__main__":
     config = MyConfig(Configuration())
-    original_yaml_path = r"cea_energy_hub_optimizer\data\energy_hub_config.yml"
-    sensitivity_setting_csv_path = (
-        r"cea_energy_hub_optimizer\data\sobol_parameters_supply.csv"
+    original_yaml_path = (
+        r"cea_energy_hub_optimizer\data\energy_hub_config_conversion_sensitivity.yml"
     )
-    if os.getlogin() == "yiqwang":
-        # public computer, specify the first part of path
-        path_first_part = r"C:\Users\yiqwang"
-    elif os.getlogin() == "wangy":
-        # own computer, specify the first part of path
-        path_first_part = r"C:\Users\wangy"
-    else:
-        raise ValueError("Unknown user, please specify the first part of the path.")
+    sensitivity_setting_csv_path = (
+        r"cea_energy_hub_optimizer\data\sobol_parameters_conversion_emission.csv"
+    )
+    # if os.getlogin() == "yiqwang":
+    #     # public computer, specify the first part of path
+    #     path_first_part = r"C:\Users\yiqwang"
+    # elif os.getlogin() == "wangy":
+    #     # own computer, specify the first part of path
+    #     path_first_part = r"C:\Users\wangy"
+    # else:
+    #     raise ValueError("Unknown user, please specify the first part of the path.")
+
+    path_first_part = os.path.join(r"C:\Users", os.getlogin())
 
     # variations_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_supply"
     # results_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_supply"
 
     variations_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_supply",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_emission_only",
     )
     results_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_supply",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_emission_only",
     )
     num_samples = 8  # better be power of 2
     method = "sobol"  # Set to "sobol" or "screening"
