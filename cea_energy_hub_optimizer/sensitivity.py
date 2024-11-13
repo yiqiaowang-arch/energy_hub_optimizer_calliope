@@ -1,5 +1,6 @@
 from calendar import c
 import gc
+import re
 from unittest import result
 import warnings
 from cea_energy_hub_optimizer.energy_hub import EnergyHub
@@ -15,7 +16,7 @@ from SALib.sample import sobol_sequence
 from SALib.analyze import sobol
 from scipy.spatial.distance import pdist, squareform
 from SALib.sample import sobol
-from typing import Union
+from typing import Union, List
 
 
 class SensitivityAnalysis:
@@ -159,7 +160,7 @@ class SensitivityAnalysis:
                 gc.collect()
 
     @staticmethod
-    def extract_sensitivity_values(
+    def get_effective_pareto_points(
         result_file: os.PathLike, threshold: float = 1e-3
     ) -> int:
         """
@@ -181,9 +182,8 @@ class SensitivityAnalysis:
         effective_points = pareto_points[list(keep_indices)]
         return len(effective_points)
 
-    def count_active_technologies(
-        self, result_file: os.PathLike
-    ) -> Tuple[float, float]:
+    @staticmethod
+    def count_active_technologies(result_file: os.PathLike) -> Tuple[float, float]:
         """
         Count the number of activated technologies in each Pareto solution.
 
@@ -198,12 +198,47 @@ class SensitivityAnalysis:
         std_count = counts.std()
         return avg_count, std_count
 
-    def analyze_results(self, threshold: float = 1e-3, to_file: bool = False):
+    @staticmethod
+    def count_specific_technology_activation(
+        result_file: os.PathLike, tech_name: str
+    ) -> Tuple[float, float]:
+        """
+        Analyze activation of a specific technology across Pareto solutions.
+
+        :param result_file: Path to the result file.
+        :param tech_name: Name of the technology to analyze.
+        :return: A tuple (average_activation, activation_rate_change).
+        """
+        df = pd.read_csv(result_file)
+        if tech_name not in df.columns:
+            raise ValueError(f"Technology '{tech_name}' not found in the result file.")
+
+        # Check activation of the specific technology
+        tech_activation = df[tech_name] > 0
+
+        # Calculate the average activation (fraction of Pareto fronts where tech is active)
+        average_activation = tech_activation.mean()
+
+        # Calculate the rate of change (derivative) of activation across solutions
+        activation_rate_change = tech_activation.astype(int).diff().abs().mean()
+
+        return average_activation, activation_rate_change
+
+    def analyze_results(
+        self,
+        threshold: float = 1e-3,
+        to_file: bool = False,
+        tech_specific: bool = False,
+    ) -> pd.DataFrame:
         """
         Analyze results by reading the variations record and compiling a DataFrame with parameters
         for sensitivity analysis.
 
         :param threshold: Threshold for filtering near-duplicate Pareto points.
+        :param record_all_technologies: If True, analyze all technologies in the result files.
+
+        :return: A DataFrame with sensitivity analysis data.
+        :rtype: pd.DataFrame
         """
         method = self.method  # Use the instance attribute
         variations_df = self.get_variation_df()
@@ -218,14 +253,14 @@ class SensitivityAnalysis:
             cost_file_path = os.path.join(self.results_folder, cost_file)
 
             if os.path.exists(result_file_path) and os.path.exists(cost_file_path):
-                effective_points_count = self.extract_sensitivity_values(
+                effective_points_count = self.get_effective_pareto_points(
                     result_file_path, threshold
+                )
+                print(
+                    f"effective points count is done for variation {variation_id}, count = {effective_points_count}"
                 )
                 avg_activated_techs, std_activated_techs = (
                     self.count_active_technologies(result_file_path)
-                )
-                print(
-                    f"Effective points for variation {variation_id}: {effective_points_count}"
                 )
                 # active_techs_count = self.count_active_techs(result_file_path)
                 # Collect parameters and outputs
@@ -239,19 +274,42 @@ class SensitivityAnalysis:
                         # Additional analysis can be added here
                     }
                 )
+                if tech_specific:
+                    df_result = pd.read_csv(result_file_path)
+                    # Assuming technology columns start from the fifth column
+                    tech_columns = df_result.columns[4:]
+                    for tech_name in tech_columns:
+                        avg_activation, activation_rate_change = (
+                            self.count_specific_technology_activation(
+                                result_file_path, tech_name
+                            )
+                        )
+                        record.update(
+                            {
+                                f"{tech_name}_avg_activation": avg_activation,
+                                f"{tech_name}_activation_rate_change": activation_rate_change,
+                            }
+                        )
                 data_records[variation_id] = record
             else:
                 print(f"Warning: Result file not found for variation {variation_id}")
 
+            print("statistical analysis is done for variation ", variation_id)
+
+        df = pd.DataFrame.from_dict(data_records, orient="index")
+        df.index.name = "variation_id"
         if data_records and to_file:
-            df = pd.DataFrame.from_dict(data_records, orient="index")
-            df.index.name = "variation_id"
             df.to_csv(
                 os.path.join(self.results_folder, "sensitivity_analysis_data.csv"),
                 index=True,
             )
+            print(
+                f"Data records are saved as {os.path.join(self.results_folder, 'sensitivity_analysis_data.csv')}"
+            )
         else:
             print("No data records to save.")
+
+        return df
 
     def get_variation_df(self) -> pd.DataFrame:
         """read the variations_record_{method}.csv and return a dataframe of that file
@@ -315,8 +373,7 @@ if __name__ == "__main__":
     # sa.generate_variations(num_samples=8)
 
     # Execute energy hub models
-    warnings.filterwarnings("ignore")
-    sa.execute_energy_hub_models()
+    # warnings.filterwarnings("ignore")
+    # sa.execute_energy_hub_models()
 
-    # Analyze results
-    # sa.analyze_results(threshold=1e-3)
+    df = sa.analyze_results(threshold=1e-3, to_file=True, tech_specific=True)
