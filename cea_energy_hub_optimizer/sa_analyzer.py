@@ -199,7 +199,7 @@ def plot_correlation_matrix(correlations: pd.DataFrame, output_path: str = ""):
 
     plt.xlabel("Results")
     plt.ylabel("Parameters")
-    plt.title("Parameter COrrelation Matrix")
+    plt.title("Parameter Correlation Matrix")
     plt.tight_layout()
     if output_path:
         plt.savefig(output_path)
@@ -303,7 +303,7 @@ def plot_pairwise_interaction_heatmap(sensitivities: dict, output_folder: str = 
 
 if __name__ == "__main__":
     # Specify the path to the CSV file
-    sensitivity_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply"
+    sensitivity_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission"
     variation_folder = os.path.join(sensitivity_folder, "variation")
     result_folder = os.path.join(sensitivity_folder, "result")
     plot_folder = os.path.join(sensitivity_folder, "plots")
@@ -325,23 +325,23 @@ if __name__ == "__main__":
     sobol_indices = compute_sobol_sensitivities(result_df, problem)
 
     # plotting
-    # # Plot Spearman rank correlation sensitivities
-    # plot_correlation_barcharts(pearson_sensitivities, output_folder=plot_folder)
+    # Plot Spearman rank correlation sensitivities
+    plot_correlation_barcharts(pearson_sensitivities, output_folder=plot_folder)
 
-    # # Plot Spearman rank correlation sensitivity matrix
-    # plot_correlation_matrix(
-    #     pearson_sensitivities,
-    #     output_path=os.path.join(plot_folder, "correlation_matrix.png"),
-    # )
+    # Plot Spearman rank correlation sensitivity matrix
+    plot_correlation_matrix(
+        pearson_sensitivities,
+        output_path=os.path.join(plot_folder, "correlation_matrix.png"),
+    )
 
-    # # Plot Sobol sensitivity indices
-    # plot_sobol_indices(sobol_indices, output_folder=plot_folder)
+    # Plot Sobol sensitivity indices
+    plot_sobol_indices(sobol_indices, output_folder=plot_folder)
 
-    # # Plot Sobol sensitivity heatmap
-    # plot_sobol_heatmap(sobol_indices, output_folder=plot_folder)
+    # Plot Sobol sensitivity heatmap
+    plot_sobol_heatmap(sobol_indices, output_folder=plot_folder)
 
     # Plot spider plots for total influence
     plot_spider_plot(sobol_indices, output_folder=plot_folder)
 
-    # # Plot pairwise interaction heatmaps
-    # plot_pairwise_interaction_heatmap(sobol_indices, output_folder=plot_folder)
+    # Plot pairwise interaction heatmaps
+    plot_pairwise_interaction_heatmap(sobol_indices, output_folder=plot_folder)
