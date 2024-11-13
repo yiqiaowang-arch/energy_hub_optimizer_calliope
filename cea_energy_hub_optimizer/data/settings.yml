@@ -167,7 +167,7 @@ tech_groups:
                 storage_cap: 13
                 om_annual_investment_fraction: 0.015
             co2:
-                energy_cap: 7
+                storage_cap: 7
 
 run:
     backend: pyomo
