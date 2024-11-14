@@ -58,7 +58,8 @@ def generate_variations(
     base_values = df["base"].values.tolist()  # Assumed to have a 'base' column
 
     if method == "sobol":
-        samples = sobol.sample(problem, N=num_samples)
+        samples = sobol.sample(problem, N=num_samples, calc_second_order=False)
+        print("number of samples: ", len(samples))
     elif method == "screening":
         samples = []
         for i in range(problem["num_vars"]):
@@ -211,9 +212,7 @@ def extract_sensitivity_values(results_folder, problem, threshold=1e-3):
 if __name__ == "__main__":
     config = MyConfig(Configuration())
     original_yaml_path = r"cea_energy_hub_optimizer\data\energy_hub_config.yml"
-    sensitivity_setting_csv_path = (
-        r"cea_energy_hub_optimizer\data\sobol_parameters_supply.csv"
-    )
+    sensitivity_setting_csv_path = r"C:\Users\yiqwang\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large\problem.csv"
     if os.getlogin() == "yiqwang":
         # public computer, specify the first part of path
         path_first_part = r"C:\Users\yiqwang"
@@ -228,13 +227,13 @@ if __name__ == "__main__":
 
     variations_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\variation_global_supply",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large\variation",
     )
     results_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\result_global_supply",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large\result",
     )
-    num_samples = 8  # better be power of 2
+    num_samples = 64  # better be power of 2
     method = "sobol"  # Set to "sobol" or "screening"
 
     if not os.path.exists(variations_folder):
@@ -252,16 +251,16 @@ if __name__ == "__main__":
     # )
     warnings.filterwarnings("ignore")
     execute_energy_hub_models(config, variations_folder, results_folder)
-    threshold = 1e-3  # Set the L2 distance threshold
+    # threshold = 1e-3  # Set the L2 distance threshold
 
-    df = pd.read_csv(sensitivity_setting_csv_path)
+    # df = pd.read_csv(sensitivity_setting_csv_path)
 
-    problem = {
-        "num_vars": len(df),
-        "names": df["name"].tolist(),
-        "bounds": df[["min", "max"]].values.tolist(),
-    }
+    # problem = {
+    #     "num_vars": len(df),
+    #     "names": df["name"].tolist(),
+    #     "bounds": df[["min", "max"]].values.tolist(),
+    # }
 
-    # Si = extract_sensitivity_values(results_folder, problem, threshold)
-    # print(Si)
-    extract_sensitivity_values(results_folder, problem, threshold)
+    # # Si = extract_sensitivity_values(results_folder, problem, threshold)
+    # # print(Si)
+    # extract_sensitivity_values(results_folder, problem, threshold)
