@@ -201,7 +201,7 @@ class SensitivityAnalysis:
     @staticmethod
     def count_specific_technology_activation(
         result_file: os.PathLike, tech_name: str
-    ) -> Tuple[float, float]:
+    ) -> float:
         """
         Analyze activation of a specific technology across Pareto solutions.
 
@@ -214,15 +214,47 @@ class SensitivityAnalysis:
             raise ValueError(f"Technology '{tech_name}' not found in the result file.")
 
         # Check activation of the specific technology
-        tech_activation = df[tech_name] > 0
+        # tech_activation = df[tech_name][df[tech_name] > 0]
+        tech_activation = (df[tech_name] > 0).sum() / len(df)
 
-        # Calculate the average activation (fraction of Pareto fronts where tech is active)
-        average_activation = tech_activation.mean()
+        # # Calculate the average activation (fraction of Pareto fronts where tech is active)
+        # activation_avg = tech_activation.mean()
 
-        # Calculate the rate of change (derivative) of activation across solutions
-        activation_rate_change = tech_activation.astype(int).diff().abs().mean()
+        # # Calculate the standard deviation
+        # activation_std = tech_activation.std()
 
-        return average_activation, activation_rate_change
+        # return activation_avg, activation_std
+        return tech_activation
+
+    @staticmethod
+    def get_average_cost(result_file: os.PathLike) -> Tuple[float, float]:
+        """
+        Get the average cost of each Pareto solution.
+
+        :param result_file: Path to the result file.
+        :return: A tuple (average, standard deviation) of (cost, emission).
+        """
+        df = pd.read_csv(result_file)
+        avg_cost = float(df["cost"].mean())
+        avg_emission = float(df["emission"].mean())
+        return avg_cost, avg_emission
+
+    @staticmethod
+    def get_slope(result_file: os.PathLike, ignore_ends=False) -> float:
+        """
+        Get the slope of the Pareto front.
+
+        :param result_file: Path to the result file.
+        :param ignore_ends: Ignore the first and last points.
+        :return: The slope (cost over emission, normally negative) of the Pareto front.
+        """
+        df = pd.read_csv(result_file)
+        if ignore_ends:
+            df = df.iloc[1:-1]
+        cost = df["cost"].values
+        emission = df["emission"].values
+        slope = float((cost[-1] - cost[0]) / (emission[-1] - emission[0]))
+        return slope
 
     def analyze_results(
         self,
@@ -269,8 +301,11 @@ class SensitivityAnalysis:
                 record.update(
                     {
                         "effective_points": effective_points_count,
-                        "avg_activated_techs": avg_activated_techs,
-                        "std_activated_techs": std_activated_techs,
+                        "activated_techs_avg": avg_activated_techs,
+                        "activated_techs_std": std_activated_techs,
+                        "average_cost": self.get_average_cost(result_file_path)[0],
+                        "average_emission": self.get_average_cost(result_file_path)[1],
+                        "slope": abs(self.get_slope(result_file_path)),
                         # Additional analysis can be added here
                     }
                 )
@@ -279,15 +314,13 @@ class SensitivityAnalysis:
                     # Assuming technology columns start from the fifth column
                     tech_columns = df_result.columns[4:]
                     for tech_name in tech_columns:
-                        avg_activation, activation_rate_change = (
-                            self.count_specific_technology_activation(
-                                result_file_path, tech_name
-                            )
+                        avg_activation = self.count_specific_technology_activation(
+                            result_file_path, tech_name
                         )
                         record.update(
                             {
-                                f"{tech_name}_avg_activation": avg_activation,
-                                f"{tech_name}_activation_rate_change": activation_rate_change,
+                                f"{tech_name}_activation_avg": avg_activation,
+                                # f"{tech_name}_activation_std": activation_rate_change,
                             }
                         )
                 data_records[variation_id] = record
@@ -342,21 +375,19 @@ if __name__ == "__main__":
     original_yaml_path = (
         r"cea_energy_hub_optimizer\data\energy_hub_config_conversion_sensitivity.yml"
     )
-    sensitivity_setting_csv_path = (
-        r"cea_energy_hub_optimizer\data\sobol_parameters_conversion_emission.csv"
-    )
+    sensitivity_setting_csv_path = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission\problem.csv"
 
     path_first_part = os.path.join(r"C:\Users", os.getlogin())
 
     variations_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential",
-        r"outputs\data\optimization\calliope_energy_hub\variation_global_emission_only",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission",
+        r"variation",
     )
     results_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential",
-        r"outputs\data\optimization\calliope_energy_hub\result_global_emission_only",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission",
+        r"result",
     )
 
     sa = SensitivityAnalysis(

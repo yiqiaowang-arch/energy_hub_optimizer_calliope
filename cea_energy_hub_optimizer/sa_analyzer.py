@@ -69,8 +69,10 @@ def plot_correlation_barcharts(correlations: pd.DataFrame, output_folder: str = 
         if not correlations[result].abs().any():
             continue
         plt.figure(figsize=(12, 10))
-        correlations[result].abs().sort_values().plot.barh()
-        plt.xlabel("Absolute Correlation Coefficient")
+        # Sort by absolute values but plot actual values
+        sorted_params = correlations[result].abs().sort_values().index
+        correlations[result].loc[sorted_params].plot.barh()
+        plt.xlabel("Correlation Coefficient")
         plt.title(f"Correlation to {result}", loc="left")
         plt.tight_layout()
         if output_folder:
@@ -96,14 +98,24 @@ def plot_sobol_indices(sensitivities: dict, output_folder: str = ""):
         if not np.any(S1) and not np.any(ST):
             continue
 
-        indices = pd.DataFrame({"S1": S1, "ST": ST}, index=params)
+        # Create bar positions
+        x = np.arange(len(params))
+        width = 0.35  # Width of the bars
 
-        indices.plot(kind="bar", figsize=(15, 15))
-        plt.title(f"Sobol Sensitivity Indices for {output_name}")
-        plt.ylabel("Sensitivity Index")
-        plt.xlabel("Parameters")
-        plt.legend(["First-order", "Total-order"])
-        plt.xticks(rotation=45)
+        fig, ax = plt.subplots(figsize=(15, 15))
+        rects1 = ax.bar(x - width / 2, S1, width, label="First-order")
+        rects2 = ax.bar(x + width / 2, ST, width, label="Total-order")
+
+        # also plot a  dashed line at 0
+        ax.axhline(0, color="black", lw=0.5, ls="--")
+
+        # Add labels and title
+        ax.set_ylabel("Sensitivity Index")
+        ax.set_xlabel("Parameters")
+        ax.set_title(f"Sobol Sensitivity Indices for {output_name}")
+        ax.set_xticks(x)
+        ax.set_xticklabels(params, rotation=45, ha="right")
+        ax.legend()
         plt.tight_layout()
         if output_folder:
             plt.savefig(f"{output_folder}/sobol_{output_name}.png")
@@ -203,6 +215,67 @@ def plot_correlation_matrix(correlations: pd.DataFrame, output_path: str = ""):
     plt.tight_layout()
     if output_path:
         plt.savefig(output_path)
+    plt.close()
+
+
+def plot_scatter_matrix(
+    sensitivity_csv_path: str,
+    problem: dict,
+    parameter_names: List[str] = [],
+    result_names: List[str] = [],
+    output_folder: str = "",
+):
+    """
+    Plot scatter matrix of parameter sensitivities for each result.
+
+    :param sensitivity_csv_path: Path to the CSV file containing the sensitivity data.
+    :param problem: Dictionary defining the problem for SALib.
+    :param parameter_names: List of parameter names to plot. If not provided, all parameters will be plotted.
+    :param results: List of result names to plot. If not provided, all results will be plotted.
+    :param output_folder: Folder to save the plots.
+    """
+    output_folder = os.path.join(output_folder, "scatter_matrix")
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    df = pd.read_csv(sensitivity_csv_path)
+    if not parameter_names:
+        parameter_names = problem["names"]
+    if not result_names:
+        # results = df.drop(columns=parameter_names + ["variation_id"])
+        result_names = df.columns.difference(parameter_names).tolist()
+    # else:
+    #     results = df[result_names]
+
+    # create a scatter plot for each pair of parameter-result. Parameters on rows, results on columns
+    nrow = len(parameter_names)
+    ncol = len(result_names)
+    fig, axes = plt.subplots(nrow, ncol, figsize=(20, 20))
+    # if only one row or column, axes will be a 1D array, so convert to 2D
+    if nrow == 1 and ncol == 1:
+        axes = np.array([[axes]])
+    else:
+        if nrow == 1:
+            axes = axes[np.newaxis, :]
+        if ncol == 1:
+            axes = axes[:, np.newaxis]
+    for i in range(nrow):
+        for j in range(ncol):
+            axes[i, j].scatter(df[result_names[j]], df[parameter_names[i]])
+            if i == range(nrow)[-1]:
+                axes[i, j].set_xlabel(result_names[j])
+            else:
+                # don't show x-axis ticklabels for all but the last row
+                plt.setp(axes[i, j].get_xticklabels(), visible=False)
+            if j == 0:
+                axes[i, j].set_ylabel(parameter_names[i])
+            else:
+                # don't show y-axis ticklabels for all but the first column
+                plt.setp(axes[i, j].get_yticklabels(), visible=False)
+
+    plt.tight_layout()
+    if output_folder:
+        plt.savefig(f"{output_folder}/scatter_matrix.png")
     plt.close()
 
 
@@ -319,18 +392,18 @@ if __name__ == "__main__":
     result_df = pd.read_csv(sensitivity_csv_path)
 
     # Compute Spearman rank correlation sensitivities
-    pearson_sensitivities = compute_correlations(result_df, problem)
+    correlations = compute_correlations(result_df, problem)
 
     # Compute Sobol sensitivity indices
     sobol_indices = compute_sobol_sensitivities(result_df, problem)
 
     # plotting
     # Plot Spearman rank correlation sensitivities
-    plot_correlation_barcharts(pearson_sensitivities, output_folder=plot_folder)
+    plot_correlation_barcharts(correlations, output_folder=plot_folder)
 
     # Plot Spearman rank correlation sensitivity matrix
     plot_correlation_matrix(
-        pearson_sensitivities,
+        correlations,
         output_path=os.path.join(plot_folder, "correlation_matrix.png"),
     )
 
@@ -345,3 +418,16 @@ if __name__ == "__main__":
 
     # Plot pairwise interaction heatmaps
     plot_pairwise_interaction_heatmap(sobol_indices, output_folder=plot_folder)
+
+    # Plot scatter matrix
+    plot_scatter_matrix(
+        sensitivity_csv_path,
+        problem,
+        [
+            # "techs.district_heating.costs.monetary.om_con",
+            "tech_groups.GSHP.costs.co2.energy_cap",
+            # "techs.pallet.costs.monetary.om_con",
+        ],
+        ["activated_techs_std"],
+        output_folder=plot_folder,
+    )
