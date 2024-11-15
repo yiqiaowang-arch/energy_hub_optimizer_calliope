@@ -30,6 +30,7 @@ class EnergyHubOptimizer(cea.plugin.CeaPlugin):
     rest of the information will be picked up from ``default.config``, ``schemas.yml`` and ``scripts.yml`` by default.
     """
 
+    # TODO: somehow with multiple buildings the script don't work anymore. Test and fix it!
     pass
 
 

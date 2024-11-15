@@ -54,7 +54,7 @@ class SensitivityAnalysis:
         if not os.path.exists(self.results_folder):
             os.makedirs(self.results_folder)
 
-    def generate_variations(self, num_samples: int = 8):
+    def generate_variations(self, num_samples: int = 8, calc_second_order=False):
         """
         Generate variations of the original YAML file based on the sampling method.
 
@@ -73,7 +73,9 @@ class SensitivityAnalysis:
         method = self.method  # Use the instance attribute
 
         if method == "sobol":
-            samples = sobol.sample(self.problem, N=num_samples)
+            samples = sobol.sample(
+                self.problem, N=num_samples, calc_second_order=calc_second_order
+            )
         elif method == "screening":
             samples = []
             for i in range(self.problem["num_vars"]):
