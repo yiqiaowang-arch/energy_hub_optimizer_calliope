@@ -63,11 +63,11 @@ def remove_district_heating_technologies(energy_hub: EnergyHub) -> None:
 def remove_oil_technologies(energy_hub: EnergyHub) -> None:
     energy_hub.tech_dict.set_key(key="techs.oil.exists", value=False)
     energy_hub.tech_dict.set_key(key="techs.oil_boiler_large.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.oil_boiler_midddle.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.oil_boiler_middle.exists", value=False)
     energy_hub.tech_dict.set_key(key="techs.oil_boiler_small.exists", value=False)
 
 
-# warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore")
 # Load the buildings
 my_config = MyConfig(Configuration())
 # fix some parameters from my_config
@@ -145,3 +145,4 @@ for building_name in buildings:
     )
     print(building_name + " is optimized! Results saved in " + result_folder)
     del energy_hub
+    gc.collect()
