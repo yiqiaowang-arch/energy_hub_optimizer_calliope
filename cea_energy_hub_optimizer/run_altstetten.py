@@ -1,3 +1,4 @@
+import gc
 from cea.config import Configuration
 from cea_energy_hub_optimizer import my_config
 from cea_energy_hub_optimizer.my_config import MyConfig
