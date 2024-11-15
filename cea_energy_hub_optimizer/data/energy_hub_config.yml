@@ -66,7 +66,7 @@ tech_groups:
         interest_rate: 0
       monetary:
         interest_rate: 0.05
-  district_heating:
+  district_heating_techs:
     constraints:
       energy_eff: 0.95
       lifetime: 30
@@ -78,6 +78,48 @@ tech_groups:
     essentials:
       carrier_in: DH
       carrier_out: heat_85
+      parent: conversion
+  gas_boiler:
+    constraints:
+      energy_eff: 0.91
+      lifetime: 21
+    costs:
+      co2:
+        energy_cap: 43.97
+      monetary:
+        om_annual: 6.3
+    essentials:
+      carrier_in: gas
+      carrier_out: heat_85
+      color: '#c69872'
+      parent: conversion
+  oil_boiler:
+    constraints:
+      energy_eff: 0.92
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 43.97
+      monetary:
+        om_annual: 3.5
+    essentials:
+      carrier_in: oil
+      carrier_out: heat_85
+      color: '#e6b8b8'
+      parent: conversion
+  pallet_boiler:
+    constraints:
+      energy_eff: 0.89
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 198.3
+      monetary:
+        om_annual: 6.3
+    essentials:
+      carrier_in: pallet
+      carrier_out: heat_85
+      color: '#c4d79b'
       parent: conversion
   storage:
     costs:
@@ -115,7 +157,7 @@ tech_groups:
       storage_initial: 0.5
     costs:
       co2:
-        energy_cap: 7
+        storage_cap: 7
       monetary:
         om_annual_investment_fraction: 0.015
         storage_cap: 13
@@ -152,9 +194,8 @@ techs:
         energy_cap: 371.8000000000001
         purchase: 7322.999999999996
     essentials:
-      color: '#219ce1'
       name: DH_15_50
-      parent: district_heating
+      parent: district_heating_techs
   DH_200_500:
     constraints:
       energy_cap_max: 500
@@ -164,9 +205,8 @@ techs:
         energy_cap: 117.4
         purchase: 29571.7
     essentials:
-      color: '#219ce3'
       name: DH_200_500
-      parent: district_heating
+      parent: district_heating_techs
   DH_500_2000:
     constraints:
       energy_cap_max: 2000
@@ -176,9 +216,8 @@ techs:
         energy_cap: 72.01
         purchase: 52250
     essentials:
-      color: '#219ce4'
       name: DH_500_2000
-      parent: district_heating
+      parent: district_heating_techs
   DH_50_200:
     constraints:
       energy_cap_max: 200
@@ -188,9 +227,8 @@ techs:
         energy_cap: 180.88
         purchase: 16869
     essentials:
-      color: '#219ce2'
       name: DH_50_200
-      parent: district_heating
+      parent: district_heating_techs
   GSHP_35:
     constraints:
       energy_eff: 7.64
@@ -390,59 +428,35 @@ techs:
     constraints:
       energy_cap_max: 500
       energy_cap_min: 200
-      energy_eff: 0.91
-      lifetime: 22
     costs:
-      co2:
-        energy_cap: 18.1
       monetary:
         energy_cap: 155.3
-        om_annual: 6.3
         purchase: 23933.3
     essentials:
-      carrier_in: gas
-      carrier_out: heat_85
-      color: '#c69873'
       name: gas_boiler_large
-      parent: conversion
+      parent: gas_boiler
   gas_boiler_middle:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 20
-      energy_eff: 0.91
-      lifetime: 21
     costs:
-      co2:
-        energy_cap: 18.1
       monetary:
         energy_cap: 176.7
-        om_annual: 6.3
         purchase: 19666.7
     essentials:
-      carrier_in: gas
-      carrier_out: heat_85
-      color: '#c69872'
       name: gas_boiler_middle
-      parent: conversion
+      parent: gas_boiler
   gas_boiler_small:
     constraints:
       energy_cap_max: 20
       energy_cap_min: 1
-      energy_eff: 0.91
-      lifetime: 20
     costs:
-      co2:
-        energy_cap: 37.685
       monetary:
         energy_cap: 300
-        om_annual: 6.3
         purchase: 17200
     essentials:
-      carrier_in: gas
-      carrier_out: heat_85
-      color: '#c69871'
       name: gas_boiler_small
-      parent: conversion
+      parent: gas_boiler
   gas_micro_CHP:
     constraints:
       carrier_ratios:
@@ -519,59 +533,38 @@ techs:
     constraints:
       energy_cap_max: 500
       energy_cap_min: 200
-      energy_eff: 0.92
-      lifetime: 20
     costs:
-      co2:
-        energy_cap: 19.51
       monetary:
         energy_cap: 211.7
-        om_annual: 3.5
         purchase: 21966.7
     essentials:
-      carrier_in: oil
-      carrier_out: heat_85
       color: '#e6b8b9'
       name: oil_boiler_large
-      parent: conversion
+      parent: oil_boiler
   oil_boiler_middle:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 20
-      energy_eff: 0.92
-      lifetime: 20
     costs:
-      co2:
-        energy_cap: 25.07
       monetary:
         energy_cap: 189.4
-        om_annual: 3.5
         purchase: 26411.1
     essentials:
-      carrier_in: oil
-      carrier_out: heat_85
       color: '#e6b8b8'
       name: oil_boiler_middle
-      parent: conversion
+      parent: oil_boiler
   oil_boiler_small:
     constraints:
       energy_cap_max: 20
       energy_cap_min: 1
-      energy_eff: 0.92
-      lifetime: 20
     costs:
-      co2:
-        energy_cap: 44.555
       monetary:
         energy_cap: 486.7
-        om_annual: 3.5
         purchase: 20466.7
     essentials:
-      carrier_in: oil
-      carrier_out: heat_85
       color: '#e6b8b7'
       name: oil_boiler_small
-      parent: conversion
+      parent: oil_boiler
   pallet:
     constraints:
       lifetime: 1
@@ -589,59 +582,38 @@ techs:
     constraints:
       energy_cap_max: 500
       energy_cap_min: 200
-      energy_eff: 0.89
-      lifetime: 20
     costs:
-      co2:
-        energy_cap: 19.4
       monetary:
         energy_cap: 278.00000000000006
-        om_annual: 6.3
         purchase: 61799.999999999985
     essentials:
-      carrier_in: pallet
-      carrier_out: heat_85
       color: '#c4d81b'
       name: pallet_boiler_large
-      parent: conversion
+      parent: pallet_boiler
   pallet_boiler_middle:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 20
-      energy_eff: 0.89
-      lifetime: 20
     costs:
-      co2:
-        energy_cap: 19.4
       monetary:
         energy_cap: 414.9999999999999
-        om_annual: 6.3
         purchase: 34400.000000000015
     essentials:
-      carrier_in: pallet
-      carrier_out: heat_85
       color: '#c4d80b'
       name: pallet_boiler_middle
-      parent: conversion
+      parent: pallet_boiler
   pallet_boiler_small:
     constraints:
       energy_cap_max: 20
       energy_cap_min: 1
-      energy_eff: 0.89
-      lifetime: 20
     costs:
-      co2:
-        energy_cap: 77.9
       monetary:
         energy_cap: 880
-        om_annual: 6.3
         purchase: 25100
     essentials:
-      carrier_in: pallet
-      carrier_out: heat_85
       color: '#c4d79b'
       name: pallet_boiler_small
-      parent: conversion
+      parent: pallet_boiler
   tank_35:
     constraints:
       energy_eff: 0.96
