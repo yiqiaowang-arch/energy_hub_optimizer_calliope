@@ -6,6 +6,7 @@ import warnings
 from cea_energy_hub_optimizer.energy_hub import EnergyHub
 from calliope import AttrDict
 from cea_energy_hub_optimizer.my_config import MyConfig
+from cea_energy_hub_optimizer.sa_cost_estimation import power
 import yaml
 import os
 import pandas as pd
@@ -124,7 +125,28 @@ class SensitivityAnalysis:
             yaml_content = AttrDict(yaml.safe_load(file))
 
         for key, value in modifications.items():
-            yaml_content.set_key(key, round(float(value), 3))
+            if key == "DH.a":
+                # do this because
+                k1, b1 = power(a=float(value), b=0.5512, min_value=15.0, max_value=50.0)
+                yaml_content.set_key("tech.DH_15_50.costs.monetary.energy_cap", k1)
+                yaml_content.set_key("tech.DH_15_50.costs.monetary.purchase", b1)
+                k2, b2 = power(
+                    a=float(value), b=0.5512, min_value=50.0, max_value=200.0
+                )
+                yaml_content.set_key("tech.DH_50_200.costs.monetary.energy_cap", k2)
+                yaml_content.set_key("tech.DH_50_200.costs.monetary.purchase", b2)
+                k3, b3 = power(
+                    a=float(value), b=0.5512, min_value=200.0, max_value=500.0
+                )
+                yaml_content.set_key("tech.DH_200_500.costs.monetary.energy_cap", k3)
+                yaml_content.set_key("tech.DH_200_500.costs.monetary.purchase", b3)
+                k4, b4 = power(
+                    a=float(value), b=0.5512, min_value=500.0, max_value=2000.0
+                )
+                yaml_content.set_key("tech.DH_500_2000.costs.monetary.energy_cap", k4)
+                yaml_content.set_key("tech.DH_500_2000.costs.monetary.purchase", b4)
+            else:
+                yaml_content.set_key(key, round(float(value), 3))
 
         with open(new_yaml_path, "w") as file:
             yaml.dump(yaml_content.as_dict(), file)

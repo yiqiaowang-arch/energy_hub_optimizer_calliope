@@ -1,76 +1,34 @@
-key,value
-techs.DH_15_50.costs.monetary.energy_cap,371.8000000000001
-techs.DH_15_50.costs.monetary.purchase,7322.999999999996
-techs.DH_200_500.costs.monetary.energy_cap,117.4
-techs.DH_200_500.costs.monetary.purchase,29571.7
-techs.DH_500_2000.costs.monetary.energy_cap,72.01
-techs.DH_500_2000.costs.monetary.purchase,52250.0
-techs.DH_50_200.costs.monetary.energy_cap,180.88
-techs.DH_50_200.costs.monetary.purchase,16869.0
-techs.HEX_60_35.constraints.lifetime,1.0
-techs.HEX_85_60.constraints.lifetime,1.0
-techs.SCET.constraints.lifetime,23.0
-techs.SCET.constraints.resource_area_per_energy_cap,1.41
-techs.SCET.costs.co2.energy_cap,296.0
-techs.SCET.costs.monetary.energy_cap,2047.0
-techs.SCET.costs.monetary.purchase,1.0
-techs.SCFP.constraints.lifetime,23.0
-techs.SCFP.constraints.resource_area_per_energy_cap,1.297
-techs.SCFP.costs.co2.energy_cap,290.0
-techs.SCFP.costs.monetary.energy_cap,1576.0
-techs.SCFP.costs.monetary.purchase,1.0
-techs.gas_boiler_large.constraints.lifetime,22.0
-techs.gas_boiler_large.costs.co2.energy_cap,18.1
-techs.gas_boiler_large.costs.monetary.energy_cap,155.3
-techs.gas_boiler_large.costs.monetary.om_annual,6.3
-techs.gas_boiler_large.costs.monetary.purchase,23933.3
-techs.gas_boiler_middle.constraints.lifetime,21.0
-techs.gas_boiler_middle.costs.co2.energy_cap,18.1
-techs.gas_boiler_middle.costs.monetary.energy_cap,176.7
-techs.gas_boiler_middle.costs.monetary.om_annual,6.3
-techs.gas_boiler_middle.costs.monetary.purchase,19666.7
-techs.gas_boiler_small.constraints.lifetime,20.0
-techs.gas_boiler_small.costs.co2.energy_cap,37.685
-techs.gas_boiler_small.costs.monetary.energy_cap,300.0
-techs.gas_boiler_small.costs.monetary.om_annual,6.3
-techs.gas_boiler_small.costs.monetary.purchase,17200.0
-techs.gas_micro_CHP.constraints.carrier_ratios.carrier_out_2.electricity,0.64
-techs.gas_micro_CHP.constraints.lifetime,15.0
-techs.gas_micro_CHP.costs.co2.energy_cap,86.82
-techs.gas_micro_CHP.costs.monetary.energy_cap,1108.2
-techs.gas_micro_CHP.costs.monetary.export,-0.1272
-techs.gas_micro_CHP.costs.monetary.om_annual,1.15
-techs.gas_micro_CHP.costs.monetary.purchase,33195.0
-techs.gas_standard.constraints.lifetime,1.0
-techs.gas_standard.costs.co2.om_con,0.23
-techs.gas_standard.costs.monetary.om_con,0.1325
-techs.oil_boiler_large.constraints.lifetime,20.0
-techs.oil_boiler_large.costs.co2.energy_cap,19.51
-techs.oil_boiler_large.costs.monetary.energy_cap,211.7
-techs.oil_boiler_large.costs.monetary.om_annual,3.5
-techs.oil_boiler_large.costs.monetary.purchase,21966.7
-techs.oil_boiler_middle.constraints.lifetime,20.0
-techs.oil_boiler_middle.costs.co2.energy_cap,25.07
-techs.oil_boiler_middle.costs.monetary.energy_cap,189.4
-techs.oil_boiler_middle.costs.monetary.om_annual,3.5
-techs.oil_boiler_middle.costs.monetary.purchase,26411.1
-techs.oil_boiler_small.constraints.lifetime,20.0
-techs.oil_boiler_small.costs.co2.energy_cap,44.555
-techs.oil_boiler_small.costs.monetary.energy_cap,486.7
-techs.oil_boiler_small.costs.monetary.om_annual,3.5
-techs.oil_boiler_small.costs.monetary.purchase,20466.7
-techs.pallet_boiler_large.constraints.lifetime,20.0
-techs.pallet_boiler_large.costs.co2.energy_cap,19.4
-techs.pallet_boiler_large.costs.monetary.energy_cap,278.00000000000006
-techs.pallet_boiler_large.costs.monetary.om_annual,6.3
-techs.pallet_boiler_large.costs.monetary.purchase,61799.999999999985
-techs.pallet_boiler_middle.constraints.lifetime,20.0
-techs.pallet_boiler_middle.costs.co2.energy_cap,19.4
-techs.pallet_boiler_middle.costs.monetary.energy_cap,414.9999999999999
-techs.pallet_boiler_middle.costs.monetary.om_annual,6.3
-techs.pallet_boiler_middle.costs.monetary.purchase,34400.000000000015
-techs.pallet_boiler_small.constraints.lifetime,20.0
-techs.pallet_boiler_small.costs.co2.energy_cap,77.9
-techs.pallet_boiler_small.costs.monetary.energy_cap,880.0
-techs.pallet_boiler_small.costs.monetary.om_annual,6.3
-techs.pallet_boiler_small.costs.monetary.purchase,25100.0
+name,min,base,max,note
+tech_groups.district_heating_techs.constraints.energy_eff,0.94,0.95,1,depends if ewz charges heat before or after the HEX.
+tech_groups.district_heating_techs.constraints.lifetime,21,30,45,0.7 to 1.5
+tech_groups.district_heating_techs.costs.monetary.om_annual,105,150,225,0.7 to 1.5
+DH.a,2896.3,2898.2,2900.1,the lower bound is historical value from last year
+tech_groups.ASHP.constraints.lifetime,12.6,18,27,0.7 to 1.5
+tech_groups.ASHP.costs.monetary.energy_cap,1633.05,1814.5,1995.95,0.9 to 1.1
+tech_groups.ASHP.costs.monetary.purchase,11389.5,12655,13920.5,0.9 to 1.1
+tech_groups.GSHP.constraints.lifetime,14,20,30,30 years for long-lasting GSHP
+tech_groups.GSHP.costs.monetary.energy_cap,2290.41,2544.9,2799.39,GSHP should always be more expensive than ASHP
+tech_groups.GSHP.costs.monetary.purchase,33357.6,37064,40770.4,0.9 to 1.1
+tech.gas_boiler.costs.monetary.energy_cap,118.854,132.06,145.266,0.9 to 1.1
+tech.gas_boiler.costs.monetary.purchase,19655.1,21839,24022.9,0.9 to 1.1
+tech.gas_boiler.constraints.energy_eff,0.86,0.91,0.96,�5 for boiler efficiency
+tech.gas_boiler.constraints.lifetime,14.7,21,31.5,0.7 to 1.5
+tech.pallet_boiler.costs.monetary.energy_cap,410.544,456.16,501.776,0.9 to 1.1
+tech.pallet_boiler.costs.monetary.purchase,27604.8,30672,33739.2,0.9 to 1.1
+tech.pallet_boiler.constraints.energy_eff,0.84,0.89,0.94,�5 for boiler efficiency
+tech.pallet_boiler.constraints.lifetime,14,20,30,0.7 to 1.5
+tech.oil_boiler.costs.monetary.energy_cap,133.236,148.04,162.844,0.9 to 1.1
+tech.oil_boiler.costs.monetary.purchase,25107.3,27897,30686.7,0.9 to 1.1
+tech.oil_boiler.constraints.energy_eff,0.87,0.92,0.97,�5 for boiler efficiency
+tech.oil_boiler.constraints.lifetime,14,20,30,0.7 to 1.5
+tech.gas_micro_CHP.costs.monetary.energy_cap,997.38,1108.2,1219.02,0.9 to 1.1
+tech.gas_micro_CHP.costs.monetary.export,-0.17,-0.1272,-0.07,same as previous PV setup
+tech.gas_micro_CHP.costs.monetary.purchase,29875.5,33195,36514.5,0.9 to 1.1
+tech.gas_micro_CHP.constraints.energy_eff,0.52,0.55,0.58,educated guess (total efficiency < 0.96)
+tech.gas_micro_CHP.constraints.carrier_ratios.carrier_out_2.electricity,0.5,0.64,0.64,educated guess
+tech.gas_micro_CHP.constraints.lifetime,10.5,15,22.5,0.7 to 1.5
+tech.li_ion_battery.costs.monetary.storage_cap,330.3,367,403.7,0.9 to 1.1
+tech.li_ion_battery.constraints.energy_eff,0.89,0.91,0.93,li-ion-battery doesn't likely to go very far away from this value
+tech.li_ion_battery.constraints.energy_cap_per_storage_cap_max,0.175,0.25,0.375,0.7 to 1.5
+tech.li_ion_battery.constraints.storage_loss,0.0005,0.001,0.002,educated guess
+tech.li_ion_battery.constraints.lifetime,9.1,13,19.5,0.7 to 1.5
