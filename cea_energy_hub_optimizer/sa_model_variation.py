@@ -279,7 +279,12 @@ class SensitivityAnalysis:
         data_records = {}
 
         for idx, row in variations_df.iterrows():
-            variation_id = int(row["variation_id"])
+            # if row["variation_id"] is not a number, split the string and get the number
+            variation_id = row["variation_id"]
+            if not isinstance(variation_id, int):
+                variation_id = int(variation_id.split("_")[-1])
+            else:
+                variation_id = int(variation_id)
             # Build the expected result file name
             result_file = f"variation_{variation_id}_{method}_pareto.csv"
             cost_file = f"variation_{variation_id}_{method}_cost_per_tech.csv"
@@ -377,18 +382,18 @@ if __name__ == "__main__":
     original_yaml_path = (
         r"cea_energy_hub_optimizer\data\energy_hub_config_conversion_sensitivity.yml"
     )
-    sensitivity_setting_csv_path = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission\problem.csv"
+    sensitivity_setting_csv_path = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large\problem.csv"
 
     path_first_part = os.path.join(r"C:\Users", os.getlogin())
 
     variations_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large",
         r"variation",
     )
     results_folder = os.path.join(
         path_first_part,
-        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission",
+        r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large",
         r"result",
     )
 
