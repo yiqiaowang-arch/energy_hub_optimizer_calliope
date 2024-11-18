@@ -35,6 +35,7 @@ class Building(Node):
             )
 
     def get_emission_system(self):
+        # TODO: change this to a property
         air_conditioning_df: pd.DataFrame = gpd.read_file(
             self.locator.get_building_air_conditioning(), ignore_geometry=True
         )

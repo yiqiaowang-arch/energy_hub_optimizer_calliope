@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike
+from sympy import sequence
 
 
 class ParetoFront:
@@ -13,17 +14,18 @@ class ParetoFront:
         ):
             raise ValueError("xs and ys must be numeric arrays.")
 
-        xs = xs[np.argsort(xs)]
-        ys = ys[np.argsort(xs)]
+        sorted_sequence = np.argsort(xs)
+        xs = xs[sorted_sequence]
+        ys = ys[sorted_sequence]
 
         self.xy_values = np.column_stack((xs, ys))
 
-        if not np.all(np.diff(ys) >= 0):
+        if np.any(np.diff(ys) > 0):  # y should be monotonically increasing
             raise ValueError(
                 "the combination of x and y values does not represent a Pareto front, which should point to the top left and bottom right corners of the plot."
             )
 
-    def x_values(self, ignore_endpoints=False) -> np.array:
+    def x_values(self, ignore_endpoints=None) -> np.array:
         if ignore_endpoints:
             return self.xy_values[:, 0][1:-1]
         return self.xy_values[:, 0]
@@ -33,11 +35,19 @@ class ParetoFront:
             return self.xy_values[:, 1][1:-1]
         return self.xy_values[:, 1]
 
-    def x_range(self, ignore_endpoints=False) -> float:
-        return float(np.ptp(self.x_values(ignore_endpoints)))
+    def x_range(self, ignore_endpoints=False, rel=False) -> float:
+        range = np.ptp(self.x_values(ignore_endpoints))
+        if rel:
+            max = np.max(self.x_values())
+            return range / max
+        return range
 
-    def y_range(self, ignore_endpoints=False) -> float:
-        return float(np.ptp(self.y_values(ignore_endpoints)))
+    def y_range(self, ignore_endpoints=False, rel=False) -> float:
+        range = np.ptp(self.y_values(ignore_endpoints))
+        if rel:
+            max = np.max(self.y_values())
+            return range / max
+        return range
 
     def slope(self, ignore_endpoints=False) -> float:
         return self.y_range(ignore_endpoints) / self.x_range(ignore_endpoints)
