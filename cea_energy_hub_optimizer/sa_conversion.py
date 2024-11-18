@@ -24,7 +24,7 @@ config.evaluated_solar_supply = ["PV", "SCET", "SCFP"]
 path_first_part = os.path.join(
     r"C:\Users",
     os.getlogin(),
-    r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_conversion_B162298",
+    r"OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_conversion_B162298_no_oil",
 )
 base_yaml_path = os.path.join(
     path_first_part,
@@ -45,13 +45,13 @@ results_folder = os.path.join(
 
 sa = SensitivityAnalysis(
     config,
-    r"cea_energy_hub_optimizer\data\energy_hub_config_conversion_sensitivity.yml",  # with only one size per boiler
-    r"cea_energy_hub_optimizer\data\sobol_parameters_conversion.csv",
+    r"cea_energy_hub_optimizer\data\energy_hub_config_conversion_sensitivity_no_oil.yml",  # with only one size per boiler
+    r"cea_energy_hub_optimizer\data\sobol_parameters_conversion_no_oil.csv",
     variations_folder,
     results_folder,
     "sobol",
 )
-# sa.generate_variations(num_samples=32, calc_second_order=False)
-# warnings.filterwarnings("ignore")
+sa.generate_variations(num_samples=32, calc_second_order=False)
+warnings.filterwarnings("ignore")
 sa.execute_energy_hub_models()
 df = sa.analyze_results(threshold=0.001, to_file=True, tech_specific=True)

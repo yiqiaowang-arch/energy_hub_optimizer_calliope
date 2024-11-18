@@ -303,7 +303,7 @@ class SensitivityAnalysis:
         for idx, row in variations_df.iterrows():
             # if row["variation_id"] is not a number, split the string and get the number
             variation_id = row["variation_id"]
-            if not isinstance(variation_id, int):
+            if not isinstance(variation_id, (int, float)):
                 variation_id = int(variation_id.split("_")[-1])
             else:
                 variation_id = int(variation_id)

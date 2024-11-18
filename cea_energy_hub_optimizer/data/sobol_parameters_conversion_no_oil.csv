@@ -1,0 +1,30 @@
+name,min,base,max,note
+tech_groups.district_heating_techs.constraints.energy_eff,0.94,0.95,1,depends if ewz charges heat before or after the HEX.
+tech_groups.district_heating_techs.constraints.lifetime,21,30,45,0.7 to 1.5
+tech_groups.district_heating_techs.costs.monetary.om_annual,105,150,225,0.7 to 1.5
+DH.a,2896.3,2898.2,2900.1,the lower bound is historical value from last year
+tech_groups.ASHP.constraints.lifetime,12.6,18,27,0.7 to 1.5
+tech_groups.ASHP.costs.monetary.energy_cap,1633.05,1814.5,1995.95,0.9 to 1.1
+tech_groups.ASHP.costs.monetary.purchase,11389.5,12655,13920.5,0.9 to 1.1
+tech_groups.GSHP.constraints.lifetime,14,20,30,30 years for long-lasting GSHP
+tech_groups.GSHP.costs.monetary.energy_cap,2290.41,2544.9,2799.39,GSHP should always be more expensive than ASHP
+tech_groups.GSHP.costs.monetary.purchase,33357.6,37064,40770.4,0.9 to 1.1
+tech.gas_boiler.costs.monetary.energy_cap,118.854,132.06,145.266,0.9 to 1.1
+tech.gas_boiler.costs.monetary.purchase,19655.1,21839,24022.9,0.9 to 1.1
+tech.gas_boiler.constraints.energy_eff,0.86,0.91,0.96,�5 for boiler efficiency
+tech.gas_boiler.constraints.lifetime,14.7,21,31.5,0.7 to 1.5
+tech.pallet_boiler.costs.monetary.energy_cap,410.544,456.16,501.776,0.9 to 1.1
+tech.pallet_boiler.costs.monetary.purchase,27604.8,30672,33739.2,0.9 to 1.1
+tech.pallet_boiler.constraints.energy_eff,0.84,0.89,0.94,�5 for boiler efficiency
+tech.pallet_boiler.constraints.lifetime,14,20,30,0.7 to 1.5
+tech.gas_micro_CHP.costs.monetary.energy_cap,997.38,1108.2,1219.02,0.9 to 1.1
+tech.gas_micro_CHP.costs.monetary.export,-0.17,-0.1272,-0.07,same as previous PV setup
+tech.gas_micro_CHP.costs.monetary.purchase,29875.5,33195,36514.5,0.9 to 1.1
+tech.gas_micro_CHP.constraints.energy_eff,0.52,0.55,0.58,educated guess (total efficiency < 0.96)
+tech.gas_micro_CHP.constraints.carrier_ratios.carrier_out_2.electricity,0.5,0.64,0.64,educated guess
+tech.gas_micro_CHP.constraints.lifetime,10.5,15,22.5,0.7 to 1.5
+tech.li_ion_battery.costs.monetary.storage_cap,330.3,367,403.7,0.9 to 1.1
+tech.li_ion_battery.constraints.energy_eff,0.89,0.91,0.93,li-ion-battery doesn't likely to go very far away from this value
+tech.li_ion_battery.constraints.energy_cap_per_storage_cap_max,0.175,0.25,0.375,0.7 to 1.5
+tech.li_ion_battery.constraints.storage_loss,0.0005,0.001,0.002,educated guess
+tech.li_ion_battery.constraints.lifetime,9.1,13,19.5,0.7 to 1.5
