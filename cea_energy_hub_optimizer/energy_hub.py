@@ -273,7 +273,8 @@ class EnergyHub:
         df_cost: pd.DataFrame = cost_xarray.sum("techs").to_pandas().transpose() # type: ignore
         for loc in cost_xarray.locs.values:
             df_cost_per_loc = cost_xarray.sel(locs=loc).to_pandas().reindex(columns=self.tech_dict.tech_list, fill_value=0.0)
-            self.df_cost_per_tech.loc[(loc, i_solution, slice(None)), :] = df_cost_per_loc.values
+            self.df_cost_per_tech.loc[(loc, i_solution, "monetary"), :] = df_cost_per_loc.loc["monetary"].values
+            self.df_cost_per_tech.loc[(loc, i_solution, "co2"), :] = df_cost_per_loc.loc["co2"].values
 
         df_energy_cap: pd.DataFrame = cap_xarray.to_pandas() # type: ignore
         # fmt: on
