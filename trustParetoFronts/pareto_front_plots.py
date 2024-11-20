@@ -164,3 +164,46 @@ def tech_size_boxplot(
         fig3.suptitle(title_fig, fontsize=24)
     fig3.tight_layout()
     return fig3
+
+
+def tech_cost_stackedbar(
+    df_cost_per_tech: pd.DataFrame,
+    color_dict: Dict[str, str] = {},
+    title: str = "",
+    figsize: Tuple[int, int] = (20, 10),
+) -> plt.figure:
+
+    cost_types = ["monetary", "co2"]
+    fig4, axes = plt.subplots(2, 1, figsize=figsize)
+    for idx, ax in enumerate(axes):
+        df_average = (
+            df_cost_per_tech.loc[:, :, cost_types[idx]].groupby("pareto_index").mean()
+        )
+        if color_dict:
+            df_average.plot(
+                kind="bar",
+                stacked=True,
+                ax=ax,
+                color=[color_dict[col] for col in df_average.columns],
+            )
+        else:
+            df_average.plot(kind="bar", stacked=True, ax=ax)
+        # ax.legend(ncol=int(len(ls_supply_name) / 3), loc="upper right")
+        # ax.set_ylabel(f"average {cost_types[idx]} cost per $m^2$")
+        if idx == 0:
+            ax.set_ylabel("average monetary cost [CHF/$m^2$]")
+        else:
+            ax.set_ylabel("average $CO_2$ cost [kg$CO_2eq/m^2$]")
+        ax.set_xlabel("pareto front index")
+
+    if title:
+        fig4.suptitle(title, fontsize=24)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig4.legend(handles, labels, loc="center right", ncol=1, prop={"size": 9})
+    # set legned font size to small
+
+    for ax in axes:
+        ax.get_legend().remove()
+    fig4.tight_layout(rect=[0, 0, 0.87, 0.95])
+    plt.show()
