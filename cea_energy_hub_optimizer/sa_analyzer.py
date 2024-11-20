@@ -1,10 +1,13 @@
+from math import e
 import os
+from re import S
 from matplotlib.font_manager import font_scalings
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Tuple, List
 from SALib.analyze import sobol
+from pyparsing import line
 
 
 def compute_correlations(df: pd.DataFrame, problem: dict) -> pd.DataFrame:
@@ -32,6 +35,7 @@ def compute_correlations(df: pd.DataFrame, problem: dict) -> pd.DataFrame:
 def compute_sobol_sensitivities(
     df: pd.DataFrame,
     problem: dict,
+    calc_second_order: bool = False,
 ) -> dict:
     """
     Compute Sobol sensitivity indices for each output using SALib.
@@ -47,11 +51,18 @@ def compute_sobol_sensitivities(
 
     for result_column in results.columns:
         Y = results[result_column].values
-        Si = sobol.analyze(problem, Y, print_to_console=False)
+        Si = sobol.analyze(
+            problem, Y, calc_second_order=calc_second_order, print_to_console=False
+        )
         # Handle NaNs by replacing them with 0
-        for key in ["S1", "S2", "ST"]:
-            Si[key] = np.nan_to_num(Si[key])
-        sensitivities[result_column] = Si
+        if calc_second_order:
+            for key in ["S1", "S2", "ST"]:
+                Si[key] = np.nan_to_num(Si[key])
+            sensitivities[result_column] = Si
+        else:
+            for key in ["S1", "ST"]:
+                Si[key] = np.nan_to_num(Si[key])
+            sensitivities[result_column] = Si
     return sensitivities
 
 
@@ -250,7 +261,7 @@ def plot_scatter_matrix(
     # create a scatter plot for each pair of parameter-result. Parameters on rows, results on columns
     nrow = len(parameter_names)
     ncol = len(result_names)
-    fig, axes = plt.subplots(nrow, ncol, figsize=(20, 20))
+    fig, axes = plt.subplots(nrow, ncol, figsize=(ncol * 3, nrow * 3))
     # if only one row or column, axes will be a 1D array, so convert to 2D
     if nrow == 1 and ncol == 1:
         axes = np.array([[axes]])
@@ -261,17 +272,20 @@ def plot_scatter_matrix(
             axes = axes[:, np.newaxis]
     for i in range(nrow):
         for j in range(ncol):
-            axes[i, j].scatter(df[result_names[j]], df[parameter_names[i]])
+            axes[i, j].scatter(
+                df[result_names[j]],
+                df[parameter_names[i]],
+                marker=".",
+                s=2,
+                edgecolor="none",
+            )
             if i == range(nrow)[-1]:
                 axes[i, j].set_xlabel(result_names[j])
             else:
                 # don't show x-axis ticklabels for all but the last row
                 plt.setp(axes[i, j].get_xticklabels(), visible=False)
-            if j == 0:
-                axes[i, j].set_ylabel(parameter_names[i])
-            else:
-                # don't show y-axis ticklabels for all but the first column
-                plt.setp(axes[i, j].get_yticklabels(), visible=False)
+            axes[i, j].set_ylabel(parameter_names[i], fontsize=6)
+            axes[i, j].tick_params(axis="both", which="major", labelsize=6)
 
     plt.tight_layout()
     if output_folder:
@@ -376,7 +390,7 @@ def plot_pairwise_interaction_heatmap(sensitivities: dict, output_folder: str = 
 
 if __name__ == "__main__":
     # Specify the path to the CSV file
-    sensitivity_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_emission"
+    sensitivity_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large"
     variation_folder = os.path.join(sensitivity_folder, "variation")
     result_folder = os.path.join(sensitivity_folder, "result")
     plot_folder = os.path.join(sensitivity_folder, "plots")
@@ -384,6 +398,7 @@ if __name__ == "__main__":
         sensitivity_folder, result_folder, "sensitivity_analysis_data.csv"
     )
     problem_csv_path = os.path.join(sensitivity_folder, "problem.csv")
+    calc_second_order = False
 
     # Load the problem definition for SALib
     problem = load_problem_definition(problem_csv_path)
@@ -395,39 +410,40 @@ if __name__ == "__main__":
     correlations = compute_correlations(result_df, problem)
 
     # Compute Sobol sensitivity indices
-    sobol_indices = compute_sobol_sensitivities(result_df, problem)
+    sobol_indices = compute_sobol_sensitivities(result_df, problem, calc_second_order)
 
     # plotting
     # Plot Spearman rank correlation sensitivities
-    plot_correlation_barcharts(correlations, output_folder=plot_folder)
+    # plot_correlation_barcharts(correlations, output_folder=plot_folder)
 
-    # Plot Spearman rank correlation sensitivity matrix
-    plot_correlation_matrix(
-        correlations,
-        output_path=os.path.join(plot_folder, "correlation_matrix.png"),
-    )
+    # # Plot Spearman rank correlation sensitivity matrix
+    # plot_correlation_matrix(
+    #     correlations,
+    #     output_path=os.path.join(plot_folder, "correlation_matrix.png"),
+    # )
 
-    # Plot Sobol sensitivity indices
-    plot_sobol_indices(sobol_indices, output_folder=plot_folder)
+    # # Plot Sobol sensitivity indices
+    # plot_sobol_indices(sobol_indices, output_folder=plot_folder)
 
-    # Plot Sobol sensitivity heatmap
-    plot_sobol_heatmap(sobol_indices, output_folder=plot_folder)
+    # # Plot Sobol sensitivity heatmap
+    # plot_sobol_heatmap(sobol_indices, output_folder=plot_folder)
 
-    # Plot spider plots for total influence
-    plot_spider_plot(sobol_indices, output_folder=plot_folder)
+    # # Plot spider plots for total influence
+    # plot_spider_plot(sobol_indices, output_folder=plot_folder)
 
-    # Plot pairwise interaction heatmaps
-    plot_pairwise_interaction_heatmap(sobol_indices, output_folder=plot_folder)
+    # # Plot pairwise interaction heatmaps
+    # if calc_second_order:
+    #     plot_pairwise_interaction_heatmap(sobol_indices, output_folder=plot_folder)
 
-    # Plot scatter matrix
+    # # Plot scatter matrix
     plot_scatter_matrix(
         sensitivity_csv_path,
         problem,
-        [
-            # "techs.district_heating.costs.monetary.om_con",
-            "tech_groups.GSHP.costs.co2.energy_cap",
-            # "techs.pallet.costs.monetary.om_con",
-        ],
-        ["activated_techs_std"],
+        # [
+        #     # "techs.district_heating.costs.monetary.om_con",
+        #     "tech_groups.GSHP.costs.co2.energy_cap",
+        #     # "techs.pallet.costs.monetary.om_con",
+        # ],
+        # ["activated_techs_std"],
         output_folder=plot_folder,
     )

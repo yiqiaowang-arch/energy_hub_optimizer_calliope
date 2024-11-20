@@ -17,10 +17,6 @@ tech.pallet_boiler.costs.monetary.energy_cap,410.544,456.16,501.776,0.9 to 1.1
 tech.pallet_boiler.costs.monetary.purchase,27604.8,30672,33739.2,0.9 to 1.1
 tech.pallet_boiler.constraints.energy_eff,0.84,0.89,0.94,�5 for boiler efficiency
 tech.pallet_boiler.constraints.lifetime,14,20,30,0.7 to 1.5
-tech.oil_boiler.costs.monetary.energy_cap,133.236,148.04,162.844,0.9 to 1.1
-tech.oil_boiler.costs.monetary.purchase,25107.3,27897,30686.7,0.9 to 1.1
-tech.oil_boiler.constraints.energy_eff,0.87,0.92,0.97,�5 for boiler efficiency
-tech.oil_boiler.constraints.lifetime,14,20,30,0.7 to 1.5
 tech.gas_micro_CHP.costs.monetary.energy_cap,997.38,1108.2,1219.02,0.9 to 1.1
 tech.gas_micro_CHP.costs.monetary.export,-0.17,-0.1272,-0.07,same as previous PV setup
 tech.gas_micro_CHP.costs.monetary.purchase,29875.5,33195,36514.5,0.9 to 1.1

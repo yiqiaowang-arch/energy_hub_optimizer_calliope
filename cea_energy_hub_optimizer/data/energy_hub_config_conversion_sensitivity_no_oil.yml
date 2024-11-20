@@ -459,37 +459,37 @@ techs:
       color: '#c69871'
       name: li_ion_battery
       parent: storage
-  oil:
-    constraints:
-      lifetime: 1
-    costs:
-      co2:
-        om_con: 0.324
-      monetary:
-        om_con: 0.1
-    essentials:
-      carrier_out: oil
-      color: '#e6b8b7'
-      name: oil
-      parent: supply
-  oil_boiler:
-    constraints:
-      energy_cap_max: 1000
-      energy_cap_min: 1
-      energy_eff: 0.92
-      lifetime: 20
-    costs:
-      co2:
-        energy_cap: 43.97
-      monetary:
-        energy_cap: 148.04
-        om_annual: 3.5
-        purchase: 27897
-    essentials:
-      carrier_in: oil
-      carrier_out: heat_85
-      name: oil_boiler
-      parent: conversion
+  # oil:
+  #   constraints:
+  #     lifetime: 1
+  #   costs:
+  #     co2:
+  #       om_con: 0.324
+  #     monetary:
+  #       om_con: 0.1
+  #   essentials:
+  #     carrier_out: oil
+  #     color: '#e6b8b7'
+  #     name: oil
+  #     parent: supply
+  # oil_boiler:
+  #   constraints:
+  #     energy_cap_max: 1000
+  #     energy_cap_min: 1
+  #     energy_eff: 0.92
+  #     lifetime: 20
+  #   costs:
+  #     co2:
+  #       energy_cap: 43.97
+  #     monetary:
+  #       energy_cap: 148.04
+  #       om_annual: 3.5
+  #       purchase: 27897
+  #   essentials:
+  #     carrier_in: oil
+  #     carrier_out: heat_85
+  #     name: oil_boiler
+  #     parent: conversion
   pallet:
     constraints:
       lifetime: 1
