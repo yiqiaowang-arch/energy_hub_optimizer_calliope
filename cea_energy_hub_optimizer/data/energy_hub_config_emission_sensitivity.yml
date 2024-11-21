@@ -489,9 +489,9 @@ techs:
       lifetime: 1
     costs:
       co2:
-        om_con: 0.23
+        om_con: 0.124
       monetary:
-        om_con: 0.1325
+        om_con: 0.178
     essentials:
       carrier_out: gas
       color: '#ffd191'
