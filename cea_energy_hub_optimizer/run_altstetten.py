@@ -104,7 +104,7 @@ check_solar_technology()
 zone: pd.DataFrame = gpd.read_file(locator.get_zone_geometry(), ignore_geometry=True)
 # get all the building names
 buildings = zone["Name"].tolist()
-result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_with_oil_with_DH")
+result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_no_gas_no_pallet")
 scenario_folder = locator.scenario
 # read DH_availability.csv and get the list of buildings that have access to district heating
 DH_availability = pd.read_csv(os.path.join(scenario_folder, "DH_availability.csv"))
@@ -136,7 +136,6 @@ network_135 = [ "B302063438", "B302063435", "B302063434", "B302063432", "B302063
                 "B163419", "B163418", "B163417", "B163416", "B163415", "B163400", "B163398", "B163397", "B163375", "B163374"
                 ]
 # fmt: on
-
 for building_name in buildings:
     # first, check if result is already in the result folder
     if (building_name + "_pareto.csv") in os.listdir(result_folder):
@@ -157,12 +156,12 @@ for building_name in buildings:
         continue
 
     energy_hub = EnergyHub(building_name, config_path)
-    if building_name not in ls_DH_available:
-        remove_district_heating_technologies(energy_hub)
+    # if building_name not in ls_DH_available:
+    remove_district_heating_technologies(energy_hub)
     # for now we keep oil technologies so the following line is commented
-    # remove_oil_technologies(energy_hub)
-    # remove_gas_technologies(energy_hub)
-    # remove_pallet_technologies(energy_hub)
+    remove_oil_technologies(energy_hub)
+    remove_gas_technologies(energy_hub)
+    remove_pallet_technologies(energy_hub)
     energy_hub.get_pareto_front(store_folder=result_folder)
     energy_hub.df_pareto.to_csv(
         result_folder + "/" + building_name + "_pareto.csv", index=True
@@ -172,4 +171,4 @@ for building_name in buildings:
     )
     print(building_name + " is optimized! Results saved in " + result_folder)
     del energy_hub
-    gc.collect()
+    # gc.collect()
