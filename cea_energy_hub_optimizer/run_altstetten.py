@@ -104,7 +104,7 @@ check_solar_technology()
 zone: pd.DataFrame = gpd.read_file(locator.get_zone_geometry(), ignore_geometry=True)
 # get all the building names
 buildings = zone["Name"].tolist()
-result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_with_DH")
+result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_with_oil_with_DH")
 scenario_folder = locator.scenario
 # read DH_availability.csv and get the list of buildings that have access to district heating
 DH_availability = pd.read_csv(os.path.join(scenario_folder, "DH_availability.csv"))
@@ -160,7 +160,7 @@ for building_name in buildings:
     if building_name not in ls_DH_available:
         remove_district_heating_technologies(energy_hub)
     # for now we keep oil technologies so the following line is commented
-    remove_oil_technologies(energy_hub)
+    # remove_oil_technologies(energy_hub)
     # remove_gas_technologies(energy_hub)
     # remove_pallet_technologies(energy_hub)
     energy_hub.get_pareto_front(store_folder=result_folder)
