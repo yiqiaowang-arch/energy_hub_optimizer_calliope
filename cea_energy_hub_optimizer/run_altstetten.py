@@ -104,7 +104,7 @@ check_solar_technology()
 zone: pd.DataFrame = gpd.read_file(locator.get_zone_geometry(), ignore_geometry=True)
 # get all the building names
 buildings = zone["Name"].tolist()
-result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_renewable_gas_no_pallet")
+result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_renewable_gas")
 if not os.path.exists(result_folder):
     os.makedirs(result_folder)
 config_path = (r"cea_energy_hub_optimizer\data\energy_hub_config_emission_sensitivity.yml")
@@ -157,7 +157,7 @@ for building_name in buildings:
     # for now we keep oil technologies so the following line is commented
     remove_oil_technologies(energy_hub)
     # remove_gas_technologies(energy_hub)
-    remove_pallet_technologies(energy_hub)
+    # remove_pallet_technologies(energy_hub)
     energy_hub.get_pareto_front(store_folder=result_folder)
     energy_hub.df_pareto.to_csv(
         result_folder + "/" + building_name + "_pareto.csv", index=True
@@ -167,4 +167,4 @@ for building_name in buildings:
     )
     print(building_name + " is optimized! Results saved in " + result_folder)
     del energy_hub
-    # gc.collect()
+    gc.collect()
