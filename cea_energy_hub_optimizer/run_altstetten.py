@@ -104,7 +104,11 @@ check_solar_technology()
 zone: pd.DataFrame = gpd.read_file(locator.get_zone_geometry(), ignore_geometry=True)
 # get all the building names
 buildings = zone["Name"].tolist()
-result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_no_gas")
+result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_with_DH")
+scenario_folder = locator.scenario
+# read DH_availability.csv and get the list of buildings that have access to district heating
+DH_availability = pd.read_csv(os.path.join(scenario_folder, "DH_availability.csv"))
+ls_DH_available = DH_availability["Name"].tolist()
 if not os.path.exists(result_folder):
     os.makedirs(result_folder)
 config_path = (r"cea_energy_hub_optimizer\data\energy_hub_config_emission_sensitivity.yml")
@@ -142,16 +146,22 @@ for building_name in buildings:
     # check if the building is part of a district energy network, if so, skip it
     if (
         building_name
-        in network_149 + network_115 + network_141 + network_153 + network_135
+        in network_149
+        + network_115
+        + network_141
+        + network_153
+        + network_135
+        + ["B162979", "B163158", "B163482"]
     ):
         print(building_name + " is part of a district energy network, skipping...")
         continue
 
     energy_hub = EnergyHub(building_name, config_path)
-    remove_district_heating_technologies(energy_hub)
+    if building_name not in ls_DH_available:
+        remove_district_heating_technologies(energy_hub)
     # for now we keep oil technologies so the following line is commented
     remove_oil_technologies(energy_hub)
-    remove_gas_technologies(energy_hub)
+    # remove_gas_technologies(energy_hub)
     # remove_pallet_technologies(energy_hub)
     energy_hub.get_pareto_front(store_folder=result_folder)
     energy_hub.df_pareto.to_csv(
