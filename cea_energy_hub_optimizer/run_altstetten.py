@@ -162,4 +162,4 @@ for building_name in buildings:
     )
     print(building_name + " is optimized! Results saved in " + result_folder)
     del energy_hub
-    gc.collect()
+    # gc.collect()
