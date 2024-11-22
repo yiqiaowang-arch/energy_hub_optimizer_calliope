@@ -7,7 +7,7 @@ from cea_energy_hub_optimizer.my_config import MyConfig
 from cea_energy_hub_optimizer.energy_hub import EnergyHub
 
 # load data
-folder_path = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\batch_with_oil"
+folder_path = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\batch_no_oil_with_DH"
 # pareto_files = [pareto_file for pareto_file in os.listdir(folder_path) if pareto_file.endswith("_pareto.csv")]
 carrier_dict = {
     "HVAC_HEATING_AS0": None,
@@ -25,6 +25,7 @@ for pareto_file in os.listdir(folder_path):
         xs = df["emission"].values.round(2)
         ys = df["cost"].values.round(2)
         try:
+            print(f"Checking {pareto_file}...")
             pf = ParetoFront(xs, ys)
             # print(f"{pareto_file} is a valid Pareto front.")
         except ValueError as e:

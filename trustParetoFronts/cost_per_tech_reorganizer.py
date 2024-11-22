@@ -11,7 +11,7 @@ def cost_per_tech_reorganizer(folder_path):
             # df has three layers of index: building (a string), pareto_index (an integer starts from 0), and cost_type (either "monetary" or "co2")
             # we want to compare the loc[(building, 0, "monetary"), "electricity"] with loc[(building, 0, "co2"), "electricity"] and see which one is larger.
             # if the monetary cost is larger then there's no problem; if the co2 cost is larger then we need to swap monetary and co2 costs.
-
+            print(f"checking building {building_name}...")
             if (
                 df.loc[(building_name, 0, "monetary"), "electricity_econatur"]
                 < df.loc[(building_name, 0, "co2"), "electricity_econatur"]
@@ -21,12 +21,12 @@ def cost_per_tech_reorganizer(folder_path):
                     df.index.levels[2].map(swap_mapping), level=2
                 )
 
-            # now we can save the file back using the same name
-            df.to_csv(os.path.join(folder_path, file), index=True)
-            print(f"Building {building_name} has been reorganized.")
+                # now we can save the file back using the same name
+                df.to_csv(os.path.join(folder_path, file), index=True)
+                print(f"Building {building_name} has been reorganized.")
 
 
 if __name__ == "__main__":
     cost_per_tech_reorganizer(
-        r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\batch_with_oil"
+        r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\batch_no_oil_with_DH"
     )
