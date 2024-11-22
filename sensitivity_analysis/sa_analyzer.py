@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from typing import Tuple, List
 from SALib.analyze import sobol
 from pyparsing import line
+import seaborn as sns
 
 
 def compute_correlations(df: pd.DataFrame, problem: dict) -> pd.DataFrame:
@@ -242,7 +243,7 @@ def plot_scatter_matrix(
     :param sensitivity_csv_path: Path to the CSV file containing the sensitivity data.
     :param problem: Dictionary defining the problem for SALib.
     :param parameter_names: List of parameter names to plot. If not provided, all parameters will be plotted.
-    :param results: List of result names to plot. If not provided, all results will be plotted.
+    :param result_names: List of result names to plot. If not provided, all results will be plotted.
     :param output_folder: Folder to save the plots.
     """
     output_folder = os.path.join(output_folder, "scatter_matrix")
@@ -258,34 +259,11 @@ def plot_scatter_matrix(
     # else:
     #     results = df[result_names]
 
-    # create a scatter plot for each pair of parameter-result. Parameters on rows, results on columns
-    nrow = len(parameter_names)
-    ncol = len(result_names)
-    fig, axes = plt.subplots(nrow, ncol, figsize=(ncol * 3, nrow * 3))
-    # if only one row or column, axes will be a 1D array, so convert to 2D
-    if nrow == 1 and ncol == 1:
-        axes = np.array([[axes]])
-    else:
-        if nrow == 1:
-            axes = axes[np.newaxis, :]
-        if ncol == 1:
-            axes = axes[:, np.newaxis]
-    for i in range(nrow):
-        for j in range(ncol):
-            axes[i, j].scatter(
-                df[result_names[j]],
-                df[parameter_names[i]],
-                marker=".",
-                s=2,
-                edgecolor="none",
-            )
-            if i == range(nrow)[-1]:
-                axes[i, j].set_xlabel(result_names[j])
-            else:
-                # don't show x-axis ticklabels for all but the last row
-                plt.setp(axes[i, j].get_xticklabels(), visible=False)
-            axes[i, j].set_ylabel(parameter_names[i], fontsize=6)
-            axes[i, j].tick_params(axis="both", which="major", labelsize=6)
+    df_params = df[parameter_names]
+    df_results = df[result_names]
+
+    # use seaborn to create a pairplot between parameters and results
+    sns.pairplot(df, x_vars=parameter_names, y_vars=result_names, kind="scatter")
 
     plt.tight_layout()
     if output_folder:
@@ -390,7 +368,7 @@ def plot_pairwise_interaction_heatmap(sensitivities: dict, output_folder: str = 
 
 if __name__ == "__main__":
     # Specify the path to the CSV file
-    sensitivity_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_supply_large"
+    sensitivity_folder = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\global_conversion_B162582"
     variation_folder = os.path.join(sensitivity_folder, "variation")
     result_folder = os.path.join(sensitivity_folder, "result")
     plot_folder = os.path.join(sensitivity_folder, "plots")
@@ -414,36 +392,30 @@ if __name__ == "__main__":
 
     # plotting
     # Plot Spearman rank correlation sensitivities
-    # plot_correlation_barcharts(correlations, output_folder=plot_folder)
+    plot_correlation_barcharts(correlations, output_folder=plot_folder)
 
-    # # Plot Spearman rank correlation sensitivity matrix
-    # plot_correlation_matrix(
-    #     correlations,
-    #     output_path=os.path.join(plot_folder, "correlation_matrix.png"),
-    # )
+    # Plot Spearman rank correlation sensitivity matrix
+    plot_correlation_matrix(
+        correlations,
+        output_path=os.path.join(plot_folder, "correlation_matrix.png"),
+    )
 
-    # # Plot Sobol sensitivity indices
-    # plot_sobol_indices(sobol_indices, output_folder=plot_folder)
+    # Plot Sobol sensitivity indices
+    plot_sobol_indices(sobol_indices, output_folder=plot_folder)
 
-    # # Plot Sobol sensitivity heatmap
-    # plot_sobol_heatmap(sobol_indices, output_folder=plot_folder)
+    # Plot Sobol sensitivity heatmap
+    plot_sobol_heatmap(sobol_indices, output_folder=plot_folder)
 
-    # # Plot spider plots for total influence
-    # plot_spider_plot(sobol_indices, output_folder=plot_folder)
+    # Plot spider plots for total influence
+    plot_spider_plot(sobol_indices, output_folder=plot_folder)
 
-    # # Plot pairwise interaction heatmaps
-    # if calc_second_order:
-    #     plot_pairwise_interaction_heatmap(sobol_indices, output_folder=plot_folder)
+    # Plot pairwise interaction heatmaps
+    if calc_second_order:
+        plot_pairwise_interaction_heatmap(sobol_indices, output_folder=plot_folder)
 
     # # Plot scatter matrix
     plot_scatter_matrix(
         sensitivity_csv_path,
         problem,
-        # [
-        #     # "techs.district_heating.costs.monetary.om_con",
-        #     "tech_groups.GSHP.costs.co2.energy_cap",
-        #     # "techs.pallet.costs.monetary.om_con",
-        # ],
-        # ["activated_techs_std"],
         output_folder=plot_folder,
     )

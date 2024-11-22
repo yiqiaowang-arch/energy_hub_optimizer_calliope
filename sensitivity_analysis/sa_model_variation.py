@@ -6,7 +6,7 @@ import warnings
 from cea_energy_hub_optimizer.energy_hub import EnergyHub
 from calliope import AttrDict
 from cea_energy_hub_optimizer.my_config import MyConfig
-from cea_energy_hub_optimizer.sa_cost_estimation import power
+from sensitivity_analysis.sa_cost_estimation import power
 import yaml
 import os
 import pandas as pd
@@ -224,8 +224,8 @@ class SensitivityAnalysis:
 
     @staticmethod
     def count_specific_technology_activation(
-        result_file: os.PathLike, tech_name: str
-    ) -> float:
+        df_pareto: pd.DataFrame, tech_names: Union[str, List[str]]
+    ) -> Union[pd.Series, np.float64]:
         """
         Analyze activation of a specific technology across Pareto solutions.
 
@@ -233,21 +233,17 @@ class SensitivityAnalysis:
         :param tech_name: Name of the technology to analyze.
         :return: A tuple (average_activation, activation_rate_change).
         """
-        df = pd.read_csv(result_file)
-        if tech_name not in df.columns:
-            raise ValueError(f"Technology '{tech_name}' not found in the result file.")
+        # df = pd.read_csv(result_file)
+        if isinstance(tech_names, str):
+            tech_names = [tech_names]
 
-        # Check activation of the specific technology
-        # tech_activation = df[tech_name][df[tech_name] > 0]
-        tech_activation = (df[tech_name] > 0).sum() / len(df)
+        for tech in tech_names:
+            if tech not in df_pareto.columns:
+                raise ValueError(f"Technology '{tech}' not found in the result file.")
 
-        # # Calculate the average activation (fraction of Pareto fronts where tech is active)
-        # activation_avg = tech_activation.mean()
-
-        # # Calculate the standard deviation
-        # activation_std = tech_activation.std()
-
-        # return activation_avg, activation_std
+        tech_activation: Union[pd.Series, np.float64] = (
+            df_pareto[tech_names] > 0
+        ).mean()
         return tech_activation
 
     @staticmethod
@@ -343,8 +339,10 @@ class SensitivityAnalysis:
                     # Assuming technology columns start from the fifth column
                     tech_columns = df_result.columns[4:]
                     for tech_name in tech_columns:
-                        avg_activation = self.count_specific_technology_activation(
-                            result_file_path, tech_name
+                        avg_activation: np.float64 = (
+                            self.count_specific_technology_activation(
+                                df_result, tech_name
+                            )
                         )
                         record.update(
                             {
