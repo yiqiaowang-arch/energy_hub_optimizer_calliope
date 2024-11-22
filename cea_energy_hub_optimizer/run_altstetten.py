@@ -88,7 +88,7 @@ my_config = MyConfig(Configuration())
 # fix some parameters from my_config
 # fmt: off
 my_config.number_of_epsilon_cut = 5
-my_config.approach_but_not_land_on_tip = False
+my_config.approach_but_not_land_on_tip = True
 my_config.temporal_resolution = "1D"
 my_config.solver = "cplex"
 my_config.use_temperature_sensitive_cop = True
@@ -104,7 +104,7 @@ check_solar_technology()
 zone: pd.DataFrame = gpd.read_file(locator.get_zone_geometry(), ignore_geometry=True)
 # get all the building names
 buildings = zone["Name"].tolist()
-result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_with_DH")
+result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_approach_tip")
 scenario_folder = locator.scenario
 # read DH_availability.csv and get the list of buildings that have access to district heating
 DH_availability = pd.read_csv(os.path.join(scenario_folder, "DH_availability.csv"))
@@ -157,8 +157,8 @@ for building_name in buildings:
         continue
 
     energy_hub = EnergyHub(building_name, config_path)
-    if building_name not in ls_DH_available:
-        remove_district_heating_technologies(energy_hub)
+    # if building_name not in ls_DH_available:
+    remove_district_heating_technologies(energy_hub)
     # for now we keep oil technologies so the following line is commented
     remove_oil_technologies(energy_hub)
     # remove_gas_technologies(energy_hub)
