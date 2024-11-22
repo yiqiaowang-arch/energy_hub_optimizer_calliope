@@ -64,7 +64,7 @@ def calculate_concavity(geometry: Polygon) -> float:
     return concavity
 
 
-def compactness(geometry: Polygon, height: float) -> float:
+def calculate_compactness(geometry: Polygon, height: float) -> float:
     """calculate the compactness of a building, which is the ratio between the surface area and the minimum surface area that can contain the volume.
     The minimum surface area that can contain the volume is a cylinder with the same volume as the building.
     If we define the volume to be `V`, radius of the cylinder as `r` and the height of the cylinder as `h`, then the surface area of the

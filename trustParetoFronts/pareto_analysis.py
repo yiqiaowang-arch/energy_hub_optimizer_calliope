@@ -25,34 +25,52 @@ class ParetoFront:
                 "the combination of x and y values does not represent a Pareto front, which should point to the top left and bottom right corners of the plot."
             )
 
-    def x_values(self, ignore_endpoints=None) -> np.array:
-        if ignore_endpoints:
-            return self.xy_values[:, 0][1:-1]
-        return self.xy_values[:, 0]
+    def x_values(
+        self, ignore_left_endpoint=False, ignore_right_endpoint=False
+    ) -> np.array:
+        xs = self.xy_values[:, 0]
+        if ignore_left_endpoint:
+            xs = xs[1:]
+        if ignore_right_endpoint:
+            xs = xs[:-1]
+        return xs
 
-    def y_values(self, ignore_endpoints=False) -> np.array:
-        if ignore_endpoints:
-            return self.xy_values[:, 1][1:-1]
-        return self.xy_values[:, 1]
+    def y_values(
+        self, ignore_left_endpoint=False, ignore_right_endpoint=False
+    ) -> np.array:
+        ys = self.xy_values[:, 1]
+        if ignore_left_endpoint:
+            ys = ys[1:]
+        if ignore_right_endpoint:
+            ys = ys[:-1]
+        return ys
 
-    def x_range(self, ignore_endpoints=False, rel=False) -> float:
-        range = np.ptp(self.x_values(ignore_endpoints))
+    def x_range(
+        self, ignore_left_endpoint=False, ignore_right_endpoint=False, rel=False
+    ) -> float:
+        range = np.ptp(self.x_values(ignore_left_endpoint, ignore_right_endpoint))
         if rel:
             max = np.max(self.x_values())
             return range / max
         return range
 
-    def y_range(self, ignore_endpoints=False, rel=False) -> float:
-        range = np.ptp(self.y_values(ignore_endpoints))
+    def y_range(
+        self, ignore_left_endpoint=False, ignore_right_endpoint=False, rel=False
+    ) -> float:
+        range = np.ptp(self.y_values(ignore_left_endpoint, ignore_right_endpoint))
         if rel:
             max = np.max(self.y_values())
             return range / max
         return range
 
-    def slope(self, ignore_endpoints=False) -> float:
-        return self.y_range(ignore_endpoints) / self.x_range(ignore_endpoints)
+    def slope(self, ignore_left_endpoint=False, ignore_right_endpoint=False) -> float:
+        return self.y_range(ignore_left_endpoint, ignore_right_endpoint) / self.x_range(
+            ignore_left_endpoint, ignore_right_endpoint
+        )
 
-    def curvature(self, ignore_endpoints=False) -> float:
+    def curvature(
+        self, ignore_left_endpoint=False, ignore_right_endpoint=False
+    ) -> float:
         """
         Calculates the total length of the pareto front curve, deviding with the length of
         the straight line between the endpoints.
@@ -63,11 +81,12 @@ class ParetoFront:
         :return: ratio between the length of the curve (polyline) and the length of the straight line between the endpoints.
         :rtype: float
         """
-        return self.length(ignore_endpoints) / np.sqrt(
-            self.x_range(ignore_endpoints) ** 2 + self.y_range(ignore_endpoints) ** 2
+        return self.length(ignore_left_endpoint, ignore_right_endpoint) / np.sqrt(
+            self.x_range(ignore_left_endpoint, ignore_right_endpoint) ** 2
+            + self.y_range(ignore_left_endpoint, ignore_right_endpoint) ** 2
         )
 
-    def length(self, ignore_endpoints=False) -> float:
+    def length(self, ignore_left_endpoint=False, ignore_right_endpoint=False) -> float:
         """
         Calculate the length of the pareto front curve.
 
@@ -77,12 +96,14 @@ class ParetoFront:
         :return: the length of the pareto front polyline
         :rtype: float
         """
-        x_values = self.x_values(ignore_endpoints)
-        y_values = self.y_values(ignore_endpoints)
+        x_values = self.x_values(ignore_left_endpoint, ignore_right_endpoint)
+        y_values = self.y_values(ignore_left_endpoint, ignore_right_endpoint)
 
         return np.sum(np.sqrt(np.diff(x_values) ** 2 + np.diff(y_values) ** 2))
 
-    def get_collided_points(self, ignore_endpoints=False) -> np.array:
+    def get_collided_points(
+        self, ignore_left_endpoint=False, ignore_right_endpoint=False
+    ) -> np.array:
         """if some of the points are physically in the same place, report their values. if no collision, return empty array.
 
         :param ignore_endpoints: nd points normally is optimized with one objective, thus is biased and unrealistic.
@@ -93,8 +114,8 @@ class ParetoFront:
             If no collision, return empty array.
         :rtype: np.array
         """
-        x_values = self.x_values(ignore_endpoints)
-        y_values = self.y_values(ignore_endpoints)
+        x_values = self.x_values(ignore_left_endpoint, ignore_right_endpoint)
+        y_values = self.y_values(ignore_left_endpoint, ignore_right_endpoint)
 
         collided_points = []
 
