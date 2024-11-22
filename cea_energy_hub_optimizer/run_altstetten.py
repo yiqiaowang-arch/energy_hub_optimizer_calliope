@@ -142,7 +142,12 @@ for building_name in buildings:
     # check if the building is part of a district energy network, if so, skip it
     if (
         building_name
-        in network_149 + network_115 + network_141 + network_153 + network_135
+        in network_149
+        + network_115
+        + network_141
+        + network_153
+        + network_135
+        + ["B162979", "B163158", "B163482"]
     ):
         print(building_name + " is part of a district energy network, skipping...")
         continue
