@@ -1,7 +1,19 @@
 # energy_hub_optimizer
-An optimization plugin for building energy hub using Calliope for the City Energy Analyst.
+A multi-objective optimization plugin for energy hubs using Calliope, tailored for the City Energy Analyst (CEA) to enhance energy system decision-making at both building and district levels. By incorporating mixed-integer linear programming (MILP), this plugin enables CEA to achieve globally optimal solutions for energy system design challenges. Designed for seamless integration, the plugin automatically handles CEA inputs and outputs, streamlining the entire optimization process into a single software solution—eliminating the need for multiple tools.
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+The plugin offers flexibility to optimize all buildings in a district either individually or collectively, based on user preferences. Equipped with an up-to-date technology database for Zurich, Switzerland, it includes a user-friendly, Excel-based technology definition file. This feature allows users to easily customize default technology definitions or create new variations effortlessly.
+
+For advanced users, the plugin provides APIs for standalone operation, enabling detailed analysis of energy hub models without relying on a graphical user interface (GUI). Optimization results, including technology sizing and associated costs (both monetary and emissions), are stored in .csv format in the CEA outputs folder for easy access and further analysis.
+
+Example visualization of optimization results:
+![Pareto Front Examples](https://github.com/user-attachments/assets/e6f20ca6-73d6-497d-804c-cf3c73bede6a)
+
+![technology variation](https://github.com/user-attachments/assets/4a04dcaf-5c1c-4a24-9a9c-7403cc20d7ed)
+
+![cost composition](https://github.com/user-attachments/assets/b2ee6f91-b635-4762-a0b1-23a061549746)
+
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Download
 To install, clone this repo to a desired path (you would need to have `git` installed to run this command. Alternatively you can also run this command in the CEA console, which
