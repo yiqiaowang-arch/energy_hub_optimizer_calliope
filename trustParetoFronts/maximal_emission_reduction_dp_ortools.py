@@ -2,18 +2,6 @@ from typing import Tuple
 import pandas as pd
 from ortools.algorithms.python import knapsack_solver
 
-"""
-Warning! This script requires pandas 2.0.3 or higher! Calliope requires 1.5.4 or lower.
-  WARNING: Failed to remove contents in a temporary directory 'C:\Users\yiqwang\AppData\Local\Temp\pip-uninstall-51z_dg4e'.
-  You can safely remove it manually.
-  WARNING: Failed to remove contents in a temporary directory 'C:\Users\yiqwang\Documents\CityEnergyAnalyst\dependencies\micromamba\envs\cea\Lib\site-packages\pandas\_libs\~indow'.
-  You can safely remove it manually.
-ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-calliope 0.6.10 requires numpy~=1.23.5, but you have numpy 1.24.4 which is incompatible.
-calliope 0.6.10 requires pandas~=1.5.2, but you have pandas 2.0.3 which is incompatible.
-Successfully installed absl-py-2.1.0 immutabledict-4.2.1 ortools-9.11.4210 pandas-2.0.3 protobuf-5.26.1
-"""
-
 
 def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataFrame:
     """
@@ -28,7 +16,7 @@ def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataF
     # Convert cost to integers
     scaling_factor = 10**precision
     df["int_cost"] = (df["cost"] * scaling_factor).round().astype(int)
-    df["int_emission"] = (df["emission"] * scaling_factor).round().astype(int)
+    df["int_emission"] = (df["emission"] * 1).round().astype(int)
 
     # Sort values to prioritize higher pareto_index within each building and int_cost
     deduplicated_idx = (
@@ -102,7 +90,7 @@ def maximal_emission_reduction_dp(
     # Compute actual cost
     actual_cost = (minimal_cost + additional_cost) / scaling_factor
 
-    return result_df, maximal_reduction / scaling_factor, actual_cost
+    return result_df, maximal_reduction / 1, actual_cost
 
 
 if __name__ == "__main__":

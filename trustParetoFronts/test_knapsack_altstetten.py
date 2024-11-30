@@ -7,14 +7,14 @@ from cea.config import Configuration
 from cea_energy_hub_optimizer.my_config import MyConfig
 from trustParetoFronts.pareto_analysis import ParetoFront
 import trustParetoFronts.geometry_analysis as ga
-from trustParetoFronts.maximal_emission_reduction_dp_copy import (
+from trustParetoFronts.maximal_emission_reduction_dp_ortools import (
     maximal_emission_reduction_dp,
 )
 
 config = MyConfig(Configuration())
 
 # Plot settings
-plt.rcParams["font.family"] = "Roboto"
+# plt.rcParams["font.family"] = "Roboto"
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
 plt.rcParams["legend.loc"] = "lower center"
@@ -194,7 +194,9 @@ print(f"Maximal cost: {maximal_cost}")
 costs = []
 emission_reductions = []
 dfs = []
+import warnings
 
+warnings.filterwarnings("ignore")
 for cost in np.linspace(minimal_cost + 10000, maximal_cost - 10000, 100):
     df, emission_reduction, actual_cost = maximal_emission_reduction_dp(
         df_pareto_all, cost, precision=-2
@@ -209,5 +211,8 @@ for df in dfs:
     df.to_csv(f"df_{i}.csv")
     i += 1
 
-plt.plot(costs, emission_reductions)
+plt.plot(costs / 1e6, emission_reductions / 1e3)
+plt.xlabel("Additional Cost [MCHF]")
+plt.ylabel("Emission Reduction [tCO2eq]")
+plt.title("Additional Investment vs. Emission Reduction from Cost-Optimal Solutions")
 plt.show()
