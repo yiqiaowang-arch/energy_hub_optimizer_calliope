@@ -7,7 +7,7 @@ from cea.config import Configuration
 from cea_energy_hub_optimizer.my_config import MyConfig
 from trustParetoFronts.pareto_analysis import ParetoFront
 import trustParetoFronts.geometry_analysis as ga
-from trustParetoFronts.maximal_emission_reduction_dp_ortools import (
+from trustParetoFronts.maximal_emission_reduction_dp_copy import (
     maximal_emission_reduction_dp,
 )
 
@@ -206,13 +206,27 @@ for cost in np.linspace(minimal_cost + 10000, maximal_cost - 10000, 100):
     print(f"Cost: {actual_cost}, Emission reduction: {emission_reduction}")
     dfs.append(df)
 
+"""
+df example:
+building    pareto_index
+A           0
+B           1
+C           2
+D           0
+"""
 i = 0
 for df in dfs:
     df.to_csv(f"df_{i}.csv")
     i += 1
 
+# merge all dfs into one df, each run is a column
+df_all = pd.concat(dfs, axis=1)
+df_all.to_csv("df_all.csv")
+
 plt.plot(costs / 1e6, emission_reductions / 1e3)
 plt.xlabel("Additional Cost [MCHF]")
 plt.ylabel("Emission Reduction [tCO2eq]")
-plt.title("Additional Investment vs. Emission Reduction from Cost-Optimal Solutions")
+plt.title(
+    "Additional Investment vs. Emission Reduction from Cost-Optimal Solutions (self-built knapsack)"
+)
 plt.show()
