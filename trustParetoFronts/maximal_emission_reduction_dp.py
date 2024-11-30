@@ -18,17 +18,22 @@ def maximal_emission_reduction_dp(
     :return: The maximal emission reduction.
     :return: The actual cost used to achieve the maximal emission reduction under budget limit.
     """
-    # Step 1: Preprocess and deduplicate
+    # Preprocess and deduplicate
+    # Preprocess and deduplicate
     df = preprocess_and_deduplicate(df, precision=precision)
     scaling_factor = 10**precision
 
-    # Step 2: Calculate minimal cost and emission solutions
+    # Minimal and maximal costs
     minimal_cost_solutions = df.loc[df.groupby(level="building")["int_cost"].idxmin()]
     minimal_cost = minimal_cost_solutions["int_cost"].sum()
-    # initialize result_df from minimal_cost_solutions, but only record the building and pareto_index
     result_df = minimal_cost_solutions.reset_index()[
         ["building", "pareto_index"]
     ].set_index("building")
+
+    # Compute `additional_cost` and store in DataFrame
+    df["additional_cost"] = df["int_cost"] - df.index.map(
+        lambda idx: minimal_cost_solutions.loc[idx[0], "int_cost"]
+    )
 
     # Feasibility Check
     if cost_budget < minimal_cost / scaling_factor:
@@ -36,65 +41,63 @@ def maximal_emission_reduction_dp(
             f"The cost budget ({cost_budget}) is infeasible. Minimum required is {minimal_cost / scaling_factor}."
         )
 
-    # Adjust the budget for additional cost
+    # Adjust budget
     additional_budget = cost_budget - (minimal_cost / scaling_factor)
-    max_budget = int(
-        np.ceil(additional_budget * scaling_factor)
-    )  # Convert budget to integer
+    max_budget = int(np.ceil(additional_budget * scaling_factor))
 
-    # Initialize DP table and auxiliary structures
-    buildings = df.index.get_level_values(0).unique()  # Get unique buildings from index
+    # DP Initialization
+    buildings = df.index.get_level_values(0).unique()
     num_buildings = len(buildings)
-    DP = np.zeros(
-        (2, max_budget + 1)
-    )  # Only two rows are needed (current and previous)
+    DP = np.zeros((2, max_budget + 1))
     selected_solution = np.full((num_buildings, max_budget + 1), None, dtype=object)
 
-    # Step 3: Populate DP table
-    for b, building in enumerate(buildings):
-        # Calculate additional cost and emission reduction for the current building
-        additinal_cost: np.ndarray = (
-            df.loc[building, "int_cost"]
-            - minimal_cost_solutions.loc[building, "int_cost"].values[0]
-        ).values
-        emission_reduction: np.ndarray = (
-            minimal_cost_solutions.loc[building, "emission"].values[0]
-            - df.loc[building, "emission"]
-        ).values
-        df.loc[building, "additional_cost"] = additinal_cost
-        df.loc[building, "emission_reduction"] = emission_reduction
+    # Pre-extract building data for efficiency
+    building_data = {}
+    for building in buildings:
         building_df = df.loc[[building]]
+        costs = building_df["additional_cost"].values.astype(int)
+        emissions = (
+            minimal_cost_solutions.loc[building, "emission"].values[0]
+            - building_df["emission"].values
+        )
+        building_data[building] = (costs, emissions, building_df.index.to_numpy())
+
+    # DP Iteration
+    for b, building in enumerate(buildings):
+        costs, emissions, indices = building_data[building]
+
+        # Vectorized DP updates for valid budgets
         for w in range(max_budget + 1):
-            # DP Formula:
-            # DP[b][w] = max(DP[b-1][w], DP[b-1][w - additional_cost] + emission_reduction)
-            DP[b % 2][w] = DP[(b - 1) % 2][w]
+            DP[b % 2][w] = DP[(b - 1) % 2][w]  # Default: Carry forward
             selected_solution[b, w] = selected_solution[b - 1, w] if b > 0 else None
 
-            for idx, row in building_df.iterrows():
-                cost = int(row["additional_cost"])
-                value = row["emission_reduction"]
-                if cost <= w:
-                    if DP[(b - 1) % 2][w - cost] + value > DP[b % 2][w]:
-                        DP[b % 2][w] = DP[(b - 1) % 2][w - cost] + value
-                        selected_solution[b, w] = idx
+            # Valid updates
+            valid_mask = costs <= w
+            valid_costs = costs[valid_mask]
+            valid_emissions = emissions[valid_mask]
+            valid_values = DP[(b - 1) % 2][w - valid_costs] + valid_emissions
 
-    # Step 4: Trace back to find selected solutions
+            # Apply updates
+            max_idx = valid_values.argmax()
+            if valid_values[max_idx] > DP[b % 2][w]:
+                DP[b % 2][w] = valid_values[max_idx]
+                selected_solution[b, w] = indices[valid_mask][max_idx]
+
+    # Trace Back
     remaining_budget = max_budget
 
-    for idx, building in enumerate(reversed(buildings)):
-        irow = num_buildings - 1 - idx
-        solution = selected_solution[irow, remaining_budget]
-        if solution is None:
-            continue
-        elif solution[0] == building:
+    for b in range(num_buildings - 1, -1, -1):
+        solution = selected_solution[b, remaining_budget]
+        if solution:
             result_df.loc[solution[0], "pareto_index"] = solution[1]
             remaining_budget -= int(df.loc[solution, "additional_cost"])
 
-    max_reduction = float(DP[(num_buildings - 1) % 2][max_budget])
-    additional_budget = float(additional_budget - remaining_budget / scaling_factor)
-    actual_cost = minimal_cost / scaling_factor + additional_budget
+    # Compute actual cost
+    actual_cost = (
+        minimal_cost / scaling_factor + (max_budget - remaining_budget) / scaling_factor
+    )
 
-    return result_df, max_reduction, actual_cost
+    return result_df, float(DP[(num_buildings - 1) % 2][max_budget]), actual_cost
 
 
 def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataFrame:
@@ -111,18 +114,15 @@ def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataF
     scaling_factor = 10**precision
     df["int_cost"] = (df["cost"] * scaling_factor).round().astype(int)
 
-    # Deduplicate solutions for each building
-    deduplicated = []
-    for building, group in df.groupby("building"):
-        # Sort by cost (ascending) and pareto_index (descending)
-        group = group.sort_values(
-            by=["int_cost", "pareto_index"], ascending=[True, False]
-        )
-        # Keep only one solution per cost
-        group = group.loc[group["int_cost"].drop_duplicates(keep="first").index]
-        deduplicated.append(group)
+    # Sort values to prioritize higher pareto_index within each building and int_cost
+    df = df.sort_values(
+        by=["int_cost", "pareto_index"], ascending=[True, False], kind="mergesort"
+    )
 
-    return pd.concat(deduplicated)
+    # Deduplicate within each building and int_cost, keeping the first occurrence
+    deduplicated_df = df[~df.index.duplicated(keep="first")]
+
+    return deduplicated_df
 
 
 if __name__ == "__main__":
@@ -146,3 +146,14 @@ if __name__ == "__main__":
         df_pareto, cost_budget, 0
     )
     print(result, f"\nMax Reduction: {max_reduction}\nActual Cost: {actual_cost}")
+
+    import timeit
+
+    # benchmark the speed of the function
+    print(
+        timeit.timeit(
+            "maximal_emission_reduction_dp(df_pareto, cost_budget, 0)",
+            globals=globals(),
+            number=1000,
+        )
+    )

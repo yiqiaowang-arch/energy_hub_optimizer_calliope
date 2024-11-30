@@ -100,21 +100,12 @@ def maximal_emission_reduction_dp(
 
     # Trace Back
     remaining_budget = max_budget
-    selected_solutions = []
 
     for b in range(num_buildings - 1, -1, -1):
         solution = selected_solution[b, remaining_budget]
         if solution:
-            selected_solutions.append(solution)
+            result_df.loc[solution[0], "pareto_index"] = solution[1]
             remaining_budget -= int(df.loc[solution, "additional_cost"])
-
-    # Convert selected solutions to DataFrame
-    result_df = pd.DataFrame(
-        {
-            "building": [s[0] for s in selected_solutions],
-            "pareto_index": [s[1] for s in selected_solutions],
-        }
-    ).set_index("building")
 
     # Compute actual cost
     actual_cost = (
