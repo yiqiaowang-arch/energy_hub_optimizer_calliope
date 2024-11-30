@@ -1,10 +1,11 @@
+from typing import Tuple
 import pandas as pd
 import numpy as np
 
 
 def maximal_emission_reduction_dp(
     df: pd.DataFrame, cost_budget: float, precision: int = 2
-) -> pd.DataFrame:
+) -> Tuple[pd.DataFrame, float, float]:
     """
     Dynamic programming approach for maximizing emission reduction with integer costs and float emissions.
     Handles cases where `building` is the first-level index.
@@ -14,6 +15,8 @@ def maximal_emission_reduction_dp(
     :param cost_budget: The cost budget for the optimization.
     :param precision: Number of decimal places to retain during scaling.
     :return: A DataFrame with the optimal Pareto solution for each building.
+    :return: The maximal emission reduction.
+    :return: The actual cost used to achieve the maximal emission reduction under budget limit.
     """
     # Step 1: Preprocess and deduplicate
     df = preprocess_and_deduplicate(df, precision=precision)
@@ -22,6 +25,10 @@ def maximal_emission_reduction_dp(
     # Step 2: Calculate minimal cost and emission solutions
     minimal_cost_solutions = df.loc[df.groupby(level="building")["int_cost"].idxmin()]
     minimal_cost = minimal_cost_solutions["int_cost"].sum()
+    # initialize result_df from minimal_cost_solutions, but only record the building and pareto_index
+    result_df = minimal_cost_solutions.reset_index()[
+        ["building", "pareto_index"]
+    ].set_index("building")
 
     # Feasibility Check
     if cost_budget < minimal_cost / scaling_factor:
@@ -46,14 +53,16 @@ def maximal_emission_reduction_dp(
     # Step 3: Populate DP table
     for b, building in enumerate(buildings):
         # Calculate additional cost and emission reduction for the current building
-        df.loc[building, "additional_cost"] = (
+        additinal_cost: np.ndarray = (
             df.loc[building, "int_cost"]
-            - minimal_cost_solutions.loc[building, "int_cost"][0]
+            - minimal_cost_solutions.loc[building, "int_cost"].values[0]
         ).values
-        df.loc[building, "emission_reduction"] = (
-            minimal_cost_solutions.loc[building, "emission"][0]
+        emission_reduction: np.ndarray = (
+            minimal_cost_solutions.loc[building, "emission"].values[0]
             - df.loc[building, "emission"]
         ).values
+        df.loc[building, "additional_cost"] = additinal_cost
+        df.loc[building, "emission_reduction"] = emission_reduction
         building_df = df.loc[[building]]
         for w in range(max_budget + 1):
             # DP Formula:
@@ -71,17 +80,21 @@ def maximal_emission_reduction_dp(
 
     # Step 4: Trace back to find selected solutions
     remaining_budget = max_budget
-    selected_solutions = []
-    for b in range(num_buildings - 1, -1, -1):
-        if selected_solution[b, remaining_budget] is not None:
-            solution = selected_solution[b, remaining_budget]
-            selected_solutions.append(solution)
+
+    for idx, building in enumerate(reversed(buildings)):
+        irow = num_buildings - 1 - idx
+        solution = selected_solution[irow, remaining_budget]
+        if solution is None:
+            continue
+        elif solution[0] == building:
+            result_df.loc[solution[0], "pareto_index"] = solution[1]
             remaining_budget -= int(df.loc[solution, "additional_cost"])
 
-    # Convert the selected solutions to a DataFrame
-    result_df = pd.DataFrame(selected_solutions)
+    max_reduction = float(DP[(num_buildings - 1) % 2][max_budget])
+    additional_budget = float(additional_budget - remaining_budget / scaling_factor)
+    actual_cost = minimal_cost / scaling_factor + additional_budget
 
-    return result_df
+    return result_df, max_reduction, actual_cost
 
 
 def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataFrame:
@@ -116,18 +129,20 @@ if __name__ == "__main__":
     # Example DataFrame
     # fmt: off
     data = {
-        "building":     ["A",   "A",    "B",    "B",    "C",    "C"],
-        "pareto_index": [0,     1,      0,      1,      0,      1],
-        "cost":         [10.5,  20.3,   15.2,   25.7,   18.1,   30.5],
-        "emission":     [100.2, 80.1,   120.0,  70.5,   90.0,   60.3],
+        "building":     ["A", "A", "A", "B", "B", "B",  "C", "C", "C",  "D", "D", "D"],
+        "pareto_index": [0, 1, 2,       0, 1, 2,        0, 1, 2,        0, 1, 2],
+        "cost":         [5, 8, 10,      4, 6, 9,        3, 7, 12,       4, 6, 11],
+        "emission":     [10, 7, 5,      15, 12, 8,      20, 15, 10,     12, 10, 5],
     }
     # fmt: on
     df_pareto = pd.DataFrame(data)
     df_pareto.set_index(["building", "pareto_index"], inplace=True)
 
     # Budget
-    cost_budget = 60
+    cost_budget = 25
 
     # Run DP
-    result = maximal_emission_reduction_dp(df_pareto, cost_budget)
-    print(result)
+    result, max_reduction, actual_cost = maximal_emission_reduction_dp(
+        df_pareto, cost_budget, 0
+    )
+    print(result, f"\nMax Reduction: {max_reduction}\nActual Cost: {actual_cost}")
