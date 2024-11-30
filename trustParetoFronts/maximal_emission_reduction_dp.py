@@ -113,14 +113,15 @@ def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataF
     # Convert cost to integers
     scaling_factor = 10**precision
     df["int_cost"] = (df["cost"] * scaling_factor).round().astype(int)
+    df["int_emission"] = (df["emission"] * scaling_factor).round().astype(int)
 
     # Sort values to prioritize higher pareto_index within each building and int_cost
-    df = df.sort_values(
-        by=["int_cost", "pareto_index"], ascending=[True, False], kind="mergesort"
+    deduplicated_idx = (
+        df.reset_index().groupby(["building", "int_cost"])["pareto_index"].idxmax()
     )
 
     # Deduplicate within each building and int_cost, keeping the first occurrence
-    deduplicated_df = df[~df.index.duplicated(keep="first")]
+    deduplicated_df = df.iloc[deduplicated_idx.values].copy()
 
     return deduplicated_df
 
