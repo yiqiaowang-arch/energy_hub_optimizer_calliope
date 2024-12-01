@@ -3,22 +3,38 @@ import pandas as pd
 import numpy as np
 
 
+def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataFrame:
+    """
+    Preprocess and deduplicate Pareto solutions for DP:
+    - Convert costs to integers.
+    - Deduplicate solutions by keeping the one with the highest pareto_index.
+
+    :param df: DataFrame with Pareto solutions, must contain "cost", "emission", and "pareto_index".
+    :param precision: Number of decimal places to retain during scaling.
+    :return: Deduplicated DataFrame with integer costs.
+    """
+    # Convert cost to integers
+    scaling_factor = 10**precision
+    df["int_cost"] = (df["cost"] * scaling_factor).round().astype(int)
+    df["int_emission"] = (df["emission"] * scaling_factor).round().astype(int)
+
+    # Sort values to prioritize higher pareto_index within each building and int_cost
+    deduplicated_idx = (
+        df.reset_index().groupby(["building", "int_cost"])["pareto_index"].idxmax()
+    )
+
+    # Deduplicate within each building and int_cost, keeping the first occurrence
+    deduplicated_df = df.iloc[deduplicated_idx.values].copy()
+
+    return deduplicated_df
+
+
 def maximal_emission_reduction_dp(
     df: pd.DataFrame, cost_budget: float, precision: int = 2
 ) -> Tuple[pd.DataFrame, float, float]:
     """
-    Dynamic programming approach for maximizing emission reduction with integer costs and float emissions.
-    Handles cases where `building` is the first-level index.
-
-    :param df: DataFrame with Pareto solutions, must contain "cost", "emission", and "pareto_index".
-               The `building` should be the first-level index.
-    :param cost_budget: The cost budget for the optimization.
-    :param precision: Number of decimal places to retain during scaling.
-    :return: A DataFrame with the optimal Pareto solution for each building.
-    :return: The maximal emission reduction.
-    :return: The actual cost used to achieve the maximal emission reduction under budget limit.
+    Optimized dynamic programming approach for maximizing emission reduction.
     """
-    # Preprocess and deduplicate
     # Preprocess and deduplicate
     df = preprocess_and_deduplicate(df, precision=precision)
     scaling_factor = 10**precision
@@ -100,44 +116,15 @@ def maximal_emission_reduction_dp(
     return result_df, float(DP[(num_buildings - 1) % 2][max_budget]), actual_cost
 
 
-def preprocess_and_deduplicate(df: pd.DataFrame, precision: int = 0) -> pd.DataFrame:
-    """
-    Preprocess and deduplicate Pareto solutions for DP:
-    - Convert costs to integers.
-    - Deduplicate solutions by keeping the one with the highest pareto_index.
-
-    :param df: DataFrame with Pareto solutions, must contain "cost", "emission", and "pareto_index".
-    :param precision: Number of decimal places to retain during scaling.
-    :return: Deduplicated DataFrame with integer costs.
-    """
-    # Convert cost to integers
-    scaling_factor = 10**precision
-    df["int_cost"] = (df["cost"] * scaling_factor).round().astype(int)
-    df["int_emission"] = (df["emission"] * scaling_factor).round().astype(int)
-
-    # Sort values to prioritize higher pareto_index within each building and int_cost
-    deduplicated_idx = (
-        df.reset_index().groupby(["building", "int_cost"])["pareto_index"].idxmax()
-    )
-
-    # Deduplicate within each building and int_cost, keeping the first occurrence
-    deduplicated_df = df.iloc[deduplicated_idx.values].copy()
-
-    return deduplicated_df
-
-
 if __name__ == "__main__":
     # Example DataFrame
-    # fmt: off
     data = {
-        "building":     ["A", "A", "A", "B", "B", "B",  "C", "C", "C",  "D", "D", "D"],
-        "pareto_index": [0, 1, 2,       0, 1, 2,        0, 1, 2,        0, 1, 2],
-        "cost":         [5, 8, 10,      4, 6, 9,        3, 7, 12,       4, 6, 11],
-        "emission":     [10, 7, 5,      15, 12, 8,      20, 15, 10,     12, 10, 5],
+        "building": ["A", "A", "A", "B", "B", "B", "C", "C", "C", "D", "D", "D"],
+        "pareto_index": [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2],
+        "cost": [5, 8, 10, 4, 6, 9, 3, 7, 12, 4, 6, 11],
+        "emission": [10, 7, 5, 15, 12, 8, 20, 15, 10, 12, 10, 5],
     }
-    # fmt: on
-    df_pareto = pd.DataFrame(data)
-    df_pareto.set_index(["building", "pareto_index"], inplace=True)
+    df_pareto = pd.DataFrame(data).set_index(["building", "pareto_index"])
 
     # Budget
     cost_budget = 25
