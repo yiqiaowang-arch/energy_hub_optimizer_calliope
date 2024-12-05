@@ -1,4 +1,6 @@
 # energy_hub_optimizer
+![image](https://github.com/user-attachments/assets/0c7669cf-7e00-4bd3-845d-8fae34060656)
+
 A multi-objective optimization plugin for energy hubs using Calliope, tailored for the City Energy Analyst (CEA) to enhance energy system decision-making at both building and district levels. By incorporating mixed-integer linear programming (MILP), this plugin enables CEA to achieve globally optimal solutions for energy system design challenges. Designed for seamless integration, the plugin automatically handles CEA inputs and outputs, streamlining the entire optimization process into a single software solution—eliminating the need for multiple tools.
 
 The plugin offers flexibility to optimize all buildings in a district either individually or collectively, based on user preferences. Equipped with an up-to-date technology database for Zurich, Switzerland, it includes a user-friendly, Excel-based technology definition file. This feature allows users to easily customize default technology definitions or create new variations effortlessly.
