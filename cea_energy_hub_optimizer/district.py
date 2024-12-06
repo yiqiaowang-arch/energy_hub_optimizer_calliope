@@ -6,6 +6,7 @@ from cea_energy_hub_optimizer.my_config import MyConfig
 
 
 class Node:
+    # TODO: implement the network (read from CEA network optimization) to the energy hub
     pass
 
 
@@ -17,7 +18,6 @@ class Building(Node):
         self.name = name
         self.locator = MyConfig().locator
         self.get_geometry()
-        self.get_emission_system()
 
     def __str__(self):
         return self.name
@@ -34,13 +34,17 @@ class Building(Node):
                 f"Building {self.name} not found in the zone geometry file, and probably not inside scenario."
             )
 
-    def get_emission_system(self):
-        # TODO: change this to a property
+    @property
+    def emission(self):
+        """
+        get the heating emission system of the building (e.g., radiator, floor heating, etc.)
+        """
         air_conditioning_df: pd.DataFrame = gpd.read_file(
             self.locator.get_building_air_conditioning(), ignore_geometry=True
         )
         air_conditioning_df.set_index("Name", inplace=True)
-        self.emission = str(air_conditioning_df.loc[self.name, "type_hs"])
+        self._emission = str(air_conditioning_df.loc[self.name, "type_hs"])
+        return self._emission
 
 
 class District:
@@ -160,6 +164,7 @@ class TechAttrDict(AttrDict):
         # TODO: correctly consider demand tech with different temperature
         for building in self.locations.keys():
             self.del_key(f"locations.{building}.techs.demand_space_cooling")
+            print(f"demand_space_cooling is disabled for {building} ...")
 
     def select_evaluated_solar_supply(self):
         solar_supply_techs = [
@@ -259,7 +264,7 @@ class TechAttrDict(AttrDict):
                 if tech != carrier:
                     self.del_key(key=f"locations.{building.name}.techs.{tech}")
 
-            # TODO: keep track on calliope's issue and restore back to the following code
+            # TODO: wait until calliope 0.7.0 and restore back to the following code
 
             # self.set_key(
             #     key=f"locations.{building.name}.techs.demand_space_heating.essentials.carrier",
