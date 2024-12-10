@@ -21,235 +21,447 @@ run:
       monetary: 1
     sense: minimize
   solver: glpk
-tech_groups:
-  ASHP:
+techs:
+  ASHP_35_0_5:
     constraints:
-      energy_cap_max: 200
-      energy_cap_min: 1
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: df=cop_heating_35
       lifetime: 18
     costs:
       co2:
         energy_cap: 45.9
+        interest_rate: 0
       monetary:
-        energy_cap: 1814.5
+        energy_cap: 0
+        interest_rate: 0.05
         om_annual: 4.64
-        purchase: 12655
+        purchase: 33100
     essentials:
       carrier_in: electricity
-      color: '#107c41'
+      carrier_out: heat_35
+      name: ASHP_35_0_5
       parent: conversion
-  GSHP:
+  ASHP_35_10_20:
     constraints:
-      energy_cap_max: 1000
+      energy_cap_max: 20
+      energy_cap_min: 10
+      energy_eff: df=cop_heating_35
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 1560
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 17800
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_35
+      name: ASHP_35_10_20
+      parent: conversion
+  ASHP_35_20_200:
+    constraints:
+      energy_cap_max: 200
+      energy_cap_min: 20
+      energy_eff: df=cop_heating_35
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 1843.3
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 12133
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_35
+      name: ASHP_35_20_200
+      parent: conversion
+  ASHP_35_5_10:
+    constraints:
+      energy_cap_max: 10
       energy_cap_min: 5
-      lifetime: 20
+      energy_eff: df=cop_heating_35
+      lifetime: 18
     costs:
       co2:
-        energy_cap: 36.3
+        energy_cap: 45.9
+        interest_rate: 0
       monetary:
-        energy_cap: 2544.9
-        om_annual: 11.57
-        purchase: 37064
+        energy_cap: 660
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 26800
     essentials:
       carrier_in: electricity
-      color: '#107c46'
+      carrier_out: heat_35
+      name: ASHP_35_5_10
       parent: conversion
-  conversion:
-    costs:
-      co2:
-        interest_rate: 0
-      monetary:
-        interest_rate: 0.05
-  conversion_plus:
-    costs:
-      co2:
-        interest_rate: 0
-      monetary:
-        interest_rate: 0.05
-  district_heating_techs:
+  ASHP_60_0_5:
     constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: df=cop_heating_60
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 33100
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_65
+      name: ASHP_60_0_5
+      parent: conversion
+  ASHP_60_10_20:
+    constraints:
+      energy_cap_max: 20
+      energy_cap_min: 10
+      energy_eff: df=cop_heating_60
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 1560
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 17800
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_65
+      name: ASHP_60_10_20
+      parent: conversion
+  ASHP_60_20_200:
+    constraints:
+      energy_cap_max: 200
+      energy_cap_min: 20
+      energy_eff: df=cop_heating_60
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 1843.3
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 12133
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_65
+      name: ASHP_60_20_200
+      parent: conversion
+  ASHP_60_5_10:
+    constraints:
+      energy_cap_max: 10
+      energy_cap_min: 5
+      energy_eff: df=cop_heating_60
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 660
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 26800
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_65
+      name: ASHP_60_5_10
+      parent: conversion
+  ASHP_85_0_5:
+    constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: df=cop_heating_85
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 33100
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_85
+      name: ASHP_85_0_5
+      parent: conversion
+  ASHP_85_10_20:
+    constraints:
+      energy_cap_max: 20
+      energy_cap_min: 10
+      energy_eff: df=cop_heating_85
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 1560
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 17800
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_85
+      name: ASHP_85_10_20
+      parent: conversion
+  ASHP_85_20_200:
+    constraints:
+      energy_cap_max: 200
+      energy_cap_min: 20
+      energy_eff: df=cop_heating_85
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 1843.3
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 12133
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_85
+      name: ASHP_85_20_200
+      parent: conversion
+  ASHP_85_5_10:
+    constraints:
+      energy_cap_max: 10
+      energy_cap_min: 5
+      energy_eff: df=cop_heating_85
+      lifetime: 18
+    costs:
+      co2:
+        energy_cap: 45.9
+        interest_rate: 0
+      monetary:
+        energy_cap: 660
+        interest_rate: 0.05
+        om_annual: 4.64
+        purchase: 26800
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_85
+      name: ASHP_85_5_10
+      parent: conversion
+  DH_15_50:
+    constraints:
+      energy_cap_max: 50
+      energy_cap_min: 15
       energy_eff: 0.95
       lifetime: 30
     costs:
       co2:
         energy_cap: 4.771
+        interest_rate: 0
       monetary:
+        energy_cap: 371.8000000000001
+        interest_rate: 0.05
         om_annual: 150
+        purchase: 7322.999999999996
     essentials:
       carrier_in: DH
       carrier_out: heat_85
-      parent: conversion
-  gas_boiler:
-    constraints:
-      energy_eff: 0.91
-      lifetime: 21
-    costs:
-      co2:
-        energy_cap: 43.97
-      monetary:
-        om_annual: 6.3
-    essentials:
-      carrier_in: gas
-      carrier_out: heat_85
-      color: '#c69872'
-      parent: conversion
-  oil_boiler:
-    constraints:
-      energy_eff: 0.92
-      lifetime: 20
-    costs:
-      co2:
-        energy_cap: 43.97
-      monetary:
-        om_annual: 3.5
-    essentials:
-      carrier_in: oil
-      carrier_out: heat_85
-      color: '#e6b8b8'
-      parent: conversion
-  pallet_boiler:
-    constraints:
-      energy_eff: 0.89
-      lifetime: 20
-    costs:
-      co2:
-        energy_cap: 198.3
-      monetary:
-        om_annual: 6.3
-    essentials:
-      carrier_in: pallet
-      carrier_out: heat_85
-      color: '#c4d79b'
-      parent: conversion
-  storage:
-    costs:
-      co2:
-        interest_rate: 0
-      monetary:
-        interest_rate: 0.05
-  supply:
-    costs:
-      co2:
-        interest_rate: 0
-      monetary:
-        interest_rate: 0.05
-  supply_for_pv:
-    constraints:
-      export_carrier: electricity
-      force_resource: true
-      lifetime: 27
-      resource: df=supply_PV
-      resource_area_per_energy_cap: 5
-      resource_unit: energy_per_area
-    costs:
-      co2:
-        energy_cap: 1250
-      monetary:
-        export: -0.1272
-        purchase: 1
-    essentials:
-      carrier_out: electricity
-      parent: supply
-  water_tank:
-    constraints:
-      lifetime: 23
-      storage_cap_max: 1000
-      storage_initial: 0.5
-    costs:
-      co2:
-        storage_cap: 7
-      monetary:
-        om_annual_investment_fraction: 0.015
-        storage_cap: 13
-    essentials:
-      parent: storage
-techs:
-  ASHP_35:
-    constraints:
-      energy_eff: 4.58
-    essentials:
-      carrier_out: heat_35
-      name: ASHP_35
-      parent: ASHP
-  ASHP_60:
-    constraints:
-      energy_eff: 2.89
-    essentials:
-      carrier_out: heat_65
-      name: ASHP_60
-      parent: ASHP
-  ASHP_85:
-    constraints:
-      energy_eff: 2.2
-    essentials:
-      carrier_out: heat_85
-      name: ASHP_85
-      parent: ASHP
-  DH_15_50:
-    constraints:
-      energy_cap_max: 50
-      energy_cap_min: 15
-    costs:
-      monetary:
-        energy_cap: 371.8000000000001
-        purchase: 7322.999999999996
-    essentials:
       name: DH_15_50
-      parent: district_heating_techs
+      parent: conversion
   DH_200_500:
     constraints:
       energy_cap_max: 500
       energy_cap_min: 200
+      energy_eff: 0.95
+      lifetime: 30
     costs:
+      co2:
+        energy_cap: 4.771
+        interest_rate: 0
       monetary:
         energy_cap: 117.4
+        interest_rate: 0.05
+        om_annual: 150
         purchase: 29571.7
     essentials:
+      carrier_in: DH
+      carrier_out: heat_85
       name: DH_200_500
-      parent: district_heating_techs
+      parent: conversion
   DH_500_2000:
     constraints:
       energy_cap_max: 2000
       energy_cap_min: 500
+      energy_eff: 0.95
+      lifetime: 30
     costs:
+      co2:
+        energy_cap: 4.771
+        interest_rate: 0
       monetary:
         energy_cap: 72.01
+        interest_rate: 0.05
+        om_annual: 150
         purchase: 52250
     essentials:
+      carrier_in: DH
+      carrier_out: heat_85
       name: DH_500_2000
-      parent: district_heating_techs
+      parent: conversion
   DH_50_200:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 50
+      energy_eff: 0.95
+      lifetime: 30
     costs:
+      co2:
+        energy_cap: 4.771
+        interest_rate: 0
       monetary:
         energy_cap: 180.88
+        interest_rate: 0.05
+        om_annual: 150
         purchase: 16869
     essentials:
-      name: DH_50_200
-      parent: district_heating_techs
-  GSHP_35:
-    constraints:
-      energy_eff: 7.64
-    essentials:
-      carrier_out: heat_35
-      name: GSHP_35
-      parent: GSHP
-  GSHP_60:
-    constraints:
-      energy_eff: 4.13
-    essentials:
-      carrier_out: heat_65
-      name: GSHP_60
-      parent: GSHP
-  GSHP_85:
-    constraints:
-      energy_eff: 2.96
-    essentials:
+      carrier_in: DH
       carrier_out: heat_85
-      name: GSHP_85
-      parent: GSHP
+      name: DH_50_200
+      parent: conversion
+  GSHP_35_0_5:
+    constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: 7.64
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 11.57
+        purchase: 54700
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_35
+      name: GSHP_35_0_5
+      parent: conversion
+  GSHP_35_5_1000:
+    constraints:
+      energy_cap_max: 1000
+      energy_cap_min: 5
+      energy_eff: 7.64
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 1281.7
+        interest_rate: 0.05
+        om_annual: 11.57
+        purchase: 48291
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_35
+      name: GSHP_35_5_1000
+      parent: conversion
+  GSHP_60_0_5:
+    constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: 4.13
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 11.57
+        purchase: 54700
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_65
+      name: GSHP_60_0_5
+      parent: conversion
+  GSHP_60_5_1000:
+    constraints:
+      energy_cap_max: 1000
+      energy_cap_min: 5
+      energy_eff: 4.13
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 1281.7
+        interest_rate: 0.05
+        om_annual: 11.57
+        purchase: 48291
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_65
+      name: GSHP_60_5_1000
+      parent: conversion
+  GSHP_85_0_5:
+    constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: 2.96
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 11.57
+        purchase: 54700
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_85
+      name: GSHP_85_0_5
+      parent: conversion
+  GSHP_85_5_1000:
+    constraints:
+      energy_cap_max: 1000
+      energy_cap_min: 5
+      energy_eff: 2.96
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 36.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 1281.7
+        interest_rate: 0.05
+        om_annual: 11.57
+        purchase: 48291
+    essentials:
+      carrier_in: electricity
+      carrier_out: heat_85
+      name: GSHP_85_5_1000
+      parent: conversion
   HEX_60_35:
     constraints:
       energy_eff: 1
@@ -272,46 +484,98 @@ techs:
     constraints:
       energy_cap_max: 2000
       energy_cap_min: 200
+      export_carrier: electricity
+      force_resource: true
+      lifetime: 27
+      resource: df=supply_PV
+      resource_area_per_energy_cap: 5
+      resource_unit: energy_per_area
     costs:
+      co2:
+        energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 1000
+        export: df=electricity_feedin_ewz_tariff
+        interest_rate: 0.05
+        purchase: 1
     essentials:
+      carrier_out: electricity
       color: '#c69874'
       name: PV_extra_large
-      parent: supply_for_pv
+      parent: supply
   PV_large:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 100
+      export_carrier: electricity
+      force_resource: true
+      lifetime: 27
+      resource: df=supply_PV
+      resource_area_per_energy_cap: 5
+      resource_unit: energy_per_area
     costs:
+      co2:
+        energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 1300
+        export: df=electricity_feedin_ewz_tariff
+        interest_rate: 0.05
+        purchase: 1
     essentials:
+      carrier_out: electricity
       color: '#c69873'
       name: PV_large
-      parent: supply_for_pv
+      parent: supply
   PV_middle:
     constraints:
       energy_cap_max: 100
       energy_cap_min: 10
+      export_carrier: electricity
+      force_resource: true
+      lifetime: 27
+      resource: df=supply_PV
+      resource_area_per_energy_cap: 5
+      resource_unit: energy_per_area
     costs:
+      co2:
+        energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 1600
+        export: df=electricity_feedin_ewz_tariff
+        interest_rate: 0.05
+        purchase: 1
     essentials:
+      carrier_out: electricity
       color: '#c69872'
       name: PV_middle
-      parent: supply_for_pv
+      parent: supply
   PV_small:
     constraints:
       energy_cap_max: 10
       energy_cap_min: 1
+      export_carrier: electricity
+      force_resource: true
+      lifetime: 27
+      resource: df=supply_PV
+      resource_area_per_energy_cap: 5
+      resource_unit: energy_per_area
     costs:
+      co2:
+        energy_cap: 1250
+        interest_rate: 0
       monetary:
         energy_cap: 3000
+        export: df=electricity_feedin_ewz_tariff
+        interest_rate: 0.05
+        purchase: 1
     essentials:
+      carrier_out: electricity
       color: '#c69871'
       name: PV_small
-      parent: supply_for_pv
+      parent: supply
   SCET:
     constraints:
       energy_cap_min: 1
@@ -323,8 +587,10 @@ techs:
     costs:
       co2:
         energy_cap: 296
+        interest_rate: 0
       monetary:
         energy_cap: 2047
+        interest_rate: 0.05
         purchase: 1
     essentials:
       carrier_out: heat_85
@@ -342,8 +608,10 @@ techs:
     costs:
       co2:
         energy_cap: 290
+        interest_rate: 0
       monetary:
         energy_cap: 1576
+        interest_rate: 0.05
         purchase: 1
     essentials:
       carrier_out: heat_60
@@ -403,8 +671,10 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.051
       monetary:
+        interest_rate: 0.05
         om_con: 0.122
     essentials:
       carrier_out: DH
@@ -416,47 +686,159 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.02
       monetary:
-        om_con: 0.2505
+        interest_rate: 0.05
+        om_con: df=electricity_supply_econatur_ewz_tariff
     essentials:
       carrier_out: electricity
       color: '#094926'
       name: electricity_econatur
       parent: supply
-  gas_boiler_large:
+  gas_100_renewable:
+    constraints:
+      lifetime: 1
+    costs:
+      co2:
+        interest_rate: 0
+        om_con: 0.124
+      monetary:
+        interest_rate: 0.05
+        om_con: 0.178
+    essentials:
+      carrier_out: gas
+      name: gas_100_renewable
+      parent: supply
+  gas_35_renewable:
+    constraints:
+      lifetime: 1
+    costs:
+      co2:
+        interest_rate: 0
+        om_con: 0.1929
+      monetary:
+        interest_rate: 0.05
+        om_con: 0.1325
+    essentials:
+      carrier_out: gas
+      color: '#ffd191'
+      name: gas_35_renewable
+      parent: supply
+  gas_50_renewable:
+    constraints:
+      lifetime: 1
+    costs:
+      co2:
+        interest_rate: 0
+        om_con: 0.177
+      monetary:
+        interest_rate: 0.05
+        om_con: 0.143
+    essentials:
+      carrier_out: gas
+      name: gas_50_renewable
+      parent: supply
+  gas_boiler_0_5:
+    constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: 0.91
+      lifetime: 21
+    costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 22700
+    essentials:
+      carrier_in: gas
+      carrier_out: heat_85
+      name: gas_boiler_0_5
+      parent: conversion
+  gas_boiler_200_500:
     constraints:
       energy_cap_max: 500
       energy_cap_min: 200
+      energy_eff: 0.91
+      lifetime: 21
     costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
       monetary:
-        energy_cap: 155.3
-        purchase: 23933.3
+        energy_cap: 187.67
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 29167
     essentials:
-      name: gas_boiler_large
-      parent: gas_boiler
-  gas_boiler_middle:
+      carrier_in: gas
+      carrier_out: heat_85
+      name: gas_boiler_200_500
+      parent: conversion
+  gas_boiler_20_200:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 20
+      energy_eff: 0.91
+      lifetime: 21
     costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
       monetary:
-        energy_cap: 176.7
-        purchase: 19666.7
+        energy_cap: 216.67
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 23367
     essentials:
-      name: gas_boiler_middle
-      parent: gas_boiler
-  gas_boiler_small:
+      carrier_in: gas
+      carrier_out: heat_85
+      name: gas_boiler_20_200
+      parent: conversion
+  gas_boiler_500_1000:
+    constraints:
+      energy_cap_max: 1000
+      energy_cap_min: 500
+      energy_eff: 0.91
+      lifetime: 21
+    costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
+      monetary:
+        energy_cap: 124
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 61000
+    essentials:
+      carrier_in: gas
+      carrier_out: heat_85
+      name: gas_boiler_500_1000
+      parent: conversion
+  gas_boiler_5_20:
     constraints:
       energy_cap_max: 20
-      energy_cap_min: 1
+      energy_cap_min: 5
+      energy_eff: 0.91
+      lifetime: 21
     costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
       monetary:
-        energy_cap: 300
-        purchase: 17200
+        energy_cap: 333.33
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 21033
     essentials:
-      name: gas_boiler_small
-      parent: gas_boiler
+      carrier_in: gas
+      carrier_out: heat_85
+      name: gas_boiler_5_20
+      parent: conversion
   gas_micro_CHP:
     constraints:
       carrier_ratios:
@@ -473,30 +855,17 @@ techs:
         interest_rate: 0
       monetary:
         energy_cap: 1108.2
-        export: -0.1272
+        export: df=electricity_feedin_ewz_tariff
         interest_rate: 0.05
         om_annual: 1.15
         purchase: 33195
     essentials:
       carrier_in: gas
-      carrier_out: heat
+      carrier_out: heat_85
       carrier_out_2: electricity
       name: gas_micro_CHP
       parent: conversion_plus
-      primary_carrier_out: heat
-  gas_standard:
-    constraints:
-      lifetime: 1
-    costs:
-      co2:
-        om_con: 0.23
-      monetary:
-        om_con: 0.1325
-    essentials:
-      carrier_out: gas
-      color: '#ffd191'
-      name: gas_standard
-      parent: supply
+      primary_carrier_out: heat_85
   li_ion_battery:
     constraints:
       energy_cap_per_storage_cap_max: 0.25
@@ -507,8 +876,10 @@ techs:
       storage_loss: 0.001
     costs:
       co2:
+        interest_rate: 0
         storage_cap: 241.5
       monetary:
+        interest_rate: 0.05
         om_annual_investment_fraction: 0.025
         storage_cap: 367
     essentials:
@@ -521,123 +892,288 @@ techs:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.324
       monetary:
+        interest_rate: 0.05
         om_con: 0.1
     essentials:
       carrier_out: oil
       color: '#e6b8b7'
       name: oil
       parent: supply
-  oil_boiler_large:
+  oil_boiler_0_5:
+    constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: 0.92
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 3.5
+        purchase: 26900
+    essentials:
+      carrier_in: oil
+      carrier_out: heat_85
+      name: oil_boiler_0_5
+      parent: conversion
+  oil_boiler_200_500:
     constraints:
       energy_cap_max: 500
       energy_cap_min: 200
+      energy_eff: 0.92
+      lifetime: 20
     costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
       monetary:
-        energy_cap: 211.7
-        purchase: 21966.7
+        energy_cap: 244
+        interest_rate: 0.05
+        om_annual: 3.5
+        purchase: 27200
     essentials:
-      color: '#e6b8b9'
-      name: oil_boiler_large
-      parent: oil_boiler
-  oil_boiler_middle:
+      carrier_in: oil
+      carrier_out: heat_85
+      name: oil_boiler_200_500
+      parent: conversion
+  oil_boiler_20_200:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 20
+      energy_eff: 0.92
+      lifetime: 20
     costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
       monetary:
-        energy_cap: 189.4
-        purchase: 26411.1
+        energy_cap: 229.44
+        interest_rate: 0.05
+        om_annual: 3.5
+        purchase: 30111
     essentials:
-      color: '#e6b8b8'
-      name: oil_boiler_middle
-      parent: oil_boiler
-  oil_boiler_small:
+      carrier_in: oil
+      carrier_out: heat_85
+      name: oil_boiler_20_200
+      parent: conversion
+  oil_boiler_500_1000:
+    constraints:
+      energy_cap_max: 1000
+      energy_cap_min: 500
+      energy_eff: 0.92
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
+      monetary:
+        energy_cap: 111.8
+        interest_rate: 0.05
+        om_annual: 3.5
+        purchase: 93300
+    essentials:
+      carrier_in: oil
+      carrier_out: heat_85
+      name: oil_boiler_500_1000
+      parent: conversion
+  oil_boiler_5_20:
     constraints:
       energy_cap_max: 20
-      energy_cap_min: 1
+      energy_cap_min: 5
+      energy_eff: 0.92
+      lifetime: 20
     costs:
+      co2:
+        energy_cap: 43.97
+        interest_rate: 0
       monetary:
-        energy_cap: 486.7
-        purchase: 20466.7
+        energy_cap: 520
+        interest_rate: 0.05
+        om_annual: 3.5
+        purchase: 24300
     essentials:
-      color: '#e6b8b7'
-      name: oil_boiler_small
-      parent: oil_boiler
-  pallet:
+      carrier_in: oil
+      carrier_out: heat_85
+      name: oil_boiler_5_20
+      parent: conversion
+  pellet:
     constraints:
       lifetime: 1
     costs:
       co2:
+        interest_rate: 0
         om_con: 0.028
       monetary:
-        om_con: 0.102
+        interest_rate: 0.05
+        om_con: 0.09
     essentials:
-      carrier_out: pallet
+      carrier_out: pellet
       color: '#c4d79b'
-      name: pallet
+      name: pellet
       parent: supply
-  pallet_boiler_large:
+  pellet_boiler_0_5:
+    constraints:
+      energy_cap_max: 5
+      energy_cap_min: 0
+      energy_eff: 0.89
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 198.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 0
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 33500
+    essentials:
+      carrier_in: pellet
+      carrier_out: heat_85
+      name: pellet_boiler_0_5
+      parent: conversion
+  pellet_boiler_200_500:
     constraints:
       energy_cap_max: 500
       energy_cap_min: 200
+      energy_eff: 0.89
+      lifetime: 20
     costs:
+      co2:
+        energy_cap: 198.3
+        interest_rate: 0
       monetary:
-        energy_cap: 278.00000000000006
-        purchase: 61799.999999999985
+        energy_cap: 310.33
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 67033
     essentials:
-      color: '#c4d81b'
-      name: pallet_boiler_large
-      parent: pallet_boiler
-  pallet_boiler_middle:
+      carrier_in: pellet
+      carrier_out: heat_85
+      name: pellet_boiler_200_500
+      parent: conversion
+  pellet_boiler_20_200:
     constraints:
       energy_cap_max: 200
       energy_cap_min: 20
+      energy_eff: 0.89
+      lifetime: 20
     costs:
+      co2:
+        energy_cap: 198.3
+        interest_rate: 0
       monetary:
-        energy_cap: 414.9999999999999
-        purchase: 34400.000000000015
+        energy_cap: 455
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 38100
     essentials:
-      color: '#c4d80b'
-      name: pallet_boiler_middle
-      parent: pallet_boiler
-  pallet_boiler_small:
+      carrier_in: pellet
+      carrier_out: heat_85
+      name: pellet_boiler_20_200
+      parent: conversion
+  pellet_boiler_500_1000:
+    constraints:
+      energy_cap_max: 1000
+      energy_cap_min: 500
+      energy_eff: 0.89
+      lifetime: 20
+    costs:
+      co2:
+        energy_cap: 198.3
+        interest_rate: 0
+      monetary:
+        energy_cap: 591.6
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: -73600
+    essentials:
+      carrier_in: pellet
+      carrier_out: heat_85
+      name: pellet_boiler_500_1000
+      parent: conversion
+  pellet_boiler_5_20:
     constraints:
       energy_cap_max: 20
-      energy_cap_min: 1
+      energy_cap_min: 5
+      energy_eff: 0.89
+      lifetime: 20
     costs:
+      co2:
+        energy_cap: 198.3
+        interest_rate: 0
       monetary:
-        energy_cap: 880
-        purchase: 25100
+        energy_cap: 913.33
+        interest_rate: 0.05
+        om_annual: 6.3
+        purchase: 28933
     essentials:
-      color: '#c4d79b'
-      name: pallet_boiler_small
-      parent: pallet_boiler
+      carrier_in: pellet
+      carrier_out: heat_85
+      name: pellet_boiler_5_20
+      parent: conversion
   tank_35:
     constraints:
       energy_eff: 0.96
+      lifetime: 23
+      storage_cap_max: 1000
+      storage_initial: 0.5
       storage_loss: 0.01
+    costs:
+      co2:
+        interest_rate: 0
+        storage_cap: 7
+      monetary:
+        interest_rate: 0.05
+        om_annual_investment_fraction: 0.015
+        storage_cap: 13
     essentials:
       carrier: heat_35
       color: '#c4d79b'
       name: tank_35
-      parent: water_tank
+      parent: storage
   tank_60:
     constraints:
       energy_eff: 0.95
+      lifetime: 23
+      storage_cap_max: 1000
+      storage_initial: 0.5
       storage_loss: 0.015
+    costs:
+      co2:
+        interest_rate: 0
+        storage_cap: 7
+      monetary:
+        interest_rate: 0.05
+        om_annual_investment_fraction: 0.015
+        storage_cap: 13
     essentials:
       carrier: heat_60
       color: '#c69871'
       name: tank_60
-      parent: water_tank
+      parent: storage
   tank_85:
     constraints:
       energy_eff: 0.94
+      lifetime: 23
+      storage_cap_max: 1000
+      storage_initial: 0.5
       storage_loss: 0.02
+    costs:
+      co2:
+        interest_rate: 0
+        storage_cap: 7
+      monetary:
+        interest_rate: 0.05
+        om_annual_investment_fraction: 0.015
+        storage_cap: 13
     essentials:
       carrier: heat_85
       color: '#e6b8b7'
       name: tank_85
-      parent: water_tank
+      parent: storage

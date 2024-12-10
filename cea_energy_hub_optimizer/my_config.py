@@ -39,7 +39,7 @@ class MyConfig:
         self.get_current_solution:          bool        = self.cea_config.energy_hub_optimizer.get_current_solution             # type: ignore
         self.temporal_resolution:           str         = self.cea_config.energy_hub_optimizer.temporal_resolution              # type: ignore
         self.solver:                        str         = self.cea_config.energy_hub_optimizer.solver                           # type: ignore
-        self.use_temperature_sensitive_cop: bool        = self.cea_config.energy_hub_optimizer.use_temperature_sensitive_cop    # type: ignore
+        # self.use_temperature_sensitive_cop: bool        = self.cea_config.energy_hub_optimizer.use_temperature_sensitive_cop    # type: ignore
         self.flatten_spike:                 bool        = self.cea_config.energy_hub_optimizer.flatten_spike                    # type: ignore
         self.flatten_spike_percentile:      float       = self.cea_config.energy_hub_optimizer.flatten_spike_percentile         # type: ignore
         # timeseries.py

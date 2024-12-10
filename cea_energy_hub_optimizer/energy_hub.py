@@ -45,14 +45,14 @@ class EnergyHub:
         self.tech_dict.set_solver(self.my_config.solver)
         self.tech_dict.select_evaluated_demand()
         self.tech_dict.select_evaluated_solar_supply()
-        if self.my_config.use_temperature_sensitive_cop:
-            self.tech_dict.set_cop_timeseries()
+        # if self.my_config.use_temperature_sensitive_cop:
+        #     self.tech_dict.set_cop_timeseries()
 
         for building in self.district.buildings:
             print(f"building {building.name} with area {building.area} m2 is added.")
 
         # high/low tariff info is also stored in the tech_dict
-        self.timeseries = TimeSeries(self.district, self.tech_dict)
+        self.timeseries = TimeSeries(self.district, tariff_loc="ewz")
         # self.tech_dict.set_electricity_tariff()  # this line must be placed after the timeseries object is created
         # self.tech_dict.set_feedin_tariff()  # this line must be placed after the timeseries object is created
 

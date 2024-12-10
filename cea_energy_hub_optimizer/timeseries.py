@@ -2,19 +2,19 @@ import numpy as np
 import pandas as pd
 from cea.utilities.epwreader import epw_reader
 from typing import Union, Iterable, Dict
-from cea_energy_hub_optimizer.district import District, Building, TechAttrDict
+from cea_energy_hub_optimizer.district import District, Building
 from cea_energy_hub_optimizer.my_config import MyConfig
 
 
 class TimeSeries:
-    def __init__(self, district: District, tech_dict: TechAttrDict):
+    def __init__(self, district: District, tariff_loc="ewz"):
         self.demand = Demand(district)
         self.pv = PV(district)
         self.pvt = PVT(district)
         self.sc_et = SC("ET", district)
         self.sc_fp = SC("FP", district)
         self.cop = COP(district)
-        # self.tariff = Tariff(district, tech_dict)
+        self.tariff = Tariff(district, loc=tariff_loc)
 
     @property
     def timeseries_dict(self):
@@ -25,7 +25,7 @@ class TimeSeries:
             **self.sc_et.result_dict,
             **self.sc_fp.result_dict,
             **self.cop.cop_dict,
-            # **self.tariff.tariff_dict,
+            **self.tariff.tariff_dict,
         }
 
 
@@ -241,61 +241,39 @@ class COP:
         self.cop_dict[df_key].loc[:, :] = cop_arr[:, None]
 
 
-# class Tariff:
-#     def __init__(self, district: District, tech_dict: TechAttrDict):
-#         self.my_config = MyConfig()
-#         # self.locator = self.my_config.locator
-#         self.district = district
-#         self.tech_dict = tech_dict
-#         self.tariff_dict: Dict[str, TimeSeriesDf] = {}
-#         ls_var_purchase = [
-#             "electricity_pronatur",
-#             "electricity_natur",
-#             "electricity_econatur",
-#         ]
-#         ls_var_feedin = [
-#             "PV_small",
-#             "PV_middle",
-#             "PV_large",
-#             "PV_extra_large",
-#             "gas_micro_CHP",
-#         ]
-#         for var_elec in ls_var_purchase:
-#             if var_elec in self.tech_dict.techs.keys():
-#                 self.generate_electricity_tariff(var_elec)
+class Tariff:
+    def __init__(self, district: District, loc: str):
+        self.my_config = MyConfig()
+        # self.locator = self.my_config.locator
+        self.district = district
+        self.tariff_dict: Dict[str, TimeSeriesDf] = {}
 
-#         for var_tech in ls_var_feedin:
-#             if var_tech in self.tech_dict.techs.keys():
-#                 self.generate_feedin_tariff(var_tech)
+        self.generate_electricity_tariff
+        self.generate_electricity_tariff(
+            0.2994, 0.1854, "electricity_supply_econatur_ewz_tariff", loc=loc
+        )
+        self.generate_electricity_tariff(
+            -0.1460, -0.1022, "electricity_feedin_ewz_tariff", loc=loc
+        )
 
-#     def generate_electricity_tariff(self, var_elec: str):
-#         # var_elec is the name of the electricty technology.
-#         # in techs.{var_elec}.costs.monetary.om_con. the stored value is in the format of "high_tariff/low_tariff"
-#         # we need to split the string and convert them to float, then generate the tariff timeseries
-#         high_tariff, low_tariff = map(
-#             float,
-#             self.tech_dict.techs[var_elec].costs.monetary.om_con.split("/"),
-#         )
-#         self.generate_tariff(high_tariff, low_tariff, f"{var_elec}_tariff")
-
-#     def generate_feedin_tariff(self, var_tech: str):
-#         high_tariff, low_tariff = map(
-#             float,
-#             self.tech_dict.techs[var_tech].costs.monetary.export.split("/"),
-#         )
-#         self.generate_tariff(high_tariff, low_tariff, f"{var_tech}_feedin_tariff")
-
-#     def generate_tariff(self, high_tariff: float, low_tariff: float, df_key: str):
-#         # create a sereis of daily high-low tariff.
-#         # high tariff time: Monday to Saturday, from 6:00 to 22:00, the rest is low tariff
-#         self.tariff_dict[df_key] = TimeSeriesDf(columns=self.district.buildings_names)
-#         self.tariff_dict[df_key].loc[:, :] = low_tariff
-#         self.tariff_dict[df_key].loc[
-#             (self.tariff_dict[df_key].index.dayofweek <= 5)
-#             & (self.tariff_dict[df_key].index.hour >= 6)
-#             & (self.tariff_dict[df_key].index.hour < 22),
-#             :,
-#         ] = high_tariff
+    def generate_electricity_tariff(
+        self, high_tariff: float, low_tariff: float, df_key: str, loc: str
+    ):
+        if loc == "ewz":
+            # create a sereis of daily high-low tariff based on ewz's electricity tariff
+            # high tariff time: Monday to Saturday, from 6:00 to 22:00, the rest is low tariff
+            self.tariff_dict[df_key] = TimeSeriesDf(
+                columns=self.district.buildings_names
+            )
+            self.tariff_dict[df_key].loc[:, :] = low_tariff
+            self.tariff_dict[df_key].loc[
+                (self.tariff_dict[df_key].index.dayofweek <= 5)
+                & (self.tariff_dict[df_key].index.hour >= 6)
+                & (self.tariff_dict[df_key].index.hour < 22),
+                :,
+            ] = high_tariff
+        else:
+            raise NotImplementedError("Currently, only ewz tariff is implemented.")
 
 
 # define a class which is a pd dataframe, having the index as epw's timestep and index's name as "t"
