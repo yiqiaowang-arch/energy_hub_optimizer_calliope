@@ -40,14 +40,16 @@ else:
     pareto_fronts_path = os.path.join(
         config.locator.get_optimization_results_folder(),
         "calliope_energy_hub",
-        "batch_no_oil_approach_tip",
+        "batch_after_presentation",
     )
 
 pareto_df_list = []
 for file in os.listdir(pareto_fronts_path):
     if file.endswith("_pareto.csv"):
-        df = pd.read_csv(os.path.join(pareto_fronts_path, file), index_col=[0, 1])
-        pareto_df_list.append(df)
+        decision_df = pd.read_csv(
+            os.path.join(pareto_fronts_path, file), index_col=[0, 1]
+        )
+        pareto_df_list.append(decision_df)
 
 df_pareto_all = pd.concat(pareto_df_list, axis=0)
 
@@ -58,25 +60,21 @@ print(f"Maximal cost: {maximal_cost}")
 
 costs = []
 emission_reductions = []
-dfs = []
+decision_dfs = []
 
 
 warnings.filterwarnings("ignore")
 i = 0
-for cost in np.linspace(minimal_cost + 100, maximal_cost, 100):
-    if i < 81:
-        i += 1
-        print(f"Skipping {i}")
-        continue
-    df, emission_reduction, actual_cost = maximal_emission_reduction_dp(
-        df_pareto_all, cost, precision=-1.5
+for cost in np.linspace(minimal_cost + 3100, maximal_cost, 3):
+    decision_df, emission_reduction, actual_cost = maximal_emission_reduction_dp(
+        df_pareto_all, cost, precision=-2
     )
-    df.columns = [i]
+    decision_df.columns = [i]
     costs.append(actual_cost)
     emission_reductions.append(emission_reduction)
     print(f"Cost: {actual_cost}, Emission reduction: {emission_reduction}")
-    dfs.append(df)
-    df.to_csv(f"df_{i}.csv")
+    decision_dfs.append(decision_df)
+    decision_df.to_csv(f"df_{i}.csv")
     i += 1
 
 """
@@ -88,20 +86,23 @@ C           2
 D           0
 """
 i = 0
-for df in dfs:
+for decision_df in decision_dfs:
     # change df's only column name to i
     # df.columns = [i]
 
     i += 1
 
 # merge all dfs into one df, each run is a column
-df_all = pd.concat(dfs, axis=1)
-df_all.to_csv("df_all_batch_no_oil_approach_tip.csv")
+decision_df_all = pd.concat(decision_dfs, axis=1)
+decision_df_all.to_csv("knapsack_decision_after_presentation.csv")
 
-plt.plot(costs, emission_reductions)
-plt.xlabel("Additional Cost [MCHF]")
-plt.ylabel("Emission Reduction [tCO2eq]")
-plt.title(
-    "Additional Investment vs. Emission Reduction from Cost-Optimal Solutions (self-built knapsack)"
-)
-plt.show()
+result_df_all = pd.DataFrame({"cost": costs, "emission_reduction": emission_reductions})
+result_df_all.to_csv("knapsack_result_after_presentation.csv")
+
+# plt.plot(costs, emission_reductions)
+# plt.xlabel("Additional Cost [MCHF]")
+# plt.ylabel("Emission Reduction [tCO2eq]")
+# plt.title(
+#     "Additional Investment vs. Emission Reduction from Cost-Optimal Solutions (self-built knapsack)"
+# )
+# plt.show()
