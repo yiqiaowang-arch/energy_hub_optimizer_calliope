@@ -63,23 +63,31 @@ def remove_district_heating_technologies(energy_hub: EnergyHub) -> None:
 
 def remove_oil_technologies(energy_hub: EnergyHub) -> None:
     energy_hub.tech_dict.set_key(key="techs.oil.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.oil_boiler_large.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.oil_boiler_middle.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.oil_boiler_small.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.oil_boiler_0_5.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.oil_boiler_5_20.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.oil_boiler_20_200.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.oil_boiler_200_500.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.oil_boiler_500_1000.exists", value=False)
 
 
 def remove_gas_technologies(energy_hub: EnergyHub) -> None:
-    energy_hub.tech_dict.set_key(key="techs.gas_standard.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.gas_boiler_large.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.gas_boiler_middle.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.gas_boiler_small.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_100_renewable.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_50_renewable.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_35_renewable.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_boiler_0_5.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_boiler_5_20.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_boiler_20_200.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_boiler_200_500.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.gas_boiler_500_1000.exists", value=False)
 
 
-def remove_pallet_technologies(energy_hub: EnergyHub) -> None:
-    energy_hub.tech_dict.set_key(key="techs.pallet.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.pallet_boiler_large.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.pallet_boiler_middle.exists", value=False)
-    energy_hub.tech_dict.set_key(key="techs.pallet_boiler_small.exists", value=False)
+def remove_pellet_technologies(energy_hub: EnergyHub) -> None:
+    energy_hub.tech_dict.set_key(key="techs.pellet.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.pellet_boiler_0_5.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.pellet_boiler_5_20.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.pellet_boiler_20_200.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.pellet_boiler_200_500.exists", value=False)
+    energy_hub.tech_dict.set_key(key="techs.pellet_boiler_500_1000.exists", value=False)
 
 
 warnings.filterwarnings("ignore")
@@ -104,14 +112,14 @@ check_solar_technology()
 zone: pd.DataFrame = gpd.read_file(locator.get_zone_geometry(), ignore_geometry=True)
 # get all the building names
 buildings = zone["Name"].tolist()
-result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_no_oil_with_DH")
+result_folder = os.path.join(locator.get_optimization_results_folder(), "calliope_energy_hub", "batch_after_presentation")
 scenario_folder = locator.scenario
 # read DH_availability.csv and get the list of buildings that have access to district heating
 DH_availability = pd.read_csv(os.path.join(scenario_folder, "DH_availability.csv"))
 ls_DH_available = DH_availability["Name"].tolist()
 if not os.path.exists(result_folder):
     os.makedirs(result_folder)
-config_path = (r"cea_energy_hub_optimizer\data\energy_hub_config_emission_sensitivity.yml")
+config_path = (r"cea_energy_hub_optimizer\data\energy_hub_config.yml")
 
 # define buildings that belongs to a district energy network
 network_149 = [ "B302062896", "B302062895", "B302062776", "B302062775", "B302060244", "B302060243", "B302060242", "B302030224", "B302030223", "B161046", 
@@ -162,7 +170,7 @@ for building_name in buildings:
     # for now we keep oil technologies so the following line is commented
     remove_oil_technologies(energy_hub)
     # remove_gas_technologies(energy_hub)
-    # remove_pallet_technologies(energy_hub)
+    # remove_pellet_technologies(energy_hub)
     energy_hub.get_pareto_front(store_folder=result_folder)
     energy_hub.df_pareto.to_csv(
         result_folder + "/" + building_name + "_pareto.csv", index=True
@@ -172,4 +180,3 @@ for building_name in buildings:
     )
     print(building_name + " is optimized! Results saved in " + result_folder)
     del energy_hub
-    gc.collect()
