@@ -65,7 +65,7 @@ decision_dfs = []
 
 warnings.filterwarnings("ignore")
 i = 0
-for cost in np.linspace(minimal_cost + 3100, maximal_cost, 3):
+for cost in np.linspace(minimal_cost + 3100, maximal_cost, 100):
     decision_df, emission_reduction, actual_cost = maximal_emission_reduction_dp(
         df_pareto_all, cost, precision=-2
     )
