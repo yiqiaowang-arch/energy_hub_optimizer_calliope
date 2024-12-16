@@ -3,6 +3,7 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import cluster
 from cea.config import Configuration
 from cea_energy_hub_optimizer.my_config import MyConfig
 from trustParetoFronts.pareto_analysis import ParetoFront
@@ -40,12 +41,22 @@ else:
     pareto_fronts_path = os.path.join(
         config.locator.get_optimization_results_folder(),
         "calliope_energy_hub",
-        "batch_after_presentation",
+        "batch_without_oil",
     )
-
+cluster_path = os.path.join(
+    config.locator.get_optimization_results_folder(),
+    "calliope_energy_hub",
+    "zone_df_with_cluster_fig2.csv",
+)
+cluster_df = pd.read_csv(cluster_path, index_col=0)
+cluster_df["cluster"] = cluster_df["cluster"].astype(int)
 pareto_df_list = []
 for file in os.listdir(pareto_fronts_path):
     if file.endswith("_pareto.csv"):
+        building_name = file.split("_")[0]
+        e_cluster = cluster_df.loc[building_name, "cluster"]
+        if e_cluster != 1:
+            continue
         decision_df = pd.read_csv(
             os.path.join(pareto_fronts_path, file), index_col=[0, 1]
         )
@@ -65,7 +76,7 @@ decision_dfs = []
 
 warnings.filterwarnings("ignore")
 i = 0
-for cost in np.linspace(minimal_cost + 3100, maximal_cost, 100):
+for cost in np.linspace(minimal_cost + 1500, maximal_cost, 100):
     decision_df, emission_reduction, actual_cost = maximal_emission_reduction_dp(
         df_pareto_all, cost, precision=-2
     )
@@ -74,7 +85,7 @@ for cost in np.linspace(minimal_cost + 3100, maximal_cost, 100):
     emission_reductions.append(emission_reduction)
     print(f"Cost: {actual_cost}, Emission reduction: {emission_reduction}")
     decision_dfs.append(decision_df)
-    decision_df.to_csv(f"df_{i}.csv")
+    # decision_df.to_csv(f"df_{i}.csv")
     i += 1
 
 """
@@ -94,10 +105,10 @@ for decision_df in decision_dfs:
 
 # merge all dfs into one df, each run is a column
 decision_df_all = pd.concat(decision_dfs, axis=1)
-decision_df_all.to_csv("knapsack_decision_after_presentation.csv")
+decision_df_all.to_csv("knapsack_decision_cluster_1_only.csv")
 
 result_df_all = pd.DataFrame({"cost": costs, "emission_reduction": emission_reductions})
-result_df_all.to_csv("knapsack_result_after_presentation.csv")
+result_df_all.to_csv("knapsack_result_cluster_1_only.csv")
 
 # plt.plot(costs, emission_reductions)
 # plt.xlabel("Additional Cost [MCHF]")
