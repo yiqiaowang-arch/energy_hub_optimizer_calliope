@@ -204,14 +204,14 @@ def tech_cost_stackedbar(
         # ax.set_ylabel(f"average {cost_types[idx]} cost per $m^2$")
         if relative:
             if idx == 0:
-                ax.set_ylabel("average monetary cost [CHF/$m^2$]")
+                ax.set_ylabel("average monetary cost [CHF/$m^2yr$]")
             else:
-                ax.set_ylabel("average $CO_2$ cost [kg$CO_2eq/m^2$]")
+                ax.set_ylabel("average emission [kg$CO_2eq/m^2yr$]")
         else:
             if idx == 0:
-                ax.set_ylabel("monetary cost [CHF]")
+                ax.set_ylabel("monetary cost [CHF/yr]")
             else:
-                ax.set_ylabel("$CO_2$ cost [kg$CO_2eq$]")
+                ax.set_ylabel("emission [kg$CO_2eq/yr$]")
 
         ax.set_xlabel("pareto front index")
 

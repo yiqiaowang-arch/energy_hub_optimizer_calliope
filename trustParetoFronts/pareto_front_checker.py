@@ -7,7 +7,7 @@ from cea_energy_hub_optimizer.my_config import MyConfig
 from cea_energy_hub_optimizer.energy_hub import EnergyHub
 
 # load data
-folder_path = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\batch_no_oil_renewable_gas_no_pallet_with_DH"
+folder_path = r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\CEA\Altstetten\basecase_residential\outputs\data\optimization\calliope_energy_hub\batch_after_presentation"
 # pareto_files = [pareto_file for pareto_file in os.listdir(folder_path) if pareto_file.endswith("_pareto.csv")]
 carrier_dict = {
     "HVAC_HEATING_AS0": None,

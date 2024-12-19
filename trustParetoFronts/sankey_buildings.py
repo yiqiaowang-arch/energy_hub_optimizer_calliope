@@ -56,5 +56,6 @@ Sankey(
 # plt.title("Sankey diagram of buildings to be analysed")
 plt.tight_layout()
 # plt.savefig("sankey_build.pdf")
-# save as svg
-plt.savefig("sankey_build.svg")
+plt.savefig(
+    r"D:\OneDrive\ETHY3FW\semesterProjectYiqiaoWang\figures\sankey_build.png", dpi=300
+)

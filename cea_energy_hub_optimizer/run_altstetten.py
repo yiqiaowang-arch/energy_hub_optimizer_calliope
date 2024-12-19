@@ -99,7 +99,7 @@ my_config.number_of_epsilon_cut = 5
 my_config.approach_but_not_land_on_tip = False
 my_config.temporal_resolution = "1D"
 my_config.solver = "cplex"
-my_config.use_temperature_sensitive_cop = True
+# my_config.use_temperature_sensitive_cop = True
 my_config.exergy_efficiency = 0.52
 my_config.flatten_spike = True
 my_config.flatten_spike_percentile = 0.02
@@ -144,8 +144,8 @@ network_135 = [ "B302063438", "B302063435", "B302063434", "B302063432", "B302063
                 "B163419", "B163418", "B163417", "B163416", "B163415", "B163400", "B163398", "B163397", "B163375", "B163374"
                 ]
 # fmt: on
-
-for building_name in buildings:
+buildings = buildings[: len(buildings) // 2]
+for building_name in reversed(buildings):
     # first, check if result is already in the result folder
     if (building_name + "_pareto.csv") in os.listdir(result_folder):
         print(building_name + " is already done, skipping...")

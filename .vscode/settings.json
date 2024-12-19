@@ -33,14 +33,15 @@
         {
             "name": "fastapi",
             "depth": 2
-        }
+        },
         {
             "name": "cea",
             "depth": 4
-        }
+        },
         {
             "name": "pandas",
             "depth": 4
-        }
-    ]
+        },
+    ],
+    "python.analysis.typeCheckingMode": "basic"
 }
