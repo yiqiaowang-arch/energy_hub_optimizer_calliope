@@ -30,6 +30,7 @@ class EnergyHubOptimizer(cea.plugin.CeaPlugin):
     rest of the information will be picked up from ``default.config``, ``schemas.yml`` and ``scripts.yml`` by default.
     """
 
+    # TODO: somehow with multiple buildings the script don't work anymore. Test and fix it!
     pass
 
 
@@ -49,7 +50,20 @@ def main(config: cea.config.Configuration) -> None:
     warnings.filterwarnings("ignore")
     locator = cea.inputlocator.InputLocator(config.scenario)
     buildings: list[str] = my_config.buildings
-    yaml_path = os.path.join(os.path.dirname(__file__), "data", "techs_energy_hub.yml")
+    yaml_path = my_config.technology_definition_file
+    if yaml_path == "":
+        yaml_path = os.path.join(
+            os.path.dirname(__file__), "data", "energy_hub_config.yml"
+        )
+    if not os.path.exists(yaml_path):
+        raise FileNotFoundError(
+            "Technology definition file not found. Please define technology data and build your .yml file using Calliope Config Constructor first."
+        )
+
+    if yaml_path.split(".")[-1] not in ["yaml", "yml"]:
+        raise ValueError(
+            "The technology definition file must be a .yaml or .yml file. Please provide a valid .yaml or .yml file."
+        )
     store_folder: str = locator._ensure_folder(
         locator.get_optimization_results_folder(), "calliope_energy_hub"
     )
@@ -63,6 +77,10 @@ def main(config: cea.config.Configuration) -> None:
         energy_hub = EnergyHub(buildings, yaml_path)
         energy_hub.get_pareto_front(store_folder=store_folder)
         energy_hub.df_pareto.to_csv(store_folder + "/global_pareto.csv", index=True)
+        energy_hub.df_cost_per_tech.to_csv(
+            store_folder + "/global_cost_per_tech.csv", index=True
+        )
+        print("All buildings are optimized! Results saved in " + store_folder)
     else:
         print("Co-optimization is disabled, buildings will be optimized one by one.")
         for building in buildings:
@@ -79,6 +97,10 @@ def main(config: cea.config.Configuration) -> None:
             # print(energy_hub.df_pareto.to_string())
             energy_hub.df_pareto.to_csv(
                 store_folder + "/" + building_name + "_pareto.csv",
+                index=True,
+            )
+            energy_hub.df_cost_per_tech.to_csv(
+                store_folder + "/" + building_name + "_cost_per_tech.csv",
                 index=True,
             )
             print(building_name + " is optimized! Results saved in " + store_folder)

@@ -43,11 +43,11 @@ Currently, this line of code will automatically downgrade pandas to 1.5.3, along
 
 Then, one need to register this plugin in cea-config. In the CEA console, enter the following command to enable the plugin in CEA:
 ```python
-cea-config write --general:plugins cea_energy_hub_optimizer.energy_hub_optimizer.EnergyHubOptimizer
+cea-config write --general:plugins cea_energy_hub_optimizer.energy_hub_optimizer.EnergyHubOptimizer --general:plugins cea_energy_hub_optimizer.calliope_config_constructor.CalliopeConfigConstructor
 ```
 Note that this line will overwrite other existing plugins. If you have other plugins installed, you can add them to the list by separating them with commas. For example:
 ```python
-cea-config write --general:plugins cea_energy_hub_optimizer.energy_hub_optimizer.EnergyHubOptimizer, --general:plugins other_plugin, --general:plugins another_plugin
+cea-config write --general:plugins cea_energy_hub_optimizer.energy_hub_optimizer.EnergyHubOptimizer --general:plugins cea_energy_hub_optimizer.calliope_config_constructor.CalliopeConfigConstructor --general:plugins other_plugin --general:plugins another_plugin
 ```
 You should include **ALL the plugins** in that command, otherwise you may lose already installed plugins.
 
@@ -79,6 +79,13 @@ After configuring the technology definitions, one can run the optimization by cl
 In the techs_energy_hub.yml file, one can see that there are three different kinds of district heating technologies, labelled with small, medium and large. This is because that the cost of installing district heating to the building is not linearly related to the capacity. The larger the capacity, the lower the cost per unit capacity. ![CAPEX_district_heating_Zurich](https://github.com/user-attachments/assets/d2373849-3b2c-42c3-a637-518b4a58ec33)
 
 Therefore, three different hypothetical linear DH technologies are set, as shown in the image above. The small one has `energy_cap_min=50` and `energy_cap_max=100`, middle `energy_cap_min=100` and `energy_cap_max=700` and large `energy_cap_min=700` and `energy_cap_max=2000`. The slope of this line is set as `energy_cap` in CHF/kW, and the intercept is set as `purchase` in CHF. Note that each technology must have the same CAPEX on their interceptions (100, 700 and 2000kW) to make sure that both technologies are indifferent to this capacity.
+
+## Uninstall
+To uninstall **all** plugins, simply paste the following command:
+```
+cea-config write --general:plugins ""
+```
+This will overwrite the plugins in cea config file.
 
 ## Development
 To enable auto-completion for both CEA's native methods and the venv that CEA uses, one need to do two things in VSCode:

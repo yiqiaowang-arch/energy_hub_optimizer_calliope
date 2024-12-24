@@ -6,6 +6,7 @@ from cea_energy_hub_optimizer.my_config import MyConfig
 
 
 class Node:
+    # TODO: implement the network (read from CEA network optimization) to the energy hub
     pass
 
 
@@ -17,6 +18,9 @@ class Building(Node):
         self.name = name
         self.locator = MyConfig().locator
         self.get_geometry()
+
+    def __str__(self):
+        return self.name
 
     def get_geometry(self):
         zone: gpd.GeoDataFrame = gpd.read_file(self.locator.get_zone_geometry())
@@ -30,19 +34,24 @@ class Building(Node):
                 f"Building {self.name} not found in the zone geometry file, and probably not inside scenario."
             )
 
-    def get_emission_system(self):
+    @property
+    def emission(self):
+        """
+        get the heating emission system of the building (e.g., radiator, floor heating, etc.)
+        """
         air_conditioning_df: pd.DataFrame = gpd.read_file(
             self.locator.get_building_air_conditioning(), ignore_geometry=True
         )
         air_conditioning_df.set_index("Name", inplace=True)
-        self.emission = str(air_conditioning_df.loc[self.name, "type_hs"])
+        self._emission = str(air_conditioning_df.loc[self.name, "type_hs"])
+        return self._emission
 
 
 class District:
     def __init__(
         self,
         building_names: Union[str, List[str]],
-        yml_path: str,
+        # yml_path: str,
     ):
         if isinstance(building_names, str):
             building_names = [building_names]
@@ -50,13 +59,12 @@ class District:
         self.locator = MyConfig().locator
         self._get_input_buildings(building_names)
         self._get_cea_input_files()
-        self._get_techs_from_yaml(yml_path)
+        # self._get_techs_from_yaml(yml_path)
 
     def _get_input_buildings(self, building_names: List[str]):
         self.buildings: List[Building] = []
         for building_name in building_names:
             building = Building(name=building_name)
-            building.get_emission_system()
             self.buildings.append(building)
 
     def _get_cea_input_files(self):
@@ -69,13 +77,12 @@ class District:
         self.zone = zone.loc[self.buildings_names]
         self.air_conditioning = air_conditioning.loc[self.buildings_names]
 
-    def _get_techs_from_yaml(self, yml_path: str):
-        self.tech_dict = TechAttrDict(yml_path=yml_path)
-        self.tech_dict.add_locations_from_district(self)
+    # def _get_techs_from_yaml(self, yml_path: str):
+    #     self.tech_dict = TechAttrDict(yml_path=yml_path)
+    #     self.tech_dict.add_locations_from_district(self)
 
     def add_building_from_name(self, building_name: str):
         building = Building(name=building_name)
-        building.get_emission_system()
         self.buildings.append(building)
         self.tech_dict._add_locations_from_building(building)
 
@@ -87,9 +94,9 @@ class District:
     def buildings_names(self) -> List[str]:
         return [building.name for building in self.buildings]
 
-    @property
-    def tech_list(self) -> List[str]:
-        return list(self.tech_dict.techs.keys())
+    # @property
+    # def tech_list(self) -> List[str]:
+    #     return list(self.tech_dict.techs.keys())
 
     @property
     def name(self) -> str:
@@ -108,6 +115,10 @@ class TechAttrDict(AttrDict):
         self.update(yaml_data)
         self.my_config = MyConfig()
 
+    @property
+    def tech_list(self) -> List[str]:
+        return list(self.techs.keys())
+
     def _add_locations_from_building(self, buildings: Union[Building, List[Building]]):
         tech_name_dict = {key: None for key in self.techs.keys()}
         if isinstance(buildings, Building):
@@ -119,7 +130,6 @@ class TechAttrDict(AttrDict):
     def add_locations_from_district(self, district: District):
         for building in district.buildings:
             self._add_locations_from_building(building)
-        self.district = district
 
     def set_temporal_resolution(self, temporal_resolution: str):
         self.set_key("model.time.function_options.resolution", temporal_resolution)
@@ -127,40 +137,35 @@ class TechAttrDict(AttrDict):
     def set_solver(self, solver: str):
         self.set_key("run.solver", solver)
 
-    def set_wood_availaility(self, extra_area: float, energy_density: float):
-        for building in self.district.buildings:
-            self.set_key(
-                key=f"locations.{building.name}.techs.wood_supply.constraints.energy_cap_max",
-                value=(building.area + extra_area) * energy_density * 0.001,
-            )
-
-    def set_cop_timeseries(self):
-        self.set_key(
-            key="techs.ASHP.constraints.carrier_ratios.carrier_out.DHW",
-            value="df=cop_dhw",
-        )
-        self.set_key(
-            key="techs.ASHP.constraints.carrier_ratios.carrier_out.cooling",
-            value="df=cop_sc",
-        )
-        print(
-            "temperature sensitive COP is enabled. Getting COP timeseries from outdoor air temperature."
-        )
-
     def select_evaluated_demand(self):
         # demand techs starts with demand_ and is key of self.techs
-        demand_techs = [key for key in self.techs.keys() if key.startswith("demand_")]
-        for tech in demand_techs:
-            if tech not in self.my_config.evaluated_demand:
-                for building in self.locations.keys():
-                    self.del_key(f"locations.{building}.techs.{tech}")
+        # demand_techs = [key for key in self.techs.keys() if key.startswith("demand_")]
+        # for tech in demand_techs:
+        #     if tech not in self.my_config.evaluated_demand:
+        #         for building in self.locations.keys():
+        #             self.del_key(f"locations.{building}.techs.{tech}")
+        # TODO: correctly consider demand tech with different temperature
+        for building in self.locations.keys():
+            self.del_key(f"locations.{building}.techs.demand_space_cooling")
+            print(f"demand_space_cooling is disabled for {building} ...")
 
     def select_evaluated_solar_supply(self):
-        solar_supply_techs = ["PV", "PVT", "SCET", "SCFP"]
+        solar_supply_techs = [
+            "PV_small",
+            "PV_middle",
+            "PV_large",
+            "PV_extra_large",
+            "PVT",
+            "SCET",
+            "SCFP",
+        ]
+
         for tech in solar_supply_techs:
-            if tech not in self.my_config.evaluated_solar_supply:
+            tech_type = tech.split("_")[0]
+            if tech_type not in self.my_config.evaluated_solar_supply:
                 for building in self.locations.keys():
-                    self.del_key(f"locations.{building}.techs.{tech}")
+                    if tech in self.locations[building].techs:
+                        self.del_key(f"locations.{building}.techs.{tech}")
 
     def set_global_max_co2(self, max_co2: Union[float, None]):
         self.set_key(
@@ -181,3 +186,45 @@ class TechAttrDict(AttrDict):
         else:
             raise ValueError("objective must be either cost or emission")
         print(f"Objective set to {objective} ...")
+
+    def set_emission_temperature(self, district: District):
+        """
+        check the emission system of the district, set the carrier of demand_space_heating accordingly.
+        the following emission systems are available from inputs/technology/assemblies/HVAC.xlsx:
+        ```
+        Emission system 	            Carrier
+        None	                    HVAC_HEATING_AS0
+        Radiator (90/70) 	            HVAC_HEATING_AS1
+        Radiator (70/55) 	            HVAC_HEATING_AS2
+        central AC (40/20) 	            HVAC_HEATING_AS3
+        Floor heating (40/35) 	    HVAC_HEATING_AS4
+        ```
+        """
+        carrier_dict = {
+            "HVAC_HEATING_AS0": None,
+            "HVAC_HEATING_AS1": "demand_space_heating_85",
+            "HVAC_HEATING_AS2": "demand_space_heating_60",
+            "HVAC_HEATING_AS3": "demand_space_heating_35",
+            "HVAC_HEATING_AS4": "demand_space_heating_35",
+        }
+        heating_demand_techs = [
+            "demand_space_heating_35",
+            "demand_space_heating_60",
+            "demand_space_heating_85",
+        ]
+        for building in district.buildings:
+            carrier = carrier_dict[building.emission]
+            # in locations.{building_name}.techs, delete all heating demand techs except the one that is needed
+            for tech in heating_demand_techs:
+                if tech != carrier:
+                    self.del_key(key=f"locations.{building.name}.techs.{tech}")
+
+            # TODO: wait until calliope 0.7.0 and restore back to the following code
+
+            # self.set_key(
+            #     key=f"locations.{building.name}.techs.demand_space_heating.essentials.carrier",
+            #     value=carrier,
+            # )
+            # print(
+            #     f"Building {building} has emission system {building.emission}, set space heating carrier to {carrier} ..."
+            # )

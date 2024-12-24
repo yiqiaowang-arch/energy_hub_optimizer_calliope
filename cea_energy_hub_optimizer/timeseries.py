@@ -7,13 +7,14 @@ from cea_energy_hub_optimizer.my_config import MyConfig
 
 
 class TimeSeries:
-    def __init__(self, district: District):
+    def __init__(self, district: District, tariff_loc="ewz"):
         self.demand = Demand(district)
         self.pv = PV(district)
         self.pvt = PVT(district)
         self.sc_et = SC("ET", district)
         self.sc_fp = SC("FP", district)
         self.cop = COP(district)
+        self.tariff = Tariff(district, loc=tariff_loc)
 
     @property
     def timeseries_dict(self):
@@ -24,6 +25,7 @@ class TimeSeries:
             **self.sc_et.result_dict,
             **self.sc_fp.result_dict,
             **self.cop.cop_dict,
+            **self.tariff.tariff_dict,
         }
 
 
@@ -34,7 +36,7 @@ class EnergyIO:
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         self.district = district
         self.mapping_dict = mapping_dict
         self.result_dict: dict[str, TimeSeriesDf] = {
@@ -69,7 +71,7 @@ class Demand(EnergyIO):
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         self.mapping_dict = {
             "demand_electricity": "E_sys_kWh",
             "demand_space_heating": "Qhs_sys_kWh",
@@ -79,7 +81,9 @@ class Demand(EnergyIO):
         super().__init__(self.mapping_dict, district)
 
     def get_node_energy(self, building: "Building"):
-        demand_path = self.locator.get_demand_results_file(building=building.name)
+        demand_path = self.my_config.locator.get_demand_results_file(
+            building=building.name
+        )
         demand_df = pd.read_csv(demand_path, usecols=list(self.mapping_dict.values()))
         for key in self.mapping_dict.keys():
             if building.name not in self.result_dict[key].columns:
@@ -112,7 +116,7 @@ class PV(SolarEnergy):
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         mapping_dict = {"supply_PV": "E_PV_gen_kWh"}
         super().__init__(mapping_dict, district)
         self.divide_by_area("supply_PV")
@@ -122,7 +126,7 @@ class PV(SolarEnergy):
             self.result_dict["supply_PV"].add_columns(building.name)
 
         if "PV" in self.my_config.evaluated_solar_supply:
-            pv_path = self.locator.PV_results(building=building.name)
+            pv_path = self.my_config.locator.PV_results(building=building.name)
             pv_df = pd.read_csv(pv_path, usecols=["E_PV_gen_kWh"])
             self.result_dict["supply_PV"][building.name] = pv_df[
                 "E_PV_gen_kWh"
@@ -146,7 +150,7 @@ class PVT(SolarEnergy):
             self.result_dict["supply_PVT_e"].add_columns(building.name)
 
         if "PVT" in self.my_config.evaluated_solar_supply:
-            pvt_path = self.locator.PVT_results(building=building.name)
+            pvt_path = self.my_config.locator.PVT_results(building=building.name)
             pvt_df = pd.read_csv(pvt_path, usecols=list(self.mapping_dict.values()))
             self.result_dict["supply_PVT_e"][building.name] = pvt_df[
                 "E_PVT_gen_kWh"
@@ -163,7 +167,7 @@ class SC(SolarEnergy):
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         mapping_dict = {f"supply_SC{panel_type}": "Q_SC_gen_kWh"}
         self.panel_type = panel_type
         super().__init__(mapping_dict, district)
@@ -175,7 +179,7 @@ class SC(SolarEnergy):
             self.result_dict[result_key].add_columns(building.name)
 
         if f"SC{self.panel_type}" in self.my_config.evaluated_solar_supply:
-            sc_path = self.locator.SC_results(
+            sc_path = self.my_config.locator.SC_results(
                 building=building.name, panel_type=self.panel_type
             )
             sc_df = pd.read_csv(sc_path, usecols=["Q_SC_gen_kWh"])
@@ -190,26 +194,23 @@ class COP:
         district: District,
     ):
         self.my_config = MyConfig()
-        self.locator = self.my_config.locator
+        # self.locator = self.my_config.locator
         self.district = district
         self.cop_dict: Dict[str, TimeSeriesDf] = {}
-
         self.T_out = TimeSeriesDf._epw_data["drybulb_C"].to_numpy()
-        exergy_eff = self.my_config.nominal_cop / ((60 + 273.15) / (60 - 10))
+        exergy_eff = self.my_config.exergy_efficiency
+
         self.add_cop_timeseries_from_temp(
-            mode="heating",
-            T_H=60,
-            T_L=self.T_out,
-            exergy_eff=exergy_eff,
-            df_key="cop_dhw",
+            "heating", 60, self.T_out, exergy_eff, df_key="cop_heating_60"
         )
         self.add_cop_timeseries_from_temp(
-            mode="cooling",
-            T_H=self.T_out,
-            T_L=10,
-            exergy_eff=exergy_eff,
-            df_key="cop_sc",
+            "heating", 35, self.T_out, exergy_eff, df_key="cop_heating_35"
         )
+        self.add_cop_timeseries_from_temp(
+            "heating", 85, self.T_out, exergy_eff, df_key="cop_heating_85"
+        )
+        if "demand_space_cooling" in self.my_config.evaluated_demand:
+            raise NotImplementedError("currently, cooling COP is not implemented.")
 
     def add_cop_timeseries_from_temp(
         self, mode: str, T_H, T_L, exergy_eff: float, df_key: str
@@ -224,7 +225,8 @@ class COP:
                 raise ValueError(
                     f"T_H must be a single value and T_L must be an array. Currently, T_H is a {type(T_H)} and T_L is a {type(T_L)}."
                 )
-
+            # limit the COP to be between 1 and 8
+            cop_arr = np.clip(cop_arr, 1, 8)
         elif mode == "cooling":
             if isinstance(T_L, (int, float)) and isinstance(T_H, np.ndarray):
                 cop_arr = (T_L + 273.15) / (T_H - T_L) * exergy_eff
@@ -232,12 +234,46 @@ class COP:
                 raise ValueError(
                     f"T_L must be a single value and T_H must be an array. Currently, T_L is a {type(T_L)} and T_H is a {type(T_H)}."
                 )
-
-        # limit the COP to be between 0 and 10
-        cop_arr = np.clip(cop_arr, 0, 10)
+            # limit the COP to be between 0 and 7
+            cop_arr = np.clip(cop_arr, 0, 7)
 
         self.cop_dict[df_key] = TimeSeriesDf(columns=self.district.buildings_names)
         self.cop_dict[df_key].loc[:, :] = cop_arr[:, None]
+
+
+class Tariff:
+    def __init__(self, district: District, loc: str):
+        self.my_config = MyConfig()
+        # self.locator = self.my_config.locator
+        self.district = district
+        self.tariff_dict: Dict[str, TimeSeriesDf] = {}
+
+        self.generate_electricity_tariff
+        self.generate_electricity_tariff(
+            0.2994, 0.1854, "electricity_supply_econatur_ewz_tariff", loc=loc
+        )
+        self.generate_electricity_tariff(
+            -0.1460, -0.1022, "electricity_feedin_ewz_tariff", loc=loc
+        )
+
+    def generate_electricity_tariff(
+        self, high_tariff: float, low_tariff: float, df_key: str, loc: str
+    ):
+        if loc == "ewz":
+            # create a sereis of daily high-low tariff based on ewz's electricity tariff
+            # high tariff time: Monday to Saturday, from 6:00 to 22:00, the rest is low tariff
+            self.tariff_dict[df_key] = TimeSeriesDf(
+                columns=self.district.buildings_names
+            )
+            self.tariff_dict[df_key].loc[:, :] = low_tariff
+            self.tariff_dict[df_key].loc[
+                (self.tariff_dict[df_key].index.dayofweek <= 5)
+                & (self.tariff_dict[df_key].index.hour >= 6)
+                & (self.tariff_dict[df_key].index.hour < 22),
+                :,
+            ] = high_tariff
+        else:
+            raise NotImplementedError("Currently, only ewz tariff is implemented.")
 
 
 # define a class which is a pd dataframe, having the index as epw's timestep and index's name as "t"
