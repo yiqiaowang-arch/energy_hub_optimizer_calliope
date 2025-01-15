@@ -1,6 +1,0 @@
-tech_type,approx_type,a,b,c,tech_name,tech_size_min,tech_size_max
-DH,power,2898.2,0.5512,,techs.DH_15_50.costs.monetary,15,50
-DH,power,2898.2,0.5512,,techs.DH_50_200.costs.monetary,50,200
-DH,power,2898.2,0.5512,,techs.DH_200_500.costs.monetary,200,500
-DH,power,2898.2,0.5512,,techs.DH_500_2000.costs.monetary,500,2000
-ASHP,linear,1814.5,12655,,,,
