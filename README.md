@@ -1,7 +1,21 @@
 # energy_hub_optimizer
-An optimization plugin for building energy hub using Calliope for the City Energy Analyst.
+![image](https://github.com/user-attachments/assets/0c7669cf-7e00-4bd3-845d-8fae34060656)
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+A multi-objective optimization plugin for energy hubs using Calliope, tailored for the City Energy Analyst (CEA) to enhance energy system decision-making at both building and district levels. By incorporating mixed-integer linear programming (MILP), this plugin enables CEA to achieve globally optimal solutions for energy system design challenges. Designed for seamless integration, the plugin automatically handles CEA inputs and outputs, streamlining the entire optimization process into a single software solution—eliminating the need for multiple tools.
+
+The plugin offers flexibility to optimize all buildings in a district either individually or collectively, based on user preferences. Equipped with an up-to-date technology database for Zurich, Switzerland, it includes a user-friendly, Excel-based technology definition file. This feature allows users to easily customize default technology definitions or create new variations effortlessly.
+
+For advanced users, the plugin provides APIs for standalone operation, enabling detailed analysis of energy hub models without relying on a graphical user interface (GUI). Optimization results, including technology sizing and associated costs (both monetary and emissions), are stored in .csv format in the CEA outputs folder for easy access and further analysis.
+
+Example visualization of optimization results:
+![Pareto Front Examples](https://github.com/user-attachments/assets/e6f20ca6-73d6-497d-804c-cf3c73bede6a)
+
+![technology variation](https://github.com/user-attachments/assets/4a04dcaf-5c1c-4a24-9a9c-7403cc20d7ed)
+
+![cost composition](https://github.com/user-attachments/assets/b2ee6f91-b635-4762-a0b1-23a061549746)
+
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Download
 To install, clone this repo to a desired path (you would need to have `git` installed to run this command. Alternatively you can also run this command in the CEA console, which
@@ -40,7 +54,7 @@ You should include **ALL the plugins** in that command, otherwise you may lose a
 Now we need to install solvers. 
 - The default solver for calliope is glpk, which is already pre-installed along with calliope conda package.
 - For Gurobi, one need to refer to [Using Gurobi in Calliope](https://calliope.readthedocs.io/en/stable/user/installation.html#gurobi) to install Gurobi Optimizer on your local computer. Note that Admin right and restart is needed for this installation. After installed, one should be able to directly use Gurobi in calliope.
-- For CPLEX, one need to first download and install CPLEX, then install its python interface by running `conda install docplex` in CEA console.
+- For CPLEX, one need to first download and install CPLEX, then install its python interface by running `conda install docplex` in CEA console. Note that to download CPLEX, one need to first have Java installed; to install cplex, one need to have admin right.
 
 
 In the CEA console, enter the following command to enable the plugin in CEA:
@@ -87,3 +101,8 @@ To enable auto-completion for both CEA's native methods and the venv that CEA us
 ```
 C:/path/to/the/installation/folder/CityEnergyAnalyst/Dependencies/micromamba/envs/cea/python.exe
 ```
+## Licenses
+
+This project is licensed under the MIT License. Additionally, it includes components licensed under the Apache License 2.0.
+
+- [Calliope](https://github.com/calliope-project/calliope), licensed under Apache 2.0.
