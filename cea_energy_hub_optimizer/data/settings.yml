@@ -76,22 +76,22 @@ tech_groups:
             co2:
                 energy_cap: 4.771
 
-    ASHP:
-        essentials:
-            parent: conversion
-            carrier_in: electricity
-            color: '#107c41'
-        constraints:
-            energy_cap_min: 1
-            energy_cap_max: 200
-            lifetime: 18
-        costs:
-            monetary:
-                energy_cap: 1814.5
-                purchase: 12655
-                om_annual: 4.64
-            co2:
-                energy_cap: 45.9
+    # ASHP:
+    #     essentials:
+    #         parent: conversion
+    #         carrier_in: electricity
+    #         color: '#107c41'
+    #     constraints:
+    #         energy_cap_min: 1
+    #         energy_cap_max: 200
+    #         lifetime: 18
+    #     costs:
+    #         monetary:
+    #             energy_cap: 1814.5
+    #             purchase: 12655
+    #             om_annual: 4.64
+    #         co2:
+    #             energy_cap: 45.9
     
     GSHP:
         essentials:

@@ -139,15 +139,27 @@ class TechAttrDict(AttrDict):
 
     def set_cop_timeseries(self):
         self.set_key(
-            key="techs.ASHP_35.constraints.energy_eff",
+            key="techs.ASHP_35_small.constraints.energy_eff",
             value="df=cop_heating_35",
         )
         self.set_key(
-            key="techs.ASHP_60.constraints.energy_eff",
+            key="techs.ASHP_35_large.constraints.energy_eff",
+            value="df=cop_heating_35",
+        )
+        self.set_key(
+            key="techs.ASHP_60_small.constraints.energy_eff",
             value="df=cop_heating_60",
         )
         self.set_key(
-            key="techs.ASHP_85.constraints.energy_eff",
+            key="techs.ASHP_60_large.constraints.energy_eff",
+            value="df=cop_heating_60",
+        )
+        self.set_key(
+            key="techs.ASHP_85_small.constraints.energy_eff",
+            value="df=cop_heating_85",
+        )
+        self.set_key(
+            key="techs.ASHP_85_large.constraints.energy_eff",
             value="df=cop_heating_85",
         )
         print(
