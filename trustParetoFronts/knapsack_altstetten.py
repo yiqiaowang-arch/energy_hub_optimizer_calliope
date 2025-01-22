@@ -40,7 +40,7 @@ else:
     pareto_fronts_path = os.path.join(
         config.locator.get_optimization_results_folder(),
         "calliope_energy_hub",
-        "batch_no_oil_approach_tip",
+        "sbe_test_HP_price",
     )
 
 pareto_df_list = []
@@ -64,26 +64,22 @@ dfs = []
 warnings.filterwarnings("ignore")
 i = 0
 for cost in np.linspace(minimal_cost + 100, maximal_cost, 100):
-    if i < 81:
-        i += 1
-        print(f"Skipping {i}")
-        continue
     df, emission_reduction, actual_cost = maximal_emission_reduction_dp(
-        df_pareto_all, cost, precision=-1.5
+        df_pareto_all, cost, precision=-2
     )
     df.columns = [i]
     costs.append(actual_cost)
     emission_reductions.append(emission_reduction)
     print(f"Cost: {actual_cost}, Emission reduction: {emission_reduction}")
     dfs.append(df)
-    df.to_csv(f"df_{i}.csv")
+    # df.to_csv(f"df_{i}.csv")
     i += 1
 
 """
 df example:
 building    pareto_index
 A           0
-B           1
+B          
 C           2
 D           0
 """
@@ -95,9 +91,11 @@ for df in dfs:
     i += 1
 
 # merge all dfs into one df, each run is a column
-df_all = pd.concat(dfs, axis=1)
-df_all.to_csv("df_all_batch_no_oil_approach_tip.csv")
+df_decisions = pd.concat(dfs, axis=1)
+df_decisions.to_csv("sbe_test_HP_price_decision.csv")
 
+df_results = pd.DataFrame({"cost": costs, "emission_reduction": emission_reductions})
+df_results.to_csv("sbe_test_HP_price_results.csv")
 plt.plot(costs, emission_reductions)
 plt.xlabel("Additional Cost [MCHF]")
 plt.ylabel("Emission Reduction [tCO2eq]")
